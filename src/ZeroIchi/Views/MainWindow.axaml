@@ -34,8 +34,10 @@
         <ScrollViewer HorizontalScrollBarVisibility="Auto"
                       IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
                       VerticalScrollBarVisibility="Auto">
-            <controls:HexViewControl CursorPosition="{Binding CursorPosition}"
+            <controls:HexViewControl x:Name="HexView"
+                                     CursorPosition="{Binding CursorPosition}"
                                      Data="{Binding Data}"
+                                     ModifiedIndices="{Binding ModifiedIndices}"
                                      SelectionLength="{Binding SelectionLength}"
                                      SelectionStart="{Binding SelectionStart}"/>
         </ScrollViewer>

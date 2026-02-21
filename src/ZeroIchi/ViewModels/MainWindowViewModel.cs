@@ -1,6 +1,7 @@
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 
@@ -31,6 +32,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private int _selectionLength;
 
+    [ObservableProperty]
+    private HashSet<int>? _modifiedIndices;
+
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
         _storageProvider = storageProvider;
@@ -57,6 +61,16 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateTitle();
         FileInfo = $"ファイル名: {Document.FileName}\nサイズ: {FormatFileSize(Document.FileSize)}";
         Data = Document.Data;
+        ModifiedIndices = null;
+    }
+
+    public void OnByteModified(int index, byte value)
+    {
+        if (Document is null) return;
+
+        Document.WriteByte(index, value);
+        ModifiedIndices = [.. Document.ModifiedIndices];
+        UpdateTitle();
     }
 
     [RelayCommand]
@@ -65,6 +79,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (Document is null || !Document.IsModified) return;
 
         await Document.SaveAsync();
+        ModifiedIndices = null;
         UpdateTitle();
     }
 

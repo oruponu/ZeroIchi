@@ -2,8 +2,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using System;
+using System.Collections.Generic;
 
 namespace ZeroIchi.Controls;
 
@@ -24,6 +26,12 @@ public class HexViewControl : Control, ILogicalScrollable
         AvaloniaProperty.Register<HexViewControl, int>(nameof(SelectionLength), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
+    public static readonly StyledProperty<HashSet<int>?> ModifiedIndicesProperty =
+        AvaloniaProperty.Register<HexViewControl, HashSet<int>?>(nameof(ModifiedIndices));
+
+    public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
+        RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
+
     private const int BytesPerLine = 16;
     private const string MonoFontFamily = "Cascadia Mono, Consolas, Courier New, monospace";
     private const double FontSize = 13;
@@ -41,11 +49,12 @@ public class HexViewControl : Control, ILogicalScrollable
     private static readonly IBrush TextBrush = new SolidColorBrush(Color.FromRgb(0xD4, 0xD4, 0xD4)).ToImmutable();
     private static readonly IBrush CursorBgBrush = new SolidColorBrush(Color.FromRgb(0x26, 0x4F, 0x78)).ToImmutable();
     private static readonly IBrush SelectionBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x26, 0x4F, 0x78)).ToImmutable();
+    private static readonly IBrush ModifiedBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xE0, 0x8C, 0x00)).ToImmutable();
 
     static HexViewControl()
     {
         AffectsRender<HexViewControl>(DataProperty, CursorPositionProperty,
-            SelectionStartProperty, SelectionLengthProperty);
+            SelectionStartProperty, SelectionLengthProperty, ModifiedIndicesProperty);
         AffectsMeasure<HexViewControl>(DataProperty);
     }
 
@@ -58,6 +67,7 @@ public class HexViewControl : Control, ILogicalScrollable
     private Size _scrollViewport;
     private bool _isDragging;
     private int _selectionAnchor;
+    private bool _editingHighNibble;
 
     public HexViewControl()
     {
@@ -89,6 +99,18 @@ public class HexViewControl : Control, ILogicalScrollable
         set => SetValue(SelectionLengthProperty, value);
     }
 
+    public HashSet<int>? ModifiedIndices
+    {
+        get => GetValue(ModifiedIndicesProperty);
+        set => SetValue(ModifiedIndicesProperty, value);
+    }
+
+    public event EventHandler<ByteModifiedEventArgs>? ByteModified
+    {
+        add => AddHandler(ByteModifiedEvent, value);
+        remove => RemoveHandler(ByteModifiedEvent, value);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -99,6 +121,7 @@ public class HexViewControl : Control, ILogicalScrollable
             SelectionStart = 0;
             SelectionLength = 0;
             _selectionAnchor = 0;
+            _editingHighNibble = false;
             _scrollOffset = default;
             InvalidateScrollable();
         }
@@ -161,20 +184,33 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         var cursor = CursorPosition;
         var hasSelection = SelectionLength > 0;
+        var modified = ModifiedIndices;
 
         for (var i = 0; i < bytesInLine; i++)
         {
             var byteIndex = byteOffset + i;
             var isCursor = byteIndex == cursor;
             var isSelected = hasSelection && byteIndex >= selStart && byteIndex < selEnd;
+            var isModified = modified is not null && modified.Contains(byteIndex);
 
-            if (!isCursor && !isSelected) continue;
+            if (!isCursor && !isSelected && !isModified) continue;
 
-            var brush = isCursor ? CursorBgBrush : SelectionBgBrush;
             var hexCharPos = HexStartChar + i * 3 + (i >= 8 ? 1 : 0);
+            var hexRect = new Rect(hexCharPos * _charWidth, y, 2 * _charWidth, _lineHeight);
+            var asciiRect = new Rect((AsciiStartChar + i) * _charWidth, y, _charWidth, _lineHeight);
 
-            context.FillRectangle(brush, new Rect(hexCharPos * _charWidth, y, 2 * _charWidth, _lineHeight));
-            context.FillRectangle(brush, new Rect((AsciiStartChar + i) * _charWidth, y, _charWidth, _lineHeight));
+            if (isModified)
+            {
+                context.FillRectangle(ModifiedBgBrush, hexRect);
+                context.FillRectangle(ModifiedBgBrush, asciiRect);
+            }
+
+            if (isCursor || isSelected)
+            {
+                var brush = isCursor ? CursorBgBrush : SelectionBgBrush;
+                context.FillRectangle(brush, hexRect);
+                context.FillRectangle(brush, asciiRect);
+            }
         }
     }
 
@@ -262,6 +298,8 @@ public class HexViewControl : Control, ILogicalScrollable
         if (byteIndex < 0) return;
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
+        _editingHighNibble = false;
 
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
@@ -351,8 +389,15 @@ public class HexViewControl : Control, ILogicalScrollable
                 newPos = Math.Min(maxIndex, newPos + visibleLines * BytesPerLine);
                 break;
             default:
+                if (!ctrl && TryParseHexKey(e.Key) is { } nibble)
+                {
+                    HandleHexInput(nibble, maxIndex);
+                    e.Handled = true;
+                }
                 return;
         }
+
+        _editingHighNibble = false;
 
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
@@ -387,6 +432,56 @@ public class HexViewControl : Control, ILogicalScrollable
             ((IScrollable)this).Offset = new Vector(_scrollOffset.X, cursorY + _lineHeight - _scrollViewport.Height);
     }
 
+    private void HandleHexInput(int nibble, int maxIndex)
+    {
+        var data = Data;
+        if (data is null) return;
+
+        var pos = CursorPosition;
+        var currentByte = data[pos];
+
+        if (!_editingHighNibble)
+        {
+            var newValue = (byte)((nibble << 4) | (currentByte & 0x0F));
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue));
+            _editingHighNibble = true;
+        }
+        else
+        {
+            var newValue = (byte)((currentByte & 0xF0) | nibble);
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue));
+            _editingHighNibble = false;
+
+            var newPos = Math.Min(maxIndex, pos + 1);
+            CursorPosition = newPos;
+            SelectionStart = newPos;
+            SelectionLength = 0;
+            _selectionAnchor = newPos;
+            EnsureCursorVisible();
+        }
+    }
+
+    private static int? TryParseHexKey(Key key) => key switch
+    {
+        Key.D0 or Key.NumPad0 => 0,
+        Key.D1 or Key.NumPad1 => 1,
+        Key.D2 or Key.NumPad2 => 2,
+        Key.D3 or Key.NumPad3 => 3,
+        Key.D4 or Key.NumPad4 => 4,
+        Key.D5 or Key.NumPad5 => 5,
+        Key.D6 or Key.NumPad6 => 6,
+        Key.D7 or Key.NumPad7 => 7,
+        Key.D8 or Key.NumPad8 => 8,
+        Key.D9 or Key.NumPad9 => 9,
+        Key.A => 0xA,
+        Key.B => 0xB,
+        Key.C => 0xC,
+        Key.D => 0xD,
+        Key.E => 0xE,
+        Key.F => 0xF,
+        _ => null,
+    };
+
     public event EventHandler? ScrollInvalidated;
 
     bool ILogicalScrollable.CanHorizontallyScroll { get; set; }
@@ -419,4 +514,11 @@ public class HexViewControl : Control, ILogicalScrollable
     void ILogicalScrollable.RaiseScrollInvalidated(EventArgs e) => ScrollInvalidated?.Invoke(this, e);
 
     private void InvalidateScrollable() => ScrollInvalidated?.Invoke(this, EventArgs.Empty);
+}
+
+public class ByteModifiedEventArgs(RoutedEvent routedEvent, object source, int index, byte value)
+    : RoutedEventArgs(routedEvent, source)
+{
+    public int Index { get; } = index;
+    public byte Value { get; } = value;
 }
