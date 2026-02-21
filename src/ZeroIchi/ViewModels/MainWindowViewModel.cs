@@ -1,8 +1,7 @@
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System;
-using System.Text;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 
@@ -10,8 +9,6 @@ namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private const int BytesPerLine = 16;
-
     private IStorageProvider? _storageProvider;
 
     [ObservableProperty]
@@ -24,7 +21,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _fileInfo = "";
 
     [ObservableProperty]
-    private string _hexDump = "";
+    private IReadOnlyList<HexLine>? _hexLines;
 
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
@@ -51,7 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Document = await BinaryDocument.OpenAsync(path);
         Title = $"{Document.FileName} - ZeroIchi";
         FileInfo = $"ファイル名: {Document.FileName}\nサイズ: {FormatFileSize(Document.FileSize)}";
-        HexDump = GenerateHexDump(Document.Data, maxLines: 16);
+        HexLines = GenerateHexLines(Document.Data);
     }
 
     private static string FormatFileSize(long bytes)
@@ -65,61 +62,14 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    private static string GenerateHexDump(byte[] data, int maxLines)
+    private static HexLine[] GenerateHexLines(byte[] data)
     {
-        var totalLines = Math.Min(maxLines, (data.Length + BytesPerLine - 1) / BytesPerLine);
-        var sb = new StringBuilder(totalLines * 80);
-        ReadOnlySpan<byte> span = data;
+        var totalLines = (data.Length + HexLine.BytesPerLine - 1) / HexLine.BytesPerLine;
+        var lines = new HexLine[totalLines];
 
-        for (var line = 0; line < totalLines; line++)
-        {
-            var offset = line * BytesPerLine;
-            var lineSpan = span.Slice(offset, Math.Min(BytesPerLine, span.Length - offset));
+        for (var i = 0; i < totalLines; i++)
+            lines[i] = HexLine.Create(data, i);
 
-            sb.Append($"{offset:X8}  ");
-            FormatHexLine(sb, lineSpan);
-            sb.Append(" |");
-            FormatAsciiLine(sb, lineSpan);
-            sb.Append('|');
-
-            if (line < totalLines - 1)
-                sb.AppendLine();
-        }
-
-        if (data.Length > maxLines * BytesPerLine)
-        {
-            sb.AppendLine();
-            sb.Append($"... (残り {data.Length - maxLines * BytesPerLine} バイト)");
-        }
-
-        return sb.ToString();
-    }
-
-    private static void FormatHexLine(StringBuilder sb, ReadOnlySpan<byte> lineData)
-    {
-        Span<char> hexBuf = stackalloc char[3]; // "XX "
-
-        for (var i = 0; i < BytesPerLine; i++)
-        {
-            if (i < lineData.Length)
-            {
-                lineData[i].TryFormat(hexBuf, out _, "X2");
-                hexBuf[2] = ' ';
-                sb.Append(hexBuf);
-            }
-            else
-            {
-                sb.Append("   ");
-            }
-
-            if (i == 7)
-                sb.Append(' ');
-        }
-    }
-
-    private static void FormatAsciiLine(StringBuilder sb, ReadOnlySpan<byte> lineData)
-    {
-        foreach (var b in lineData)
-            sb.Append(b is >= 0x20 and <= 0x7E ? (char)b : '.');
+        return lines;
     }
 }
