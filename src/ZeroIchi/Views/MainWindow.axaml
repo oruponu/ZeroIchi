@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="using:ZeroIchi.Models"
         xmlns:vm="using:ZeroIchi.ViewModels"
         Title="{Binding Title}"
         d:DesignHeight="450"
@@ -27,12 +28,39 @@
                    IsVisible="{Binding FileInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Text="{Binding FileInfo}"/>
 
-        <ScrollViewer>
-            <TextBlock FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                       FontSize="13"
-                       IsVisible="{Binding HexDump, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                       Text="{Binding HexDump}"/>
-        </ScrollViewer>
+        <ListBox IsVisible="{Binding HexLines, Converter={x:Static ObjectConverters.IsNotNull}}"
+                 ItemsSource="{Binding HexLines}"
+                 SelectionMode="Toggle">
+            <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="4,0"/>
+                    <Setter Property="MinHeight" Value="0"/>
+                </Style>
+                <Style Selector="ListBoxItem TextBlock">
+                    <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Courier New, monospace"/>
+                    <Setter Property="FontSize" Value="13"/>
+                </Style>
+            </ListBox.Styles>
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="models:HexLine">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Margin="0,0,12,0"
+                                   Foreground="Gray"
+                                   Text="{Binding Offset}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding HexBytes}"/>
+                        <TextBlock Grid.Column="2"
+                                   Margin="12,0,0,0"
+                                   Text="{Binding Ascii}"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </DockPanel>
 
 </Window>
