@@ -1,7 +1,6 @@
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 
@@ -21,7 +20,16 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _fileInfo = "";
 
     [ObservableProperty]
-    private IReadOnlyList<HexLine>? _hexLines;
+    private byte[]? _data;
+
+    [ObservableProperty]
+    private int _cursorPosition;
+
+    [ObservableProperty]
+    private int _selectionStart;
+
+    [ObservableProperty]
+    private int _selectionLength;
 
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
@@ -48,7 +56,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Document = await BinaryDocument.OpenAsync(path);
         Title = $"{Document.FileName} - ZeroIchi";
         FileInfo = $"ファイル名: {Document.FileName}\nサイズ: {FormatFileSize(Document.FileSize)}";
-        HexLines = GenerateHexLines(Document.Data);
+        Data = Document.Data;
     }
 
     private static string FormatFileSize(long bytes)
@@ -60,16 +68,5 @@ public partial class MainWindowViewModel : ViewModelBase
             < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
             _ => $"{bytes / (1024.0 * 1024 * 1024):F1} GB",
         };
-    }
-
-    private static HexLine[] GenerateHexLines(byte[] data)
-    {
-        var totalLines = (data.Length + HexLine.BytesPerLine - 1) / HexLine.BytesPerLine;
-        var lines = new HexLine[totalLines];
-
-        for (var i = 0; i < totalLines; i++)
-            lines[i] = HexLine.Create(data, i);
-
-        return lines;
     }
 }
