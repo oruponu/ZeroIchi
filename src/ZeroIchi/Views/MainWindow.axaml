@@ -1,20 +1,38 @@
-<Window xmlns="https://github.com/avaloniaui"
+<Window x:Class="ZeroIchi.Views.MainWindow"
+        xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:ZeroIchi.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="ZeroIchi.Views.MainWindow"
+        xmlns:vm="using:ZeroIchi.ViewModels"
+        Title="{Binding Title}"
+        d:DesignHeight="450"
+        d:DesignWidth="800"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="ZeroIchi">
+        mc:Ignorable="d">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    <DockPanel Margin="8">
+        <StackPanel Margin="0,0,0,8"
+                    DockPanel.Dock="Top"
+                    Orientation="Horizontal">
+            <Button Command="{Binding OpenFileCommand}" Content="ファイルを開く"/>
+        </StackPanel>
+
+        <TextBlock Margin="0,0,0,8"
+                   DockPanel.Dock="Top"
+                   IsVisible="{Binding FileInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Text="{Binding FileInfo}"/>
+
+        <ScrollViewer>
+            <TextBlock FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                       FontSize="13"
+                       IsVisible="{Binding HexDump, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Text="{Binding HexDump}"/>
+        </ScrollViewer>
+    </DockPanel>
 
 </Window>
