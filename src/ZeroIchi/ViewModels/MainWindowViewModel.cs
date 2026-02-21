@@ -54,9 +54,30 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         Document = await BinaryDocument.OpenAsync(path);
-        Title = $"{Document.FileName} - ZeroIchi";
+        UpdateTitle();
         FileInfo = $"ファイル名: {Document.FileName}\nサイズ: {FormatFileSize(Document.FileSize)}";
         Data = Document.Data;
+    }
+
+    [RelayCommand]
+    private async Task SaveFileAsync()
+    {
+        if (Document is null || !Document.IsModified) return;
+
+        await Document.SaveAsync();
+        UpdateTitle();
+    }
+
+    private void UpdateTitle()
+    {
+        if (Document is null)
+        {
+            Title = "ZeroIchi";
+            return;
+        }
+
+        var modified = Document.IsModified ? "*" : "";
+        Title = $"ZeroIchi - {Document.FileName}{modified}";
     }
 
     private static string FormatFileSize(long bytes)

@@ -21,6 +21,9 @@
                     DockPanel.Dock="Top"
                     Orientation="Horizontal">
             <Button Command="{Binding OpenFileCommand}" Content="ファイルを開く"/>
+            <Button Margin="8,0,0,0"
+                    Command="{Binding SaveFileCommand}"
+                    Content="保存"/>
         </StackPanel>
 
         <TextBlock Margin="0,0,0,8"
