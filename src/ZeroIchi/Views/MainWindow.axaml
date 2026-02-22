@@ -19,6 +19,9 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="ファイル(_F)">
+                <MenuItem Command="{Binding NewFileCommand}"
+                          Header="新規(_N)"
+                          InputGesture="Ctrl+N"/>
                 <MenuItem Command="{Binding OpenFileCommand}"
                           Header="開く(_O)..."
                           InputGesture="Ctrl+O"/>

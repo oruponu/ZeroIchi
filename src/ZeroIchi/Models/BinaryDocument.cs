@@ -13,12 +13,16 @@ public class BinaryDocument
     public HashSet<int> ModifiedIndices { get; } = [];
     public bool IsModified => ModifiedIndices.Count > 0;
 
+    public bool IsNew => FilePath == "";
+
     private BinaryDocument(string filePath, byte[] data)
     {
         FilePath = filePath;
-        FileName = Path.GetFileName(filePath);
+        FileName = filePath == "" ? "Untitled" : Path.GetFileName(filePath);
         Data = data;
     }
+
+    public static BinaryDocument CreateNew() => new("", []);
 
     public static async Task<BinaryDocument> OpenAsync(string path)
     {
