@@ -211,7 +211,7 @@ public class HexViewControl : Control, ILogicalScrollable
 
                 DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
                 var textY = y + CellPaddingY;
-                DrawText(context, byteOffset.ToString("X8"), 0, textY, MonospaceTypeface, OffsetBrush);
+                DrawText(context, byteOffset.ToString("X8"), 0, textY, MonospaceTypeface, OffsetBrush, CellPaddingX);
                 if (bytesInLine > 0)
                 {
                     DrawHexBytes(context, data, byteOffset, bytesInLine, textY, MonospaceTypeface);
@@ -284,7 +284,7 @@ public class HexViewControl : Control, ILogicalScrollable
         var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
         if (cursorOnLine || selectionOnLine)
         {
-            var offsetRect = new Rect(0, y, OffsetChars * _charWidth, _rowHeight);
+            var offsetRect = new Rect(0, y, OffsetChars * _charWidth + 2 * CellPaddingX, _rowHeight);
             context.FillRectangle(cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect);
         }
 
@@ -334,11 +334,11 @@ public class HexViewControl : Control, ILogicalScrollable
     }
 
     private void DrawText(DrawingContext context, string text, int charColumn, double y,
-        Typeface typeface, IBrush brush)
+        Typeface typeface, IBrush brush, double xOffset = 0)
     {
         var formatted = new FormattedText(text, System.Globalization.CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight, typeface, FontSize, brush);
-        context.DrawText(formatted, new Point(charColumn * _charWidth, y));
+        context.DrawText(formatted, new Point(charColumn * _charWidth + xOffset, y));
     }
 
     private void DrawHexBytes(DrawingContext context, byte[] data, int byteOffset, int bytesInLine,
