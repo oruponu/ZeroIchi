@@ -97,6 +97,16 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateTitle();
     }
 
+    public void OnBytesDeleted(int index, int count)
+    {
+        if (Document is null) return;
+
+        Document.DeleteBytes(index, count);
+        Data = Document.Data;
+        ModifiedIndices = [.. Document.ModifiedIndices];
+        UpdateTitle();
+    }
+
     [RelayCommand]
     private async Task SaveFileAsync()
     {

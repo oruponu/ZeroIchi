@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -11,7 +12,8 @@ public class BinaryDocument
     public byte[] Data { get; private set; }
     public long FileSize => Data.Length;
     public HashSet<int> ModifiedIndices { get; } = [];
-    public bool IsModified => ModifiedIndices.Count > 0;
+    private bool _structurallyModified;
+    public bool IsModified => _structurallyModified || ModifiedIndices.Count > 0;
 
     public bool IsNew => FilePath == "";
 
@@ -43,15 +45,41 @@ public class BinaryDocument
         ModifiedIndices.Add(Data.Length - 1);
     }
 
+    public void DeleteBytes(int index, int count)
+    {
+        if (count <= 0 || index < 0 || index + count > Data.Length) return;
+
+        var newData = new byte[Data.Length - count];
+        Array.Copy(Data, 0, newData, 0, index);
+        Array.Copy(Data, index + count, newData, index, Data.Length - index - count);
+
+        var shifted = new List<int>();
+        foreach (var i in ModifiedIndices)
+        {
+            if (i < index)
+                shifted.Add(i);
+            else if (i >= index + count)
+                shifted.Add(i - count);
+        }
+
+        ModifiedIndices.Clear();
+        ModifiedIndices.UnionWith(shifted);
+
+        Data = newData;
+        _structurallyModified = true;
+    }
+
     public async Task SaveAsync()
     {
         await File.WriteAllBytesAsync(FilePath, Data);
         ModifiedIndices.Clear();
+        _structurallyModified = false;
     }
 
     public async Task SaveAsAsync(string path)
     {
         await File.WriteAllBytesAsync(path, Data);
         ModifiedIndices.Clear();
+        _structurallyModified = false;
     }
 }

@@ -12,6 +12,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         HexView.AddHandler(HexViewControl.ByteModifiedEvent, OnByteModified);
+        HexView.AddHandler(HexViewControl.BytesDeletedEvent, OnBytesDeleted);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -58,6 +59,14 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
         {
             vm.OnByteModified(e.Index, e.Value);
+        }
+    }
+
+    private void OnBytesDeleted(object? sender, BytesDeletedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.OnBytesDeleted(e.Index, e.Count);
         }
     }
 }

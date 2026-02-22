@@ -32,6 +32,9 @@ public class HexViewControl : Control, ILogicalScrollable
     public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
         RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
 
+    public static readonly RoutedEvent<BytesDeletedEventArgs> BytesDeletedEvent =
+        RoutedEvent.Register<HexViewControl, BytesDeletedEventArgs>(nameof(BytesDeleted), RoutingStrategies.Bubble);
+
     private const int BytesPerLine = 16;
     private const string MonoFontFamily = "Cascadia Mono, Consolas, Courier New, monospace";
     private const double FontSize = 13;
@@ -118,6 +121,12 @@ public class HexViewControl : Control, ILogicalScrollable
         remove => RemoveHandler(ByteModifiedEvent, value);
     }
 
+    public event EventHandler<BytesDeletedEventArgs>? BytesDeleted
+    {
+        add => AddHandler(BytesDeletedEvent, value);
+        remove => RemoveHandler(BytesDeletedEvent, value);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -127,8 +136,8 @@ public class HexViewControl : Control, ILogicalScrollable
             var oldData = change.GetOldValue<byte[]?>();
             var newData = change.GetNewValue<byte[]?>();
 
-            // バイト追加時はカーソル位置と編集状態を維持
-            if (oldData is not null && newData is not null && newData.Length == oldData.Length + 1)
+            // バイト追加・削除時はカーソル位置と編集状態を維持
+            if (oldData is not null && newData is not null && newData.Length != oldData.Length)
             {
                 InvalidateScrollable();
                 return;
@@ -625,6 +634,11 @@ public class HexViewControl : Control, ILogicalScrollable
             case Key.PageDown:
                 newPos = Math.Min(maxIndex, newPos + visibleLines * BytesPerLine);
                 break;
+            case Key.Delete:
+            case Key.Back:
+                HandleDelete(e.Key, data);
+                e.Handled = true;
+                return;
             default:
                 if (!ctrl && TryParseHexKey(e.Key) is { } nibble)
                 {
@@ -709,6 +723,45 @@ public class HexViewControl : Control, ILogicalScrollable
         }
     }
 
+    private void HandleDelete(Key key, byte[] data)
+    {
+        int deleteIndex;
+        int deleteCount;
+
+        if (SelectionLength > 0)
+        {
+            deleteIndex = SelectionStart;
+            deleteCount = SelectionLength;
+        }
+        else if (key == Key.Delete)
+        {
+            if (CursorPosition >= data.Length) return;
+            deleteIndex = CursorPosition;
+            deleteCount = 1;
+        }
+        else if (key == Key.Back)
+        {
+            if (CursorPosition <= 0) return;
+            deleteIndex = CursorPosition - 1;
+            deleteCount = 1;
+        }
+        else
+        {
+            return;
+        }
+
+        var newPos = Math.Clamp(deleteIndex, 0, data.Length - deleteCount);
+
+        RaiseEvent(new BytesDeletedEventArgs(BytesDeletedEvent, this, deleteIndex, deleteCount));
+
+        _editingHighNibble = false;
+        CursorPosition = newPos;
+        SelectionStart = newPos;
+        SelectionLength = 0;
+        _selectionAnchor = newPos;
+        EnsureCursorVisible();
+    }
+
     private static int? TryParseHexKey(Key key) => key switch
     {
         Key.D0 or Key.NumPad0 => 0,
@@ -769,4 +822,11 @@ public class ByteModifiedEventArgs(RoutedEvent routedEvent, object source, int i
 {
     public int Index { get; } = index;
     public byte Value { get; } = value;
+}
+
+public class BytesDeletedEventArgs(RoutedEvent routedEvent, object source, int index, int count)
+    : RoutedEventArgs(routedEvent, source)
+{
+    public int Index { get; } = index;
+    public int Count { get; } = count;
 }
