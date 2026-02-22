@@ -8,7 +8,7 @@ public class BinaryDocument
 {
     public string FilePath { get; }
     public string FileName { get; }
-    public byte[] Data { get; }
+    public byte[] Data { get; private set; }
     public long FileSize => Data.Length;
     public HashSet<int> ModifiedIndices { get; } = [];
     public bool IsModified => ModifiedIndices.Count > 0;
@@ -35,6 +35,12 @@ public class BinaryDocument
         if ((uint)index >= (uint)Data.Length) return;
         Data[index] = value;
         ModifiedIndices.Add(index);
+    }
+
+    public void AppendByte(byte value)
+    {
+        Data = [.. Data, value];
+        ModifiedIndices.Add(Data.Length - 1);
     }
 
     public async Task SaveAsync()
