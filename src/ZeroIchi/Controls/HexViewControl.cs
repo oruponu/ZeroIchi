@@ -162,6 +162,12 @@ public class HexViewControl : Control, ILogicalScrollable
     private double AsciiCellX(int i) => AsciiStartX + i * _asciiCellWidth;
     private double TotalWidth => AsciiCellX(BytesPerLine);
 
+    private Rect HexCellRect(int byteInLine, double y)
+    {
+        var charPos = HexStartChar + byteInLine * 3 + (byteInLine >= 8 ? 1 : 0);
+        return new Rect(charPos * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
+    }
+
     protected override Size MeasureOverride(Size availableSize)
     {
         EnsureMetrics();
@@ -232,6 +238,35 @@ public class HexViewControl : Control, ILogicalScrollable
 
     private void DrawHeader(DrawingContext context)
     {
+        if (Data is not null)
+        {
+            var cursorCol = CursorPosition % BytesPerLine;
+            var hasSelection = SelectionLength > 0;
+            var selFirstCol = 0;
+            var selLastCol = 0;
+            var selLineSpan = 0;
+
+            if (hasSelection)
+            {
+                var selEnd = SelectionStart + SelectionLength - 1;
+                selFirstCol = SelectionStart % BytesPerLine;
+                selLastCol = selEnd % BytesPerLine;
+                selLineSpan = selEnd / BytesPerLine - SelectionStart / BytesPerLine;
+            }
+
+            for (var i = 0; i < BytesPerLine; i++)
+            {
+                var isCursor = i == cursorCol;
+                var isSelected = hasSelection && (selLineSpan >= 2
+                    || (selLineSpan == 0 ? i >= selFirstCol && i <= selLastCol
+                                         : i >= selFirstCol || i <= selLastCol));
+
+                if (!isCursor && !isSelected) continue;
+
+                context.FillRectangle(isCursor ? CursorBgBrush : SelectionBgBrush, HexCellRect(i, 0));
+            }
+        }
+
         DrawText(context, HeaderHexText, HexStartChar, CellPaddingY, MonospaceTypeface, OffsetBrush);
         var separatorY = _rowHeight - 0.5;
         context.DrawLine(HeaderSeparatorPen, new Point(0, separatorY), new Point(Bounds.Width, separatorY));
@@ -245,6 +280,14 @@ public class HexViewControl : Control, ILogicalScrollable
         var modified = ModifiedIndices;
         var hovered = _hoveredByteIndex;
 
+        var cursorOnLine = cursor / BytesPerLine == byteOffset / BytesPerLine;
+        var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
+        if (cursorOnLine || selectionOnLine)
+        {
+            var offsetRect = new Rect(0, y, OffsetChars * _charWidth, _rowHeight);
+            context.FillRectangle(cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect);
+        }
+
         for (var i = 0; i < bytesInLine; i++)
         {
             var byteIndex = byteOffset + i;
@@ -255,8 +298,7 @@ public class HexViewControl : Control, ILogicalScrollable
 
             if (!isCursor && !isSelected && !isModified && !isHovered) continue;
 
-            var hexCharPos = HexStartChar + i * 3 + (i >= 8 ? 1 : 0);
-            var hexRect = new Rect(hexCharPos * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
+            var hexRect = HexCellRect(i, y);
             var asciiRect = new Rect(AsciiCellX(i), y, _asciiCellWidth, _rowHeight);
 
             if (isHovered && !isCursor && !isSelected)
@@ -285,11 +327,8 @@ public class HexViewControl : Control, ILogicalScrollable
             var appendInLine = data.Length - byteOffset;
             if (appendInLine is >= 0 and < BytesPerLine)
             {
-                var hexCharPos = HexStartChar + appendInLine * 3 + (appendInLine >= 8 ? 1 : 0);
-                var hexRect = new Rect(hexCharPos * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
-                var asciiRect = new Rect(AsciiCellX(appendInLine), y, _asciiCellWidth, _rowHeight);
-                context.FillRectangle(CursorBgBrush, hexRect);
-                context.FillRectangle(CursorBgBrush, asciiRect);
+                context.FillRectangle(CursorBgBrush, HexCellRect(appendInLine, y));
+                context.FillRectangle(CursorBgBrush, new Rect(AsciiCellX(appendInLine), y, _asciiCellWidth, _rowHeight));
             }
         }
     }
