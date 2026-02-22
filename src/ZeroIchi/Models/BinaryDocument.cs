@@ -9,11 +9,11 @@ public class BinaryDocument
 {
     public string FilePath { get; }
     public string FileName { get; }
-    public byte[] Data { get; private set; }
+    public byte[] Data { get; internal set; }
     public long FileSize => Data.Length;
     public HashSet<int> ModifiedIndices { get; } = [];
-    private bool _structurallyModified;
-    public bool IsModified => _structurallyModified || ModifiedIndices.Count > 0;
+    internal bool StructurallyModified { get; set; }
+    public bool IsModified => StructurallyModified || ModifiedIndices.Count > 0;
 
     public bool IsNew => FilePath == "";
 
@@ -66,20 +66,20 @@ public class BinaryDocument
         ModifiedIndices.UnionWith(shifted);
 
         Data = newData;
-        _structurallyModified = true;
+        StructurallyModified = true;
     }
 
     public async Task SaveAsync()
     {
         await File.WriteAllBytesAsync(FilePath, Data);
         ModifiedIndices.Clear();
-        _structurallyModified = false;
+        StructurallyModified = false;
     }
 
     public async Task SaveAsAsync(string path)
     {
         await File.WriteAllBytesAsync(path, Data);
         ModifiedIndices.Clear();
-        _structurallyModified = false;
+        StructurallyModified = false;
     }
 }
