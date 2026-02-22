@@ -48,11 +48,6 @@
         </Border>
 
         <DockPanel Margin="8">
-            <TextBlock Margin="0,0,0,8"
-                       DockPanel.Dock="Top"
-                       IsVisible="{Binding FileInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                       Text="{Binding FileInfo}"/>
-
             <ScrollViewer HorizontalScrollBarVisibility="Auto"
                           IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
                           VerticalScrollBarVisibility="Auto">
