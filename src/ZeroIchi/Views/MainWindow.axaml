@@ -36,6 +36,17 @@
             </MenuItem>
         </Menu>
 
+        <Border Padding="8,4"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                BorderThickness="0,1,0,0"
+                DockPanel.Dock="Bottom"
+                IsVisible="{Binding StatusBarPositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding StatusBarSizeText}"/>
+                <TextBlock Text="{Binding StatusBarPositionText}"/>
+            </DockPanel>
+        </Border>
+
         <DockPanel Margin="8">
             <TextBlock Margin="0,0,0,8"
                        DockPanel.Dock="Top"

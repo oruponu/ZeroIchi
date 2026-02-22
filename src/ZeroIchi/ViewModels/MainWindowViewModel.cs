@@ -36,6 +36,12 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private HashSet<int>? _modifiedIndices;
 
+    [ObservableProperty]
+    private string _statusBarPositionText = "00000000";
+
+    [ObservableProperty]
+    private string _statusBarSizeText = "0 B";
+
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
         _storageProvider = storageProvider;
@@ -149,6 +155,33 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var modified = Document.IsModified ? "*" : "";
         Title = $"{modified}{Document.FileName} - ZeroIchi";
+    }
+
+    partial void OnCursorPositionChanged(int value) => UpdateStatusBar();
+    partial void OnSelectionStartChanged(int value) => UpdateStatusBar();
+    partial void OnSelectionLengthChanged(int value) => UpdateStatusBar();
+    partial void OnDataChanged(byte[]? value) => UpdateStatusBar();
+
+    private void UpdateStatusBar()
+    {
+        if (Data is null)
+        {
+            StatusBarPositionText = "";
+            StatusBarSizeText = "";
+            return;
+        }
+
+        if (SelectionLength > 0)
+        {
+            var selEnd = SelectionStart + SelectionLength - 1;
+            StatusBarPositionText = $"{SelectionStart:X8} - {selEnd:X8} ({SelectionLength} バイト)";
+        }
+        else
+        {
+            StatusBarPositionText = $"{CursorPosition:X8}";
+        }
+
+        StatusBarSizeText = FormatFileSize(Data.Length);
     }
 
     private static string FormatFileSize(long bytes)
