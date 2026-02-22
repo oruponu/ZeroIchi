@@ -28,9 +28,19 @@ public partial class MainWindow : Window
     {
         base.OnKeyDown(e);
 
-        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.S)
+        if (DataContext is MainWindowViewModel vm)
         {
-            if (DataContext is MainWindowViewModel vm)
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.O)
+            {
+                vm.OpenFileCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.S)
+            {
+                vm.SaveAsFileCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.S)
             {
                 vm.SaveFileCommand.Execute(null);
                 e.Handled = true;

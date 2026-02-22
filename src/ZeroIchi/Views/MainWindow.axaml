@@ -16,31 +16,40 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <DockPanel Margin="8">
-        <StackPanel Margin="0,0,0,8"
-                    DockPanel.Dock="Top"
-                    Orientation="Horizontal">
-            <Button Command="{Binding OpenFileCommand}" Content="ファイルを開く"/>
-            <Button Margin="8,0,0,0"
-                    Command="{Binding SaveFileCommand}"
-                    Content="保存"/>
-        </StackPanel>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Command="{Binding OpenFileCommand}"
+                          Header="開く(_O)..."
+                          InputGesture="Ctrl+O"/>
+                <MenuItem Command="{Binding SaveFileCommand}"
+                          Header="保存(_S)"
+                          InputGesture="Ctrl+S"/>
+                <MenuItem Command="{Binding SaveAsFileCommand}"
+                          Header="名前を付けて保存(_A)..."
+                          InputGesture="Ctrl+Shift+S"/>
+                <Separator/>
+                <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
+            </MenuItem>
+        </Menu>
 
-        <TextBlock Margin="0,0,0,8"
-                   DockPanel.Dock="Top"
-                   IsVisible="{Binding FileInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                   Text="{Binding FileInfo}"/>
+        <DockPanel Margin="8">
+            <TextBlock Margin="0,0,0,8"
+                       DockPanel.Dock="Top"
+                       IsVisible="{Binding FileInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Text="{Binding FileInfo}"/>
 
-        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                      IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
-                      VerticalScrollBarVisibility="Auto">
-            <controls:HexViewControl x:Name="HexView"
-                                     CursorPosition="{Binding CursorPosition}"
-                                     Data="{Binding Data}"
-                                     ModifiedIndices="{Binding ModifiedIndices}"
-                                     SelectionLength="{Binding SelectionLength}"
-                                     SelectionStart="{Binding SelectionStart}"/>
-        </ScrollViewer>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
+                          VerticalScrollBarVisibility="Auto">
+                <controls:HexViewControl x:Name="HexView"
+                                         CursorPosition="{Binding CursorPosition}"
+                                         Data="{Binding Data}"
+                                         ModifiedIndices="{Binding ModifiedIndices}"
+                                         SelectionLength="{Binding SelectionLength}"
+                                         SelectionStart="{Binding SelectionStart}"/>
+            </ScrollViewer>
+        </DockPanel>
     </DockPanel>
 
 </Window>

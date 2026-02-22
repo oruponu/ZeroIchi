@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -81,6 +82,33 @@ public partial class MainWindowViewModel : ViewModelBase
         await Document.SaveAsync();
         ModifiedIndices = null;
         UpdateTitle();
+    }
+
+    [RelayCommand]
+    private async Task SaveAsFileAsync()
+    {
+        if (_storageProvider is null || Document is null) return;
+
+        var file = await _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "名前を付けて保存",
+            SuggestedFileName = Document.FileName,
+        });
+
+        if (file?.TryGetLocalPath() is not { } path) return;
+
+        await Document.SaveAsAsync(path);
+        ModifiedIndices = null;
+        UpdateTitle();
+    }
+
+    [RelayCommand]
+    private static void Exit()
+    {
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime lifetime)
+        {
+            lifetime.Shutdown();
+        }
     }
 
     private void UpdateTitle()
