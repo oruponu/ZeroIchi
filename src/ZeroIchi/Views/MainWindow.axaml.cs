@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Platform.Storage;
 using System;
+using System.Linq;
 using ZeroIchi.Controls;
 using ZeroIchi.ViewModels;
 
@@ -13,6 +15,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         HexView.AddHandler(HexViewControl.ByteModifiedEvent, OnByteModified);
         HexView.AddHandler(HexViewControl.BytesDeletedEvent, OnBytesDeleted);
+        AddHandler(DragDrop.DropEvent, OnDrop);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -67,6 +70,28 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
         {
             vm.OnBytesDeleted(e.Index, e.Count);
+        }
+    }
+
+    private async void OnDrop(object? sender, DragEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not MainWindowViewModel vm)
+                return;
+
+            var files = e.DataTransfer.TryGetFiles()?.OfType<IStorageFile>().ToList();
+            if (files is not { Count: > 0 })
+                return;
+
+            if (files[0].TryGetLocalPath() is not { } path)
+                return;
+
+            await vm.OpenFileAsync(path);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
         }
     }
 }

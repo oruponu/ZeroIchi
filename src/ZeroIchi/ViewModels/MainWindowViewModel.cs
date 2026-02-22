@@ -73,6 +73,11 @@ public partial class MainWindowViewModel : ViewModelBase
         if (files[0].TryGetLocalPath() is not { } path)
             return;
 
+        await OpenFileAsync(path);
+    }
+
+    public async Task OpenFileAsync(string path)
+    {
         Document = await BinaryDocument.OpenAsync(path);
         UpdateTitle();
         Data = Document.Data;
