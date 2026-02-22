@@ -35,6 +35,16 @@
                 <Separator/>
                 <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
             </MenuItem>
+            <MenuItem Header="編集(_E)">
+                <MenuItem Command="{Binding UndoCommand}"
+                          Header="元に戻す(_U)"
+                          InputGesture="Ctrl+Z"
+                          IsEnabled="{Binding CanUndo}"/>
+                <MenuItem Command="{Binding RedoCommand}"
+                          Header="やり直し(_R)"
+                          InputGesture="Ctrl+Y"
+                          IsEnabled="{Binding CanRedo}"/>
+            </MenuItem>
         </Menu>
 
         <Border Padding="8,4"
