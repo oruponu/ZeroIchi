@@ -16,7 +16,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private BinaryDocument? _document = BinaryDocument.CreateNew();
 
     [ObservableProperty]
-    private string _title = "ZeroIchi - Untitled";
+    private string _title = "Untitled - ZeroIchi";
 
     [ObservableProperty]
     private string _fileInfo = "";
@@ -139,7 +139,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         var modified = Document.IsModified ? "*" : "";
-        Title = $"ZeroIchi - {Document.FileName}{modified}";
+        Title = $"{modified}{Document.FileName} - ZeroIchi";
     }
 
     private static string FormatFileSize(long bytes)
