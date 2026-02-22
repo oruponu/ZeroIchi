@@ -37,6 +37,7 @@ public class HexViewControl : Control, ILogicalScrollable
     private const double FontSize = 13;
     private const double CellPaddingX = 4;
     private const double CellPaddingY = 2;
+    private const double HighlightCornerRadius = 4;
 
     // 列レイアウト（文字数）：Offset(8) Gap(2) Hex(49=16*3+1) Gap(2) ASCII(パディング付き)
     private const int OffsetChars = 8;
@@ -254,16 +255,21 @@ public class HexViewControl : Control, ILogicalScrollable
                 selLineSpan = selEnd / BytesPerLine - SelectionStart / BytesPerLine;
             }
 
+            bool IsHeaderHighlighted(int col) =>
+                col == cursorCol || (hasSelection && (selLineSpan >= 2
+                    || (selLineSpan == 0 ? col >= selFirstCol && col <= selLastCol
+                                         : col >= selFirstCol || col <= selLastCol)));
+
             for (var i = 0; i < BytesPerLine; i++)
             {
-                var isCursor = i == cursorCol;
-                var isSelected = hasSelection && (selLineSpan >= 2
-                    || (selLineSpan == 0 ? i >= selFirstCol && i <= selLastCol
-                                         : i >= selFirstCol || i <= selLastCol));
+                if (!IsHeaderHighlighted(i)) continue;
 
-                if (!isCursor && !isSelected) continue;
+                var hasLeft = i > 0 && i != 8 && IsHeaderHighlighted(i - 1);
+                var hasRight = i < BytesPerLine - 1 && i != 7 && IsHeaderHighlighted(i + 1);
+                var r = HighlightCornerRadius;
 
-                context.FillRectangle(isCursor ? CursorBgBrush : SelectionBgBrush, HexCellRect(i, 0));
+                FillRoundedRect(context, i == cursorCol ? CursorBgBrush : SelectionBgBrush, HexCellRect(i, 0),
+                    hasLeft ? 0 : r, hasRight ? 0 : r, hasRight ? 0 : r, hasLeft ? 0 : r);
             }
         }
 
@@ -279,13 +285,29 @@ public class HexViewControl : Control, ILogicalScrollable
         var hasSelection = SelectionLength > 0;
         var modified = ModifiedIndices;
         var hovered = _hoveredByteIndex;
+        var data = Data;
+        var dataLength = data?.Length ?? 0;
 
         var cursorOnLine = cursor / BytesPerLine == byteOffset / BytesPerLine;
         var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
+
         if (cursorOnLine || selectionOnLine)
         {
+            bool IsAddrRowHighlighted(int rowOffset)
+            {
+                if (rowOffset < 0 || rowOffset > dataLength) return false;
+                if (cursor / BytesPerLine == rowOffset / BytesPerLine) return true;
+                var rowEnd = Math.Min(rowOffset + BytesPerLine, dataLength);
+                return hasSelection && selStart < rowEnd && selEnd > rowOffset;
+            }
+
+            var addrAbove = IsAddrRowHighlighted(byteOffset - BytesPerLine);
+            var addrBelow = IsAddrRowHighlighted(byteOffset + BytesPerLine);
+            var r = HighlightCornerRadius;
+
             var offsetRect = new Rect(0, y, OffsetChars * _charWidth + 2 * CellPaddingX, _rowHeight);
-            context.FillRectangle(cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect);
+            FillRoundedRect(context, cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect,
+                addrAbove ? 0 : r, addrAbove ? 0 : r, addrBelow ? 0 : r, addrBelow ? 0 : r);
         }
 
         for (var i = 0; i < bytesInLine; i++)
@@ -295,42 +317,116 @@ public class HexViewControl : Control, ILogicalScrollable
             var isSelected = hasSelection && byteIndex >= selStart && byteIndex < selEnd;
             var isModified = modified is not null && modified.Contains(byteIndex);
             var isHovered = byteIndex == hovered;
+            var highlighted = isCursor || isSelected;
 
-            if (!isCursor && !isSelected && !isModified && !isHovered) continue;
+            if (!highlighted && !isModified && !isHovered) continue;
 
             var hexRect = HexCellRect(i, y);
             var asciiRect = new Rect(AsciiCellX(i), y, _asciiCellWidth, _rowHeight);
 
-            if (isHovered && !isCursor && !isSelected)
+            if (isHovered && !highlighted)
             {
-                context.FillRectangle(HoverBgBrush, hexRect);
-                context.FillRectangle(HoverBgBrush, asciiRect);
+                context.DrawRectangle(HoverBgBrush, null, new RoundedRect(hexRect, HighlightCornerRadius));
+                context.DrawRectangle(HoverBgBrush, null, new RoundedRect(asciiRect, HighlightCornerRadius));
             }
 
             if (isModified)
             {
-                context.FillRectangle(ModifiedBgBrush, hexRect);
-                context.FillRectangle(ModifiedBgBrush, asciiRect);
+                bool IsModifiedNeighbor(int index) =>
+                    index >= 0 && index < dataLength && modified!.Contains(index);
+
+                DrawMergedCells(context, ModifiedBgBrush, hexRect, asciiRect, i,
+                    byteIndex >= BytesPerLine && IsModifiedNeighbor(byteIndex - BytesPerLine),
+                    byteIndex + BytesPerLine < dataLength && IsModifiedNeighbor(byteIndex + BytesPerLine),
+                    i > 0 && IsModifiedNeighbor(byteIndex - 1),
+                    i < BytesPerLine - 1 && IsModifiedNeighbor(byteIndex + 1));
             }
 
-            if (isCursor || isSelected)
+            if (highlighted)
             {
-                var brush = isCursor ? CursorBgBrush : SelectionBgBrush;
-                context.FillRectangle(brush, hexRect);
-                context.FillRectangle(brush, asciiRect);
+                DrawMergedCells(context, isCursor ? CursorBgBrush : SelectionBgBrush, hexRect, asciiRect, i,
+                    byteIndex >= BytesPerLine && IsHighlighted(byteIndex - BytesPerLine),
+                    byteIndex + BytesPerLine <= dataLength && IsHighlighted(byteIndex + BytesPerLine),
+                    i > 0 && IsHighlighted(byteIndex - 1),
+                    i < BytesPerLine - 1 && IsHighlighted(byteIndex + 1));
             }
         }
 
-        var data = Data;
         if (data is not null && cursor == data.Length)
         {
             var appendInLine = data.Length - byteOffset;
             if (appendInLine is >= 0 and < BytesPerLine)
             {
-                context.FillRectangle(CursorBgBrush, HexCellRect(appendInLine, y));
-                context.FillRectangle(CursorBgBrush, new Rect(AsciiCellX(appendInLine), y, _asciiCellWidth, _rowHeight));
+                DrawMergedCells(context, CursorBgBrush,
+                    HexCellRect(appendInLine, y),
+                    new Rect(AsciiCellX(appendInLine), y, _asciiCellWidth, _rowHeight),
+                    appendInLine,
+                    cursor >= BytesPerLine && IsHighlighted(cursor - BytesPerLine),
+                    false,
+                    appendInLine > 0 && IsHighlighted(cursor - 1),
+                    false);
             }
         }
+
+        return;
+
+        bool IsHighlighted(int index) =>
+            index == cursor || (hasSelection && index >= selStart && index < selEnd);
+    }
+
+    // バイト 7-8 の間は結合しない
+    private static void DrawMergedCells(DrawingContext context, IBrush brush,
+        Rect hexRect, Rect asciiRect, int col,
+        bool above, bool below, bool left, bool right)
+    {
+        var r = HighlightCornerRadius;
+        var hexLeft = left && col != 8;
+        var hexRight = right && col != 7;
+
+        FillRoundedRect(context, brush, hexRect,
+            above || hexLeft ? 0 : r, above || hexRight ? 0 : r,
+            below || hexRight ? 0 : r, below || hexLeft ? 0 : r);
+        FillRoundedRect(context, brush, asciiRect,
+            above || left ? 0 : r, above || right ? 0 : r,
+            below || right ? 0 : r, below || left ? 0 : r);
+    }
+
+    private static void FillRoundedRect(DrawingContext context, IBrush brush, Rect rect,
+        double tl, double tr, double br, double bl)
+    {
+        if (tl <= 0 && tr <= 0 && br <= 0 && bl <= 0)
+        {
+            context.FillRectangle(brush, rect);
+            return;
+        }
+
+        if (tl > 0 && tr > 0 && br > 0 && bl > 0)
+        {
+            context.DrawRectangle(brush, null, new RoundedRect(rect, tl));
+            return;
+        }
+
+        var geo = new StreamGeometry();
+        using (var ctx = geo.Open())
+        {
+            double x = rect.X, y = rect.Y, w = rect.Width, h = rect.Height;
+            ctx.BeginFigure(new Point(x + tl, y), true);
+            ctx.LineTo(new Point(x + w - tr, y));
+            if (tr > 0) ctx.ArcTo(new Point(x + w, y + tr), new Size(tr, tr), 0, false, SweepDirection.Clockwise);
+            else ctx.LineTo(new Point(x + w, y));
+            ctx.LineTo(new Point(x + w, y + h - br));
+            if (br > 0) ctx.ArcTo(new Point(x + w - br, y + h), new Size(br, br), 0, false, SweepDirection.Clockwise);
+            else ctx.LineTo(new Point(x + w, y + h));
+            ctx.LineTo(new Point(x + bl, y + h));
+            if (bl > 0) ctx.ArcTo(new Point(x, y + h - bl), new Size(bl, bl), 0, false, SweepDirection.Clockwise);
+            else ctx.LineTo(new Point(x, y + h));
+            ctx.LineTo(new Point(x, y + tl));
+            if (tl > 0) ctx.ArcTo(new Point(x + tl, y), new Size(tl, tl), 0, false, SweepDirection.Clockwise);
+            else ctx.LineTo(new Point(x, y));
+            ctx.EndFigure(true);
+        }
+
+        context.DrawGeometry(brush, null, geo);
     }
 
     private void DrawText(DrawingContext context, string text, int charColumn, double y,
