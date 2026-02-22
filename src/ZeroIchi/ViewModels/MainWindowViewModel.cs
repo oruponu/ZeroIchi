@@ -19,9 +19,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _title = "Untitled - ZeroIchi";
 
     [ObservableProperty]
-    private string _fileInfo = "";
-
-    [ObservableProperty]
     private byte[]? _data = [];
 
     [ObservableProperty]
@@ -52,7 +49,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Document = BinaryDocument.CreateNew();
         Data = Document.Data;
-        FileInfo = "";
         ModifiedIndices = null;
         CursorPosition = 0;
         SelectionStart = 0;
@@ -79,7 +75,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Document = await BinaryDocument.OpenAsync(path);
         UpdateTitle();
-        FileInfo = $"ファイル名: {Document.FileName}\nサイズ: {FormatFileSize(Document.FileSize)}";
         Data = Document.Data;
         ModifiedIndices = null;
     }
