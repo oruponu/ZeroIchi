@@ -50,6 +50,7 @@ public class HexViewControl : Control, ILogicalScrollable
     private static readonly IBrush CursorBgBrush = new SolidColorBrush(Color.FromRgb(0x26, 0x4F, 0x78)).ToImmutable();
     private static readonly IBrush SelectionBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x26, 0x4F, 0x78)).ToImmutable();
     private static readonly IBrush ModifiedBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xE0, 0x8C, 0x00)).ToImmutable();
+    private static readonly IBrush HoverBgBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)).ToImmutable();
     private static readonly Pen HeaderSeparatorPen = new(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)).ToImmutable());
     private static readonly string HeaderHexText = BuildHeaderHexText();
 
@@ -72,6 +73,7 @@ public class HexViewControl : Control, ILogicalScrollable
     private bool _isDragging;
     private int _selectionAnchor;
     private bool _editingHighNibble;
+    private int _hoveredByteIndex = -1;
 
     public HexViewControl()
     {
@@ -241,6 +243,7 @@ public class HexViewControl : Control, ILogicalScrollable
         var cursor = CursorPosition;
         var hasSelection = SelectionLength > 0;
         var modified = ModifiedIndices;
+        var hovered = _hoveredByteIndex;
 
         for (var i = 0; i < bytesInLine; i++)
         {
@@ -248,12 +251,19 @@ public class HexViewControl : Control, ILogicalScrollable
             var isCursor = byteIndex == cursor;
             var isSelected = hasSelection && byteIndex >= selStart && byteIndex < selEnd;
             var isModified = modified is not null && modified.Contains(byteIndex);
+            var isHovered = byteIndex == hovered;
 
-            if (!isCursor && !isSelected && !isModified) continue;
+            if (!isCursor && !isSelected && !isModified && !isHovered) continue;
 
             var hexCharPos = HexStartChar + i * 3 + (i >= 8 ? 1 : 0);
             var hexRect = new Rect(hexCharPos * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
             var asciiRect = new Rect(AsciiCellX(i), y, _asciiCellWidth, _rowHeight);
+
+            if (isHovered && !isCursor && !isSelected)
+            {
+                context.FillRectangle(HoverBgBrush, hexRect);
+                context.FillRectangle(HoverBgBrush, asciiRect);
+            }
 
             if (isModified)
             {
@@ -394,13 +404,33 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         base.OnPointerMoved(e);
 
-        if (!_isDragging) return;
-
         var byteIndex = HitTestByte(e.GetPosition(this));
-        if (byteIndex < 0) return;
 
-        UpdateSelection(_selectionAnchor, byteIndex);
-        e.Handled = true;
+        if (_isDragging)
+        {
+            if (byteIndex < 0) return;
+            UpdateSelection(_selectionAnchor, byteIndex);
+            e.Handled = true;
+            return;
+        }
+
+        var newHover = byteIndex >= 0 ? byteIndex : -1;
+        if (newHover != _hoveredByteIndex)
+        {
+            _hoveredByteIndex = newHover;
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+
+        if (_hoveredByteIndex >= 0)
+        {
+            _hoveredByteIndex = -1;
+            InvalidateVisual();
+        }
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
