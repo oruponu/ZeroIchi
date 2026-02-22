@@ -82,7 +82,16 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (Document is null) return;
 
-        Document.WriteByte(index, value);
+        if (index == Document.Data.Length)
+        {
+            Document.AppendByte(value);
+            Data = Document.Data;
+        }
+        else
+        {
+            Document.WriteByte(index, value);
+        }
+
         ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateTitle();
     }
