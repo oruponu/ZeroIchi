@@ -23,9 +23,17 @@ public partial class MainWindowViewModel : ViewModelBase
     }.Build();
 
     private IStorageProvider? _storageProvider;
+    private readonly UndoRedoManager _undoRedoManager = new();
+    private IEditCommand? _lastExecutedCommand;
 
     [ObservableProperty]
     private BinaryDocument? _document = BinaryDocument.CreateNew();
+
+    [ObservableProperty]
+    private bool _canUndo;
+
+    [ObservableProperty]
+    private bool _canRedo;
 
     [ObservableProperty]
     private string _title = "Untitled - ZeroIchi";
@@ -68,6 +76,8 @@ public partial class MainWindowViewModel : ViewModelBase
         CursorPosition = 0;
         SelectionStart = 0;
         SelectionLength = 0;
+        _undoRedoManager.Clear();
+        UpdateUndoRedoState();
         UpdateTitle();
     }
 
@@ -97,34 +107,90 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateTitle();
         Data = Document.Data;
         ModifiedIndices = null;
+        _undoRedoManager.Clear();
+        UpdateUndoRedoState();
     }
 
     public void OnByteModified(int index, byte value)
     {
         if (Document is null) return;
 
+        IEditCommand command;
         if (index == Document.Data.Length)
         {
-            Document.AppendByte(value);
-            Data = Document.Data;
+            command = new AppendByteCommand(Document, value, CursorPosition);
         }
         else
         {
-            Document.WriteByte(index, value);
+            command = new WriteByteCommand(Document, index, value, CursorPosition);
         }
 
+        _undoRedoManager.ExecuteCommand(command);
+        _lastExecutedCommand = command;
+        Data = Document.Data;
         ModifiedIndices = [.. Document.ModifiedIndices];
+        UpdateUndoRedoState();
         UpdateTitle();
+    }
+
+    public void CaptureCursorAfterEdit()
+    {
+        if (_lastExecutedCommand is not null)
+        {
+            _lastExecutedCommand.CursorPositionAfter = CursorPosition;
+            _lastExecutedCommand = null;
+        }
     }
 
     public void OnBytesDeleted(int index, int count)
     {
         if (Document is null) return;
 
-        Document.DeleteBytes(index, count);
+        var command = new DeleteBytesCommand(Document, index, count, CursorPosition);
+        _undoRedoManager.ExecuteCommand(command);
+        command.CursorPositionAfter = CursorPosition;
         Data = Document.Data;
         ModifiedIndices = [.. Document.ModifiedIndices];
+        UpdateUndoRedoState();
         UpdateTitle();
+    }
+
+    [RelayCommand]
+    private void Undo()
+    {
+        if (Document is null) return;
+
+        var command = _undoRedoManager.Undo();
+        if (command is null) return;
+
+        Data = Document.Data;
+        ModifiedIndices = [.. Document.ModifiedIndices];
+        CursorPosition = command.CursorPositionBefore;
+        SelectionLength = 0;
+        UpdateUndoRedoState();
+        UpdateTitle();
+    }
+
+    [RelayCommand]
+    private void Redo()
+    {
+        if (Document is null) return;
+
+        var command = _undoRedoManager.Redo();
+        if (command is null) return;
+
+        Data = Document.Data;
+        ModifiedIndices = [.. Document.ModifiedIndices];
+        CursorPosition = command.CursorPositionAfter;
+        SelectionLength = 0;
+        UpdateUndoRedoState();
+        UpdateTitle();
+    }
+
+    private void UpdateUndoRedoState()
+    {
+        CanUndo = _undoRedoManager.CanUndo;
+        CanRedo = _undoRedoManager.CanRedo;
     }
 
     [RelayCommand]

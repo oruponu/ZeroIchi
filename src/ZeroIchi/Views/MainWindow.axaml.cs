@@ -54,6 +54,21 @@ public partial class MainWindow : Window
                 vm.SaveFileCommand.Execute(null);
                 e.Handled = true;
             }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.Z)
+            {
+                vm.RedoCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.Z)
+            {
+                vm.UndoCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.Y)
+            {
+                vm.RedoCommand.Execute(null);
+                e.Handled = true;
+            }
         }
     }
 
@@ -62,6 +77,7 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
         {
             vm.OnByteModified(e.Index, e.Value);
+            vm.CaptureCursorAfterEdit();
         }
     }
 
