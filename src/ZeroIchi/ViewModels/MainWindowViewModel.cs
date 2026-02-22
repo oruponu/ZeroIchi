@@ -13,16 +13,16 @@ public partial class MainWindowViewModel : ViewModelBase
     private IStorageProvider? _storageProvider;
 
     [ObservableProperty]
-    private BinaryDocument? _document;
+    private BinaryDocument? _document = BinaryDocument.CreateNew();
 
     [ObservableProperty]
-    private string _title = "ZeroIchi";
+    private string _title = "ZeroIchi - Untitled";
 
     [ObservableProperty]
     private string _fileInfo = "";
 
     [ObservableProperty]
-    private byte[]? _data;
+    private byte[]? _data = [];
 
     [ObservableProperty]
     private int _cursorPosition;
@@ -39,6 +39,19 @@ public partial class MainWindowViewModel : ViewModelBase
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
         _storageProvider = storageProvider;
+    }
+
+    [RelayCommand]
+    private void NewFile()
+    {
+        Document = BinaryDocument.CreateNew();
+        Data = Document.Data;
+        FileInfo = "";
+        ModifiedIndices = null;
+        CursorPosition = 0;
+        SelectionStart = 0;
+        SelectionLength = 0;
+        UpdateTitle();
     }
 
     [RelayCommand]
@@ -78,6 +91,12 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task SaveFileAsync()
     {
         if (Document is null || !Document.IsModified) return;
+
+        if (Document.IsNew)
+        {
+            await SaveAsFileAsync();
+            return;
+        }
 
         await Document.SaveAsync();
         ModifiedIndices = null;

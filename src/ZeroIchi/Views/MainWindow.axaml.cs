@@ -30,7 +30,12 @@ public partial class MainWindow : Window
 
         if (DataContext is MainWindowViewModel vm)
         {
-            if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.O)
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.N)
+            {
+                vm.NewFileCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.O)
             {
                 vm.OpenFileCommand.Execute(null);
                 e.Handled = true;
