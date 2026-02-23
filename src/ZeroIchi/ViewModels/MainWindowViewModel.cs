@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -74,6 +73,13 @@ public partial class MainWindowViewModel : ViewModelBase
     public void SetClipboard(IClipboard? clipboard)
     {
         _clipboard = clipboard;
+    }
+
+    private Action? _closeAction;
+
+    public void SetCloseAction(Action closeAction)
+    {
+        _closeAction = closeAction;
     }
 
     [RelayCommand]
@@ -327,12 +333,9 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private static void Exit()
+    private void Exit()
     {
-        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime lifetime)
-        {
-            lifetime.Shutdown();
-        }
+        _closeAction?.Invoke();
     }
 
     private void UpdateTitle()
