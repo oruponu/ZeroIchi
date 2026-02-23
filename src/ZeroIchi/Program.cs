@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Media.Fonts;
 using System;
 
 namespace ZeroIchi;
@@ -17,5 +18,11 @@ sealed class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .ConfigureFonts(fontManager =>
+            {
+                fontManager.AddFontCollection(new EmbeddedFontCollection(
+                    new Uri("fonts:App", UriKind.Absolute),
+                    new Uri("avares://ZeroIchi/Assets/Fonts", UriKind.Absolute)));
+            })
             .LogToTrace();
 }
