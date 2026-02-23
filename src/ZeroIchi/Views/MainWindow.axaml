@@ -76,7 +76,7 @@
         </Border>
 
         <Border Margin="4"
-                Background="{DynamicResource SystemRegionBrush}"
+                Background="#262626"
                 BoxShadow="0 1 4 0 #20000000"
                 ClipToBounds="True"
                 CornerRadius="8">
