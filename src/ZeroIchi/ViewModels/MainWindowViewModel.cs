@@ -366,7 +366,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        if (SelectionLength > 0)
+        if (SelectionLength > 1)
         {
             var selEnd = SelectionStart + SelectionLength - 1;
             StatusBarPositionText = $"{SelectionStart:X8} - {selEnd:X8} ({SelectionLength} バイト)";
