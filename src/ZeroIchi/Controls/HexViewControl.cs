@@ -42,11 +42,9 @@ public class HexViewControl : Control, ILogicalScrollable
     private const double CellPaddingY = 2;
     private const double HighlightCornerRadius = 4;
 
-    // 列レイアウト（文字数）：Offset(8) Gap(2) Hex(49=16*3+1) Gap(2) ASCII(パディング付き)
     private const int OffsetChars = 8;
     private const int HexChars = 49;
-    private const int HexStartChar = OffsetChars + 2;
-    private const int AsciiStartChar = HexStartChar + HexChars + 2;
+    private const double ColumnGap = 16;
 
     private static readonly Typeface MonospaceTypeface = new(MonoFontFamily);
     private static readonly IBrush OffsetBrush = Brushes.Gray;
@@ -68,6 +66,10 @@ public class HexViewControl : Control, ILogicalScrollable
     private double _charWidth;
     private double _lineHeight;
     private double _rowHeight;
+    private double _dataTop;
+    private double _hexStartX;
+    private double _hexEndX;
+    private double _asciiStartX;
     private double _asciiCellWidth;
     private bool _metricsValid;
 
@@ -162,20 +164,23 @@ public class HexViewControl : Control, ILogicalScrollable
         _charWidth = formatted.Width;
         _lineHeight = Math.Ceiling(formatted.Height);
         _rowHeight = _lineHeight + 2 * CellPaddingY;
+        _dataTop = _rowHeight + ColumnGap - 2 * CellPaddingX;
+        _hexStartX = CellPaddingX + OffsetChars * _charWidth + ColumnGap;
+        _hexEndX = _hexStartX + HexChars * _charWidth;
+        _asciiStartX = _hexEndX + ColumnGap;
         _asciiCellWidth = _charWidth + 2 * CellPaddingX;
         _metricsValid = true;
     }
 
     private int TotalLines => Data is { } d ? d.Length / BytesPerLine + 1 : 0;
 
-    private double AsciiStartX => AsciiStartChar * _charWidth;
-    private double AsciiCellX(int i) => AsciiStartX + i * _asciiCellWidth;
+    private double AsciiCellX(int i) => _asciiStartX + i * _asciiCellWidth;
     private double TotalWidth => AsciiCellX(BytesPerLine);
 
     private Rect HexCellRect(int byteInLine, double y)
     {
-        var charPos = HexStartChar + byteInLine * 3 + (byteInLine >= 8 ? 1 : 0);
-        return new Rect(charPos * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
+        var charInHex = byteInLine * 3 + (byteInLine >= 8 ? 1 : 0);
+        return new Rect(_hexStartX + charInHex * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
     }
 
     protected override Size MeasureOverride(Size availableSize)
@@ -183,7 +188,7 @@ public class HexViewControl : Control, ILogicalScrollable
         EnsureMetrics();
 
         var desiredWidth = TotalWidth;
-        _scrollExtent = new Size(desiredWidth, TotalLines * _rowHeight + _rowHeight);
+        _scrollExtent = new Size(desiredWidth, TotalLines * _rowHeight + _dataTop);
         _scrollViewport = new Size(availableSize.Width, availableSize.Height);
         InvalidateScrollable();
 
@@ -202,7 +207,7 @@ public class HexViewControl : Control, ILogicalScrollable
         var data = Data;
         if (data is null) return;
 
-        var dataTop = _rowHeight;
+        var dataTop = _dataTop;
         var totalLines = data.Length / BytesPerLine + 1;
         var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
         var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
@@ -221,7 +226,7 @@ public class HexViewControl : Control, ILogicalScrollable
 
                 DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
                 var textY = y + CellPaddingY;
-                DrawText(context, byteOffset.ToString("X8"), 0, textY, MonospaceTypeface, OffsetBrush, CellPaddingX);
+                DrawText(context, byteOffset.ToString("X8"), CellPaddingX, textY, MonospaceTypeface, OffsetBrush);
                 if (bytesInLine > 0)
                 {
                     DrawHexBytes(context, data, byteOffset, bytesInLine, textY, MonospaceTypeface);
@@ -282,8 +287,8 @@ public class HexViewControl : Control, ILogicalScrollable
             }
         }
 
-        DrawText(context, HeaderHexText, HexStartChar, CellPaddingY, MonospaceTypeface, OffsetBrush);
-        var separatorY = _rowHeight - 0.5;
+        DrawText(context, HeaderHexText, _hexStartX, CellPaddingY, MonospaceTypeface, OffsetBrush);
+        var separatorY = Math.Floor((_rowHeight + _dataTop) / 2) - 0.5;
         context.DrawLine(HeaderSeparatorPen, new Point(0, separatorY), new Point(Bounds.Width, separatorY));
     }
 
@@ -438,12 +443,12 @@ public class HexViewControl : Control, ILogicalScrollable
         context.DrawGeometry(brush, null, geo);
     }
 
-    private void DrawText(DrawingContext context, string text, int charColumn, double y,
-        Typeface typeface, IBrush brush, double xOffset = 0)
+    private static void DrawText(DrawingContext context, string text, double x, double y,
+        Typeface typeface, IBrush brush)
     {
         var formatted = new FormattedText(text, System.Globalization.CultureInfo.InvariantCulture,
             FlowDirection.LeftToRight, typeface, FontSize, brush);
-        context.DrawText(formatted, new Point(charColumn * _charWidth + xOffset, y));
+        context.DrawText(formatted, new Point(x, y));
     }
 
     private void DrawHexBytes(DrawingContext context, byte[] data, int byteOffset, int bytesInLine,
@@ -460,7 +465,7 @@ public class HexViewControl : Control, ILogicalScrollable
             buf[charPos + 1] = ToHexChar(b & 0xF);
         }
 
-        DrawText(context, new string(buf), HexStartChar, y, typeface, TextBrush);
+        DrawText(context, new string(buf), _hexStartX, y, typeface, TextBrush);
     }
 
     private void DrawAscii(DrawingContext context, byte[] data, int byteOffset, int bytesInLine,
@@ -485,23 +490,21 @@ public class HexViewControl : Control, ILogicalScrollable
         EnsureMetrics();
 
         var data = Data;
-        if (data is null || point.Y < _rowHeight) return -1;
+        if (data is null || point.Y < _dataTop) return -1;
 
-        var line = (int)((point.Y - _rowHeight + _scrollOffset.Y) / _rowHeight);
+        var line = (int)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         if (line < 0 || line >= TotalLines) return -1;
 
-        var charCol = point.X / _charWidth;
         int byteInLine;
 
-        var asciiStartX = AsciiStartX;
         var asciiEndX = AsciiCellX(BytesPerLine);
-        if (point.X >= asciiStartX && point.X < asciiEndX)
+        if (point.X >= _asciiStartX && point.X < asciiEndX)
         {
-            byteInLine = (int)((point.X - asciiStartX) / _asciiCellWidth);
+            byteInLine = (int)((point.X - _asciiStartX) / _asciiCellWidth);
         }
-        else if (charCol is >= HexStartChar and < HexStartChar + HexChars)
+        else if (point.X >= _hexStartX && point.X < _hexEndX)
         {
-            var relChar = charCol - HexStartChar;
+            var relChar = (point.X - _hexStartX) / _charWidth;
             byteInLine = (int)((relChar - (relChar >= 24 ? 1 : 0)) / 3);
         }
         else
@@ -606,7 +609,7 @@ public class HexViewControl : Control, ILogicalScrollable
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
         var maxIndex = data.Length;
         var newPos = CursorPosition;
-        var visibleLines = (int)((Bounds.Height - _rowHeight) / _rowHeight);
+        var visibleLines = (int)((Bounds.Height - _dataTop) / _rowHeight);
 
         switch (e.Key)
         {
@@ -675,7 +678,7 @@ public class HexViewControl : Control, ILogicalScrollable
         var cursorLine = CursorPosition / BytesPerLine;
         var cursorY = cursorLine * _rowHeight;
         var viewTop = _scrollOffset.Y;
-        var viewHeight = _scrollViewport.Height - _rowHeight;
+        var viewHeight = _scrollViewport.Height - _dataTop;
         var viewBottom = viewTop + viewHeight;
 
         if (cursorY < viewTop)
