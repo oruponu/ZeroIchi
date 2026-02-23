@@ -25,6 +25,7 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
         {
             vm.SetStorageProvider(StorageProvider);
+            vm.SetClipboard(Clipboard);
         }
     }
 
@@ -67,6 +68,21 @@ public partial class MainWindow : Window
             else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.Y)
             {
                 vm.RedoCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.C)
+            {
+                vm.CopyCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.X)
+            {
+                vm.CutCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.V)
+            {
+                vm.PasteCommand.Execute(null);
                 e.Handled = true;
             }
         }

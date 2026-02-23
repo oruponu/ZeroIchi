@@ -45,6 +45,33 @@ public class BinaryDocument
         ModifiedIndices.Add(Data.Length - 1);
     }
 
+    public void InsertBytes(int index, byte[] bytes)
+    {
+        if (bytes.Length == 0 || index < 0 || index > Data.Length) return;
+
+        var newData = new byte[Data.Length + bytes.Length];
+        Array.Copy(Data, 0, newData, 0, index);
+        Array.Copy(bytes, 0, newData, index, bytes.Length);
+        Array.Copy(Data, index, newData, index + bytes.Length, Data.Length - index);
+
+        var shifted = new List<int>();
+        foreach (var i in ModifiedIndices)
+        {
+            if (i < index)
+                shifted.Add(i);
+            else
+                shifted.Add(i + bytes.Length);
+        }
+
+        ModifiedIndices.Clear();
+        ModifiedIndices.UnionWith(shifted);
+        for (var i = 0; i < bytes.Length; i++)
+            ModifiedIndices.Add(index + i);
+
+        Data = newData;
+        StructurallyModified = true;
+    }
+
     public void DeleteBytes(int index, int count)
     {
         if (count <= 0 || index < 0 || index + count > Data.Length) return;

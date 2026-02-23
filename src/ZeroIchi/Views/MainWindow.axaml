@@ -44,6 +44,16 @@
                           Header="やり直し(_R)"
                           InputGesture="Ctrl+Y"
                           IsEnabled="{Binding CanRedo}"/>
+                <Separator/>
+                <MenuItem Command="{Binding CutCommand}"
+                          Header="切り取り(_T)"
+                          InputGesture="Ctrl+X"/>
+                <MenuItem Command="{Binding CopyCommand}"
+                          Header="コピー(_C)"
+                          InputGesture="Ctrl+C"/>
+                <MenuItem Command="{Binding PasteCommand}"
+                          Header="貼り付け(_P)"
+                          InputGesture="Ctrl+V"/>
             </MenuItem>
         </Menu>
 
