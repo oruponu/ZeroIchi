@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using ZeroIchi.Controls;
 using ZeroIchi.ViewModels;
 
@@ -32,6 +33,7 @@ public partial class MainWindow : Window
             vm.SetStorageProvider(StorageProvider);
             vm.SetClipboard(Clipboard);
             vm.SetCloseAction(Close);
+            vm.SetConfirmDiscardChanges(ConfirmDiscardChangesAsync);
         }
     }
 
@@ -44,21 +46,11 @@ public partial class MainWindow : Window
             if (_isClosingConfirmed)
                 return;
 
-            if (DataContext is MainWindowViewModel { Document.IsModified: true } vm)
+            if (DataContext is MainWindowViewModel { Document.IsModified: true })
             {
                 e.Cancel = true;
 
-                var result = await SaveChangesDialog.ShowAsync(this,
-                    visible => ModalOverlay.IsVisible = visible);
-
-                if (result == SaveChangesResult.Save)
-                {
-                    await vm.SaveFileCommand.ExecuteAsync(null);
-                    if (vm.Document is { IsModified: true })
-                        return;
-                }
-
-                if (result == SaveChangesResult.Cancel)
+                if (!await ConfirmDiscardChangesAsync())
                     return;
 
                 _isClosingConfirmed = true;
@@ -69,6 +61,23 @@ public partial class MainWindow : Window
         {
             Console.Error.WriteLine(ex);
         }
+    }
+
+    private async Task<bool> ConfirmDiscardChangesAsync()
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return false;
+
+        var result = await SaveChangesDialog.ShowAsync(this,
+            visible => ModalOverlay.IsVisible = visible);
+
+        if (result == SaveChangesResult.Save)
+        {
+            await vm.SaveFileCommand.ExecuteAsync(null);
+            return vm.Document is not { IsModified: true };
+        }
+
+        return result == SaveChangesResult.Discard;
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

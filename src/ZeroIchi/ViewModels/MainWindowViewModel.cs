@@ -26,6 +26,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private IStorageProvider? _storageProvider;
     private IClipboard? _clipboard;
+    private Action? _closeAction;
+    private Func<Task<bool>>? _confirmDiscardChanges;
     private readonly UndoRedoManager _undoRedoManager = new();
     private IEditCommand? _lastExecutedCommand;
 
@@ -75,16 +77,25 @@ public partial class MainWindowViewModel : ViewModelBase
         _clipboard = clipboard;
     }
 
-    private Action? _closeAction;
-
     public void SetCloseAction(Action closeAction)
     {
         _closeAction = closeAction;
     }
 
-    [RelayCommand]
-    private void NewFile()
+    public void SetConfirmDiscardChanges(Func<Task<bool>> confirmDiscardChanges)
     {
+        _confirmDiscardChanges = confirmDiscardChanges;
+    }
+
+    [RelayCommand]
+    private async Task NewFileAsync()
+    {
+        if (Document is { IsModified: true } && _confirmDiscardChanges is not null)
+        {
+            if (!await _confirmDiscardChanges())
+                return;
+        }
+
         Document = BinaryDocument.CreateNew();
         Data = Document.Data;
         ModifiedIndices = null;
