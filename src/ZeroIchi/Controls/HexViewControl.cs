@@ -47,7 +47,7 @@ public class HexViewControl : Control, ILogicalScrollable
     private const double ColumnGap = 16;
 
     private static readonly Typeface MonospaceTypeface = new(MonoFontFamily);
-    private static readonly IBrush OffsetBrush = Brushes.Gray;
+    private static readonly IBrush OffsetBrush = new SolidColorBrush(Color.FromRgb(0xB0, 0xB0, 0xB0)).ToImmutable();
     private static readonly IBrush TextBrush = new SolidColorBrush(Color.FromRgb(0xD4, 0xD4, 0xD4)).ToImmutable();
     private static readonly IBrush CursorBgBrush = new SolidColorBrush(Color.FromRgb(0x26, 0x4F, 0x78)).ToImmutable();
     private static readonly IBrush SelectionBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x26, 0x4F, 0x78)).ToImmutable();
