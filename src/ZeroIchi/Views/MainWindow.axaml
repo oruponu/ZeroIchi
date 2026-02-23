@@ -44,6 +44,10 @@
         <Style Selector="Button.caption-close:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#A02015"/>
         </Style>
+
+        <Style Selector="MenuItem">
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
     </Window.Styles>
 
     <Design.DataContext>
