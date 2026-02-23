@@ -18,6 +18,7 @@ public partial class MainWindow : Window
         HexView.AddHandler(HexViewControl.ByteModifiedEvent, OnByteModified);
         HexView.AddHandler(HexViewControl.BytesDeletedEvent, OnBytesDeleted);
         AddHandler(DragDrop.DropEvent, OnDrop);
+        Opened += (_, _) => HexView.Focus();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
