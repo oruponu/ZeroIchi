@@ -136,8 +136,8 @@ public class HexViewControl : Control, ILogicalScrollable
             var oldData = change.GetOldValue<byte[]?>();
             var newData = change.GetNewValue<byte[]?>();
 
-            // バイト追加・削除時はカーソル位置と編集状態を維持
-            if (oldData is not null && newData is not null && newData.Length != oldData.Length)
+            // 編集操作時はカーソル位置と編集状態を維持
+            if (oldData is not null && newData is not null)
             {
                 InvalidateScrollable();
                 return;
@@ -536,7 +536,7 @@ public class HexViewControl : Control, ILogicalScrollable
             _selectionAnchor = byteIndex;
             CursorPosition = byteIndex;
             SelectionStart = byteIndex;
-            SelectionLength = 0;
+            SelectionLength = Data is { } d && byteIndex < d.Length ? 1 : 0;
         }
 
         _isDragging = true;
@@ -660,7 +660,7 @@ public class HexViewControl : Control, ILogicalScrollable
         {
             CursorPosition = newPos;
             SelectionStart = newPos;
-            SelectionLength = 0;
+            SelectionLength = newPos < maxIndex ? 1 : 0;
             _selectionAnchor = newPos;
         }
 
@@ -717,7 +717,7 @@ public class HexViewControl : Control, ILogicalScrollable
             var newPos = Math.Min(maxIndex, pos + 1);
             CursorPosition = newPos;
             SelectionStart = newPos;
-            SelectionLength = 0;
+            SelectionLength = newPos < maxIndex ? 1 : 0;
             _selectionAnchor = newPos;
             EnsureCursorVisible();
         }
@@ -757,7 +757,7 @@ public class HexViewControl : Control, ILogicalScrollable
         _editingHighNibble = false;
         CursorPosition = newPos;
         SelectionStart = newPos;
-        SelectionLength = 0;
+        SelectionLength = newPos < data.Length - deleteCount ? 1 : 0;
         _selectionAnchor = newPos;
         EnsureCursorVisible();
     }
