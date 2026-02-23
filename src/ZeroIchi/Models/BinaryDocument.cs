@@ -7,8 +7,8 @@ namespace ZeroIchi.Models;
 
 public class BinaryDocument
 {
-    public string FilePath { get; }
-    public string FileName { get; }
+    public string FilePath { get; private set; }
+    public string FileName { get; private set; }
     public byte[] Data { get; internal set; }
     public long FileSize => Data.Length;
     public HashSet<int> ModifiedIndices { get; } = [];
@@ -106,6 +106,8 @@ public class BinaryDocument
     public async Task SaveAsAsync(string path)
     {
         await File.WriteAllBytesAsync(path, Data);
+        FilePath = path;
+        FileName = Path.GetFileName(path);
         ModifiedIndices.Clear();
         StructurallyModified = false;
     }
