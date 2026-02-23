@@ -54,6 +54,10 @@
                 <MenuItem Command="{Binding PasteCommand}"
                           Header="貼り付け(_P)"
                           InputGesture="Ctrl+V"/>
+                <Separator/>
+                <MenuItem Command="{Binding SelectAllCommand}"
+                          Header="すべて選択(_A)"
+                          InputGesture="Ctrl+A"/>
             </MenuItem>
         </Menu>
 

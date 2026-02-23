@@ -85,6 +85,11 @@ public partial class MainWindow : Window
                 vm.PasteCommand.Execute(null);
                 e.Handled = true;
             }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.A)
+            {
+                vm.SelectAllCommand.Execute(null);
+                e.Handled = true;
+            }
         }
     }
 

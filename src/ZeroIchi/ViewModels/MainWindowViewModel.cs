@@ -263,6 +263,16 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateTitle();
     }
 
+    [RelayCommand]
+    private void SelectAll()
+    {
+        if (Data is not { Length: > 0 }) return;
+
+        SelectionStart = 0;
+        SelectionLength = Data.Length;
+        CursorPosition = 0;
+    }
+
     private static byte[]? ParseHexString(string text)
     {
         var tokens = text.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
