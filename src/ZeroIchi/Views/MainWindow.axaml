@@ -142,11 +142,18 @@
                 DockPanel.Dock="Bottom"
                 IsVisible="{Binding StatusBarPositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Right" Text="{Binding StatusBarSizeText}"/>
+                <TextBlock DockPanel.Dock="Right"
+                           FontSize="11"
+                           Foreground="#A0A0A0"
+                           Text="{Binding StatusBarSizeText}"/>
                 <TextBlock Margin="0,0,16,0"
                            DockPanel.Dock="Right"
+                           FontSize="11"
+                           Foreground="#A0A0A0"
                            Text="{Binding StatusBarFileTypeText}"/>
-                <TextBlock Text="{Binding StatusBarPositionText}"/>
+                <TextBlock FontSize="11"
+                           Foreground="#A0A0A0"
+                           Text="{Binding StatusBarPositionText}"/>
             </DockPanel>
         </Border>
 
