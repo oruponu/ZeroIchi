@@ -36,7 +36,7 @@ public class HexViewControl : Control, ILogicalScrollable
         RoutedEvent.Register<HexViewControl, BytesDeletedEventArgs>(nameof(BytesDeleted), RoutingStrategies.Bubble);
 
     private const int BytesPerLine = 16;
-    private const string MonoFontFamily = "Cascadia Mono, Consolas, Courier New, monospace";
+    private const string MonoFontFamily = "fonts:App#Roboto Mono";
     private const double FontSize = 13;
     private const double CellPaddingX = 4;
     private const double CellPaddingY = 2;
