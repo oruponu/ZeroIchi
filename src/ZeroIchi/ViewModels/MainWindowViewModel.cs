@@ -105,6 +105,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Document = await BinaryDocument.OpenAsync(path);
         UpdateTitle();
+        CursorPosition = 0;
+        SelectionStart = 0;
+        SelectionLength = 0;
         Data = Document.Data;
         ModifiedIndices = null;
         _undoRedoManager.Clear();
