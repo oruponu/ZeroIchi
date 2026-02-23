@@ -6,6 +6,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:ZeroIchi.ViewModels"
         Title="{Binding Title}"
+        Width="900"
+        Height="600"
         d:DesignHeight="450"
         d:DesignWidth="800"
         x:DataType="vm:MainWindowViewModel"
