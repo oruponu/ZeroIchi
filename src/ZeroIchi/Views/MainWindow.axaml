@@ -11,57 +11,126 @@
         x:DataType="vm:MainWindowViewModel"
         Background="Transparent"
         DragDrop.AllowDrop="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="32"
+        ExtendClientAreaToDecorationsHint="True"
         Icon="/Assets/avalonia-logo.ico"
         TransparencyLevelHint="Mica"
         mc:Ignorable="d">
+
+    <Window.Styles>
+        <Style Selector="Button.caption-button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.caption-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.caption-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#15FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.caption-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#C42B1C"/>
+        </Style>
+        <Style Selector="Button.caption-close:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#A02015"/>
+        </Style>
+    </Window.Styles>
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <DockPanel>
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="ファイル(_F)">
-                <MenuItem Command="{Binding NewFileCommand}"
-                          Header="新規(_N)"
-                          InputGesture="Ctrl+N"/>
-                <MenuItem Command="{Binding OpenFileCommand}"
-                          Header="開く(_O)..."
-                          InputGesture="Ctrl+O"/>
-                <MenuItem Command="{Binding SaveFileCommand}"
-                          Header="保存(_S)"
-                          InputGesture="Ctrl+S"/>
-                <MenuItem Command="{Binding SaveAsFileCommand}"
-                          Header="名前を付けて保存(_A)..."
-                          InputGesture="Ctrl+Shift+S"/>
-                <Separator/>
-                <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
-            </MenuItem>
-            <MenuItem Header="編集(_E)">
-                <MenuItem Command="{Binding UndoCommand}"
-                          Header="元に戻す(_U)"
-                          InputGesture="Ctrl+Z"
-                          IsEnabled="{Binding CanUndo}"/>
-                <MenuItem Command="{Binding RedoCommand}"
-                          Header="やり直し(_R)"
-                          InputGesture="Ctrl+Y"
-                          IsEnabled="{Binding CanRedo}"/>
-                <Separator/>
-                <MenuItem Command="{Binding CutCommand}"
-                          Header="切り取り(_T)"
-                          InputGesture="Ctrl+X"/>
-                <MenuItem Command="{Binding CopyCommand}"
-                          Header="コピー(_C)"
-                          InputGesture="Ctrl+C"/>
-                <MenuItem Command="{Binding PasteCommand}"
-                          Header="貼り付け(_P)"
-                          InputGesture="Ctrl+V"/>
-                <Separator/>
-                <MenuItem Command="{Binding SelectAllCommand}"
-                          Header="すべて選択(_A)"
-                          InputGesture="Ctrl+A"/>
-            </MenuItem>
-        </Menu>
+    <DockPanel x:Name="RootPanel">
+        <Grid Height="32"
+              ColumnDefinitions="Auto,*,Auto"
+              DockPanel.Dock="Top">
+            <Menu Grid.Column="0">
+                <MenuItem Header="ファイル(_F)">
+                    <MenuItem Command="{Binding NewFileCommand}"
+                              Header="新規(_N)"
+                              InputGesture="Ctrl+N"/>
+                    <MenuItem Command="{Binding OpenFileCommand}"
+                              Header="開く(_O)..."
+                              InputGesture="Ctrl+O"/>
+                    <MenuItem Command="{Binding SaveFileCommand}"
+                              Header="保存(_S)"
+                              InputGesture="Ctrl+S"/>
+                    <MenuItem Command="{Binding SaveAsFileCommand}"
+                              Header="名前を付けて保存(_A)..."
+                              InputGesture="Ctrl+Shift+S"/>
+                    <Separator/>
+                    <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
+                </MenuItem>
+                <MenuItem Header="編集(_E)">
+                    <MenuItem Command="{Binding UndoCommand}"
+                              Header="元に戻す(_U)"
+                              InputGesture="Ctrl+Z"
+                              IsEnabled="{Binding CanUndo}"/>
+                    <MenuItem Command="{Binding RedoCommand}"
+                              Header="やり直し(_R)"
+                              InputGesture="Ctrl+Y"
+                              IsEnabled="{Binding CanRedo}"/>
+                    <Separator/>
+                    <MenuItem Command="{Binding CutCommand}"
+                              Header="切り取り(_T)"
+                              InputGesture="Ctrl+X"/>
+                    <MenuItem Command="{Binding CopyCommand}"
+                              Header="コピー(_C)"
+                              InputGesture="Ctrl+C"/>
+                    <MenuItem Command="{Binding PasteCommand}"
+                              Header="貼り付け(_P)"
+                              InputGesture="Ctrl+V"/>
+                    <Separator/>
+                    <MenuItem Command="{Binding SelectAllCommand}"
+                              Header="すべて選択(_A)"
+                              InputGesture="Ctrl+A"/>
+                </MenuItem>
+            </Menu>
+
+            <TextBlock Grid.Column="1"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="13"
+                       IsHitTestVisible="False"
+                       Opacity="0.7"
+                       Text="{Binding Title}"/>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Classes="caption-button" Click="OnMinimizeClick">
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               FontSize="10"
+                               Text="&#xE921;"/>
+                </Button>
+                <Button Classes="caption-button" Click="OnMaximizeRestoreClick">
+                    <Panel>
+                        <TextBlock x:Name="MaximizeIcon"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="10"
+                                   Text="&#xE922;"/>
+                        <TextBlock x:Name="RestoreIcon"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="10"
+                                   IsVisible="False"
+                                   Text="&#xE923;"/>
+                    </Panel>
+                </Button>
+                <Button Classes="caption-button caption-close" Click="OnCloseClick">
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               FontSize="10"
+                               Text="&#xE8BB;"/>
+                </Button>
+            </StackPanel>
+        </Grid>
 
         <Border Padding="8,4"
                 DockPanel.Dock="Bottom"
