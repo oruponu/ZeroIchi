@@ -156,6 +156,7 @@
                 ClipToBounds="True"
                 CornerRadius="8">
             <ScrollViewer Padding="8"
+                          AllowAutoHide="False"
                           HorizontalScrollBarVisibility="Auto"
                           IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
                           VerticalScrollBarVisibility="Auto">
