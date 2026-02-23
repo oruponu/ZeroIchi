@@ -153,7 +153,8 @@
                 BoxShadow="0 1 4 0 #20000000"
                 ClipToBounds="True"
                 CornerRadius="8">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+            <ScrollViewer Padding="8"
+                          HorizontalScrollBarVisibility="Auto"
                           IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
                           VerticalScrollBarVisibility="Auto">
                 <controls:HexViewControl x:Name="HexView"
