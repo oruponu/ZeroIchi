@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,6 +8,8 @@ using MimeDetective.Definitions;
 using MimeDetective.Definitions.Licensing;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 
@@ -23,6 +26,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }.Build();
 
     private IStorageProvider? _storageProvider;
+    private IClipboard? _clipboard;
     private readonly UndoRedoManager _undoRedoManager = new();
     private IEditCommand? _lastExecutedCommand;
 
@@ -65,6 +69,11 @@ public partial class MainWindowViewModel : ViewModelBase
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
         _storageProvider = storageProvider;
+    }
+
+    public void SetClipboard(IClipboard? clipboard)
+    {
+        _clipboard = clipboard;
     }
 
     [RelayCommand]
@@ -188,6 +197,83 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectionLength = 0;
         UpdateUndoRedoState();
         UpdateTitle();
+    }
+
+    [RelayCommand]
+    private async Task CopyAsync()
+    {
+        if (_clipboard is null || Document is null || SelectionLength <= 0) return;
+
+        var start = SelectionStart;
+        var length = Math.Min(SelectionLength, Document.Data.Length - start);
+        if (length <= 0) return;
+
+        var hex = string.Join(" ", Document.Data[start..(start + length)].Select(b => b.ToString("X2")));
+        await _clipboard.SetTextAsync(hex);
+    }
+
+    [RelayCommand]
+    private async Task CutAsync()
+    {
+        if (Document is null || SelectionLength <= 0) return;
+
+        await CopyAsync();
+
+        var start = SelectionStart;
+        var length = Math.Min(SelectionLength, Document.Data.Length - start);
+        if (length <= 0) return;
+
+        var command = new DeleteBytesCommand(Document, start, length, CursorPosition);
+        _undoRedoManager.ExecuteCommand(command);
+
+        CursorPosition = start;
+        SelectionStart = start;
+        SelectionLength = start < Document.Data.Length ? 1 : 0;
+        command.CursorPositionAfter = CursorPosition;
+
+        Data = Document.Data;
+        ModifiedIndices = [.. Document.ModifiedIndices];
+        UpdateUndoRedoState();
+        UpdateTitle();
+    }
+
+    [RelayCommand]
+    private async Task PasteAsync()
+    {
+        if (_clipboard is null || Document is null) return;
+
+        var text = await _clipboard.TryGetTextAsync();
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        var bytes = ParseHexString(text);
+        if (bytes is null || bytes.Length == 0) return;
+
+        var insertIndex = CursorPosition;
+        var insertCommand = new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition);
+        _undoRedoManager.ExecuteCommand(insertCommand);
+
+        CursorPosition = insertIndex + bytes.Length;
+        SelectionStart = CursorPosition;
+        SelectionLength = CursorPosition < Document.Data.Length ? 1 : 0;
+        insertCommand.CursorPositionAfter = CursorPosition;
+
+        Data = Document.Data;
+        ModifiedIndices = [.. Document.ModifiedIndices];
+        UpdateUndoRedoState();
+        UpdateTitle();
+    }
+
+    private static byte[]? ParseHexString(string text)
+    {
+        var tokens = text.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+        var result = new byte[tokens.Length];
+        for (var i = 0; i < tokens.Length; i++)
+        {
+            if (!byte.TryParse(tokens[i], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var b))
+                return null;
+            result[i] = b;
+        }
+        return result;
     }
 
     private void UpdateUndoRedoState()
