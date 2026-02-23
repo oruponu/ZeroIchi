@@ -12,6 +12,8 @@ namespace ZeroIchi.Views;
 
 public partial class MainWindow : Window
 {
+    private bool _isClosingConfirmed;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -29,6 +31,43 @@ public partial class MainWindow : Window
         {
             vm.SetStorageProvider(StorageProvider);
             vm.SetClipboard(Clipboard);
+            vm.SetCloseAction(Close);
+        }
+    }
+
+    protected override async void OnClosing(WindowClosingEventArgs e)
+    {
+        try
+        {
+            base.OnClosing(e);
+
+            if (_isClosingConfirmed)
+                return;
+
+            if (DataContext is MainWindowViewModel { Document.IsModified: true } vm)
+            {
+                e.Cancel = true;
+
+                var result = await SaveChangesDialog.ShowAsync(this,
+                    visible => ModalOverlay.IsVisible = visible);
+
+                if (result == SaveChangesResult.Save)
+                {
+                    await vm.SaveFileCommand.ExecuteAsync(null);
+                    if (vm.Document is { IsModified: true })
+                        return;
+                }
+
+                if (result == SaveChangesResult.Cancel)
+                    return;
+
+                _isClosingConfirmed = true;
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
         }
     }
 

@@ -56,125 +56,131 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <DockPanel x:Name="RootPanel">
-        <Grid Height="32"
-              ColumnDefinitions="Auto,*,Auto"
-              DockPanel.Dock="Top">
-            <Menu Grid.Column="0">
-                <MenuItem Header="ファイル(_F)">
-                    <MenuItem Command="{Binding NewFileCommand}"
-                              Header="新規(_N)"
-                              InputGesture="Ctrl+N"/>
-                    <MenuItem Command="{Binding OpenFileCommand}"
-                              Header="開く(_O)..."
-                              InputGesture="Ctrl+O"/>
-                    <MenuItem Command="{Binding SaveFileCommand}"
-                              Header="保存(_S)"
-                              InputGesture="Ctrl+S"/>
-                    <MenuItem Command="{Binding SaveAsFileCommand}"
-                              Header="名前を付けて保存(_A)..."
-                              InputGesture="Ctrl+Shift+S"/>
-                    <Separator/>
-                    <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
-                </MenuItem>
-                <MenuItem Header="編集(_E)">
-                    <MenuItem Command="{Binding UndoCommand}"
-                              Header="元に戻す(_U)"
-                              InputGesture="Ctrl+Z"
-                              IsEnabled="{Binding CanUndo}"/>
-                    <MenuItem Command="{Binding RedoCommand}"
-                              Header="やり直し(_R)"
-                              InputGesture="Ctrl+Y"
-                              IsEnabled="{Binding CanRedo}"/>
-                    <Separator/>
-                    <MenuItem Command="{Binding CutCommand}"
-                              Header="切り取り(_T)"
-                              InputGesture="Ctrl+X"/>
-                    <MenuItem Command="{Binding CopyCommand}"
-                              Header="コピー(_C)"
-                              InputGesture="Ctrl+C"/>
-                    <MenuItem Command="{Binding PasteCommand}"
-                              Header="貼り付け(_P)"
-                              InputGesture="Ctrl+V"/>
-                    <Separator/>
-                    <MenuItem Command="{Binding SelectAllCommand}"
-                              Header="すべて選択(_A)"
-                              InputGesture="Ctrl+A"/>
-                </MenuItem>
-            </Menu>
+    <Panel>
+        <DockPanel x:Name="RootPanel">
+            <Grid Height="32"
+                  ColumnDefinitions="Auto,*,Auto"
+                  DockPanel.Dock="Top">
+                <Menu Grid.Column="0">
+                    <MenuItem Header="ファイル(_F)">
+                        <MenuItem Command="{Binding NewFileCommand}"
+                                  Header="新規(_N)"
+                                  InputGesture="Ctrl+N"/>
+                        <MenuItem Command="{Binding OpenFileCommand}"
+                                  Header="開く(_O)..."
+                                  InputGesture="Ctrl+O"/>
+                        <MenuItem Command="{Binding SaveFileCommand}"
+                                  Header="保存(_S)"
+                                  InputGesture="Ctrl+S"/>
+                        <MenuItem Command="{Binding SaveAsFileCommand}"
+                                  Header="名前を付けて保存(_A)..."
+                                  InputGesture="Ctrl+Shift+S"/>
+                        <Separator/>
+                        <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
+                    </MenuItem>
+                    <MenuItem Header="編集(_E)">
+                        <MenuItem Command="{Binding UndoCommand}"
+                                  Header="元に戻す(_U)"
+                                  InputGesture="Ctrl+Z"
+                                  IsEnabled="{Binding CanUndo}"/>
+                        <MenuItem Command="{Binding RedoCommand}"
+                                  Header="やり直し(_R)"
+                                  InputGesture="Ctrl+Y"
+                                  IsEnabled="{Binding CanRedo}"/>
+                        <Separator/>
+                        <MenuItem Command="{Binding CutCommand}"
+                                  Header="切り取り(_T)"
+                                  InputGesture="Ctrl+X"/>
+                        <MenuItem Command="{Binding CopyCommand}"
+                                  Header="コピー(_C)"
+                                  InputGesture="Ctrl+C"/>
+                        <MenuItem Command="{Binding PasteCommand}"
+                                  Header="貼り付け(_P)"
+                                  InputGesture="Ctrl+V"/>
+                        <Separator/>
+                        <MenuItem Command="{Binding SelectAllCommand}"
+                                  Header="すべて選択(_A)"
+                                  InputGesture="Ctrl+A"/>
+                    </MenuItem>
+                </Menu>
 
-            <TextBlock Grid.Column="1"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       FontSize="13"
-                       IsHitTestVisible="False"
-                       Opacity="0.7"
-                       Text="{Binding Title}"/>
+                <TextBlock Grid.Column="1"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="13"
+                           IsHitTestVisible="False"
+                           Opacity="0.7"
+                           Text="{Binding Title}"/>
 
-            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button Classes="caption-button" Click="OnMinimizeClick">
-                    <TextBlock FontFamily="Segoe MDL2 Assets"
-                               FontSize="10"
-                               Text="&#xE921;"/>
-                </Button>
-                <Button Classes="caption-button" Click="OnMaximizeRestoreClick">
-                    <Panel>
-                        <TextBlock x:Name="MaximizeIcon"
-                                   FontFamily="Segoe MDL2 Assets"
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Classes="caption-button" Click="OnMinimizeClick">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
                                    FontSize="10"
-                                   Text="&#xE922;"/>
-                        <TextBlock x:Name="RestoreIcon"
-                                   FontFamily="Segoe MDL2 Assets"
+                                   Text="&#xE921;"/>
+                    </Button>
+                    <Button Classes="caption-button" Click="OnMaximizeRestoreClick">
+                        <Panel>
+                            <TextBlock x:Name="MaximizeIcon"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="10"
+                                       Text="&#xE922;"/>
+                            <TextBlock x:Name="RestoreIcon"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="10"
+                                       IsVisible="False"
+                                       Text="&#xE923;"/>
+                        </Panel>
+                    </Button>
+                    <Button Classes="caption-button caption-close" Click="OnCloseClick">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
                                    FontSize="10"
-                                   IsVisible="False"
-                                   Text="&#xE923;"/>
-                    </Panel>
-                </Button>
-                <Button Classes="caption-button caption-close" Click="OnCloseClick">
-                    <TextBlock FontFamily="Segoe MDL2 Assets"
-                               FontSize="10"
-                               Text="&#xE8BB;"/>
-                </Button>
-            </StackPanel>
-        </Grid>
+                                   Text="&#xE8BB;"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-        <Border Padding="8,4"
-                DockPanel.Dock="Bottom"
-                IsVisible="{Binding StatusBarPositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-            <DockPanel>
-                <TextBlock DockPanel.Dock="Right"
-                           FontSize="11"
-                           Foreground="#A0A0A0"
-                           Text="{Binding StatusBarSizeText}"/>
-                <TextBlock Margin="0,0,16,0"
-                           DockPanel.Dock="Right"
-                           FontSize="11"
-                           Foreground="#A0A0A0"
-                           Text="{Binding StatusBarFileTypeText}"/>
-                <TextBlock FontSize="11"
-                           Foreground="#A0A0A0"
-                           Text="{Binding StatusBarPositionText}"/>
-            </DockPanel>
-        </Border>
+            <Border Padding="8,4"
+                    DockPanel.Dock="Bottom"
+                    IsVisible="{Binding StatusBarPositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right"
+                               FontSize="11"
+                               Foreground="#A0A0A0"
+                               Text="{Binding StatusBarSizeText}"/>
+                    <TextBlock Margin="0,0,16,0"
+                               DockPanel.Dock="Right"
+                               FontSize="11"
+                               Foreground="#A0A0A0"
+                               Text="{Binding StatusBarFileTypeText}"/>
+                    <TextBlock FontSize="11"
+                               Foreground="#A0A0A0"
+                               Text="{Binding StatusBarPositionText}"/>
+                </DockPanel>
+            </Border>
 
-        <Border Margin="4"
-                Background="#262626"
-                BoxShadow="0 1 4 0 #20000000"
-                ClipToBounds="True"
-                CornerRadius="8">
-            <ScrollViewer Padding="8"
-                          AllowAutoHide="False"
-                          HorizontalScrollBarVisibility="Auto"
-                          IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
-                          VerticalScrollBarVisibility="Auto">
-                <controls:HexViewControl x:Name="HexView"
-                                         CursorPosition="{Binding CursorPosition}"
-                                         Data="{Binding Data}"
-                                         ModifiedIndices="{Binding ModifiedIndices}"
-                                         SelectionLength="{Binding SelectionLength}"
-                                         SelectionStart="{Binding SelectionStart}"/>
-            </ScrollViewer>
-        </Border>
-    </DockPanel>
+            <Border Margin="4"
+                    Background="#262626"
+                    BoxShadow="0 1 4 0 #20000000"
+                    ClipToBounds="True"
+                    CornerRadius="8">
+                <ScrollViewer Padding="8"
+                              AllowAutoHide="False"
+                              HorizontalScrollBarVisibility="Auto"
+                              IsVisible="{Binding Data, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              VerticalScrollBarVisibility="Auto">
+                    <controls:HexViewControl x:Name="HexView"
+                                             CursorPosition="{Binding CursorPosition}"
+                                             Data="{Binding Data}"
+                                             ModifiedIndices="{Binding ModifiedIndices}"
+                                             SelectionLength="{Binding SelectionLength}"
+                                             SelectionStart="{Binding SelectionStart}"/>
+                </ScrollViewer>
+            </Border>
+        </DockPanel>
+        <Border x:Name="ModalOverlay"
+                Background="#40000000"
+                IsHitTestVisible="False"
+                IsVisible="False"/>
+    </Panel>
 
 </Window>
