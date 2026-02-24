@@ -144,7 +144,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (Document is null) return;
 
         IEditCommand command;
-        if (index == Document.Data.Length)
+        if (index == (int)Document.Buffer.Length)
         {
             command = new AppendByteCommand(Document, value, CursorPosition);
         }
@@ -221,10 +221,10 @@ public partial class MainWindowViewModel : ViewModelBase
         if (_clipboard is null || Document is null || SelectionLength <= 0) return;
 
         var start = SelectionStart;
-        var length = Math.Min(SelectionLength, Document.Data.Length - start);
+        var length = Math.Min(SelectionLength, (int)Document.Buffer.Length - start);
         if (length <= 0) return;
 
-        var hex = string.Join(" ", Document.Data[start..(start + length)].Select(b => b.ToString("X2")));
+        var hex = string.Join(" ", Document.Buffer.SliceToArray(start, length).Select(b => b.ToString("X2")));
         await _clipboard.SetTextAsync(hex);
     }
 
@@ -236,7 +236,7 @@ public partial class MainWindowViewModel : ViewModelBase
         await CopyAsync();
 
         var start = SelectionStart;
-        var length = Math.Min(SelectionLength, Document.Data.Length - start);
+        var length = Math.Min(SelectionLength, (int)Document.Buffer.Length - start);
         if (length <= 0) return;
 
         var command = new DeleteBytesCommand(Document, start, length, CursorPosition);
@@ -244,7 +244,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         CursorPosition = start;
         SelectionStart = start;
-        SelectionLength = start < Document.Data.Length ? 1 : 0;
+        SelectionLength = start < (int)Document.Buffer.Length ? 1 : 0;
         command.CursorPositionAfter = CursorPosition;
 
         DataVersion++;
@@ -270,7 +270,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         CursorPosition = insertIndex + bytes.Length;
         SelectionStart = CursorPosition;
-        SelectionLength = CursorPosition < Document.Data.Length ? 1 : 0;
+        SelectionLength = CursorPosition < (int)Document.Buffer.Length ? 1 : 0;
         insertCommand.CursorPositionAfter = CursorPosition;
 
         DataVersion++;
@@ -282,10 +282,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void SelectAll()
     {
-        if (Document?.Data is not { Length: > 0 } data) return;
+        if (Document?.Buffer is not { Length: > 0 } buffer) return;
 
         SelectionStart = 0;
-        SelectionLength = data.Length;
+        SelectionLength = (int)buffer.Length;
         CursorPosition = 0;
     }
 
@@ -366,7 +366,16 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnDocumentChanged(BinaryDocument? value)
     {
-        StatusBarFileTypeText = value?.Data is { Length: > 0 } data ? DetectFileType(data) : "";
+        if (value?.Buffer is { Length: > 0 } buffer)
+        {
+            var length = (int)Math.Min(buffer.Length, 1024);
+            var header = buffer.SliceToArray(0, length);
+            StatusBarFileTypeText = DetectFileType(header);
+        }
+        else
+        {
+            StatusBarFileTypeText = "";
+        }
         UpdateStatusBar();
     }
 
@@ -374,8 +383,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void UpdateStatusBar()
     {
-        var data = Document?.Data;
-        if (data is null)
+        var buffer = Document?.Buffer;
+        if (buffer is null)
         {
             StatusBarPositionText = "";
             StatusBarFileTypeText = "";
@@ -393,15 +402,14 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusBarPositionText = $"{CursorPosition:X8}";
         }
 
-        StatusBarSizeText = FormatFileSize(data.Length);
+        StatusBarSizeText = FormatFileSize(buffer.Length);
     }
 
-    private static string DetectFileType(byte[] data)
+    private static string DetectFileType(byte[] headerBytes)
     {
-        if (data.Length == 0) return "";
+        if (headerBytes.Length == 0) return "";
 
-        var length = Math.Min(data.Length, 1024);
-        var results = Inspector.Inspect(new ReadOnlySpan<byte>(data, 0, length));
+        var results = Inspector.Inspect(new ReadOnlySpan<byte>(headerBytes, 0, headerBytes.Length));
         var match = results.ByFileExtension();
 
         return match.Length > 0 ? match[0].Extension : "";

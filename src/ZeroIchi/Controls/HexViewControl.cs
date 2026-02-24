@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using ZeroIchi.Models;
 
@@ -103,7 +104,7 @@ public class HexViewControl : Control, ILogicalScrollable
         set => SetValue(DataVersionProperty, value);
     }
 
-    private byte[]? Data => Document?.Data;
+    private ByteBuffer? Buffer => Document?.Buffer;
 
     public int CursorPosition
     {
@@ -178,7 +179,7 @@ public class HexViewControl : Control, ILogicalScrollable
         _metricsValid = true;
     }
 
-    private int TotalLines => Data is { } d ? d.Length / BytesPerLine + 1 : 0;
+    private int TotalLines => Buffer is { } b ? (int)(b.Length / BytesPerLine) + 1 : 0;
 
     private double AsciiCellX(int i) => _asciiStartX + i * _asciiCellWidth;
     private double TotalWidth => AsciiCellX(BytesPerLine);
@@ -210,11 +211,12 @@ public class HexViewControl : Control, ILogicalScrollable
 
         DrawHeader(context);
 
-        var data = Data;
-        if (data is null) return;
+        var buffer = Buffer;
+        if (buffer is null) return;
 
+        var dataLength = (int)buffer.Length;
         var dataTop = _dataTop;
-        var totalLines = data.Length / BytesPerLine + 1;
+        var totalLines = dataLength / BytesPerLine + 1;
         var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
         var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
         var lastLine = Math.Min(totalLines, firstLine + visibleLineCount);
@@ -222,23 +224,38 @@ public class HexViewControl : Control, ILogicalScrollable
         var selStart = SelectionStart;
         var selEnd = selStart + SelectionLength;
 
-        using (context.PushClip(new Rect(0, dataTop, Bounds.Width, Bounds.Height - dataTop)))
+        var visibleBytes = (lastLine - firstLine) * BytesPerLine;
+        var rentedBuffer = ArrayPool<byte>.Shared.Rent(visibleBytes);
+        try
         {
-            for (var line = firstLine; line < lastLine; line++)
-            {
-                var y = dataTop + line * _rowHeight - _scrollOffset.Y;
-                var byteOffset = line * BytesPerLine;
-                var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, data.Length - byteOffset));
+            var startOffset = firstLine * BytesPerLine;
+            var bytesToRead = Math.Min(visibleBytes, dataLength - startOffset);
+            if (bytesToRead > 0)
+                buffer.ReadBytes(startOffset, rentedBuffer, 0, bytesToRead);
 
-                DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
-                var textY = y + CellPaddingY;
-                DrawText(context, byteOffset.ToString("X8"), CellPaddingX, textY, MonospaceTypeface, OffsetBrush);
-                if (bytesInLine > 0)
+            using (context.PushClip(new Rect(0, dataTop, Bounds.Width, Bounds.Height - dataTop)))
+            {
+                for (var line = firstLine; line < lastLine; line++)
                 {
-                    DrawHexBytes(context, data, byteOffset, bytesInLine, textY, MonospaceTypeface);
-                    DrawAscii(context, data, byteOffset, bytesInLine, textY, MonospaceTypeface);
+                    var y = dataTop + line * _rowHeight - _scrollOffset.Y;
+                    var byteOffset = line * BytesPerLine;
+                    var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+
+                    DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
+                    var textY = y + CellPaddingY;
+                    DrawText(context, byteOffset.ToString("X8"), CellPaddingX, textY, MonospaceTypeface, OffsetBrush);
+                    if (bytesInLine > 0)
+                    {
+                        var bufferOffset = byteOffset - startOffset;
+                        DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                        DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                    }
                 }
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rentedBuffer);
         }
     }
 
@@ -259,7 +276,7 @@ public class HexViewControl : Control, ILogicalScrollable
 
     private void DrawHeader(DrawingContext context)
     {
-        if (Data is not null)
+        if (Buffer is not null)
         {
             var cursorCol = CursorPosition % BytesPerLine;
             var hasSelection = SelectionLength > 0;
@@ -305,8 +322,8 @@ public class HexViewControl : Control, ILogicalScrollable
         var hasSelection = SelectionLength > 0;
         var modified = ModifiedIndices;
         var hovered = _hoveredByteIndex;
-        var data = Data;
-        var dataLength = data?.Length ?? 0;
+        var buffer = Buffer;
+        var dataLength = (int)(buffer?.Length ?? 0);
 
         var cursorOnLine = cursor / BytesPerLine == byteOffset / BytesPerLine;
         var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
@@ -372,9 +389,9 @@ public class HexViewControl : Control, ILogicalScrollable
             }
         }
 
-        if (data is not null && cursor == data.Length)
+        if (buffer is not null && cursor == dataLength)
         {
-            var appendInLine = data.Length - byteOffset;
+            var appendInLine = dataLength - byteOffset;
             if (appendInLine is >= 0 and < BytesPerLine)
             {
                 DrawMergedCells(context, CursorBgBrush,
@@ -495,8 +512,8 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         EnsureMetrics();
 
-        var data = Data;
-        if (data is null || point.Y < _dataTop) return -1;
+        var buffer = Buffer;
+        if (buffer is null || point.Y < _dataTop) return -1;
 
         var line = (int)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         if (line < 0 || line >= TotalLines) return -1;
@@ -520,7 +537,7 @@ public class HexViewControl : Control, ILogicalScrollable
 
         byteInLine = Math.Clamp(byteInLine, 0, BytesPerLine - 1);
         var byteIndex = line * BytesPerLine + byteInLine;
-        return Math.Min(byteIndex, data.Length);
+        return Math.Min(byteIndex, (int)buffer.Length);
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -545,7 +562,7 @@ public class HexViewControl : Control, ILogicalScrollable
             _selectionAnchor = byteIndex;
             CursorPosition = byteIndex;
             SelectionStart = byteIndex;
-            SelectionLength = Data is { } d && byteIndex < d.Length ? 1 : 0;
+            SelectionLength = Buffer is { } b && byteIndex < (int)b.Length ? 1 : 0;
         }
 
         _isDragging = true;
@@ -609,11 +626,12 @@ public class HexViewControl : Control, ILogicalScrollable
         base.OnKeyDown(e);
         EnsureMetrics();
 
-        var data = Data;
-        if (data is null) return;
+        var buffer = Buffer;
+        if (buffer is null) return;
 
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
-        var maxIndex = data.Length;
+        var dataLength = (int)buffer.Length;
+        var maxIndex = dataLength;
         var newPos = CursorPosition;
         var visibleLines = (int)((Bounds.Height - _dataTop) / _rowHeight);
 
@@ -645,7 +663,7 @@ public class HexViewControl : Control, ILogicalScrollable
                 break;
             case Key.Delete:
             case Key.Back:
-                HandleDelete(e.Key, data);
+                HandleDelete(e.Key, dataLength);
                 e.Handled = true;
                 return;
             default:
@@ -695,12 +713,13 @@ public class HexViewControl : Control, ILogicalScrollable
 
     private void HandleHexInput(int nibble, int maxIndex)
     {
-        var data = Data;
-        if (data is null) return;
+        var buffer = Buffer;
+        if (buffer is null) return;
 
         var pos = CursorPosition;
+        var dataLength = (int)buffer.Length;
 
-        if (pos == data.Length)
+        if (pos == dataLength)
         {
             var newValue = (byte)(nibble << 4);
             RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue));
@@ -709,7 +728,7 @@ public class HexViewControl : Control, ILogicalScrollable
             return;
         }
 
-        var currentByte = data[pos];
+        var currentByte = buffer.ReadByte(pos);
 
         if (!_editingHighNibble)
         {
@@ -732,7 +751,7 @@ public class HexViewControl : Control, ILogicalScrollable
         }
     }
 
-    private void HandleDelete(Key key, byte[] data)
+    private void HandleDelete(Key key, int dataLength)
     {
         int deleteIndex;
         int deleteCount;
@@ -744,7 +763,7 @@ public class HexViewControl : Control, ILogicalScrollable
         }
         else if (key == Key.Delete)
         {
-            if (CursorPosition >= data.Length) return;
+            if (CursorPosition >= dataLength) return;
             deleteIndex = CursorPosition;
             deleteCount = 1;
         }
@@ -759,14 +778,14 @@ public class HexViewControl : Control, ILogicalScrollable
             return;
         }
 
-        var newPos = Math.Clamp(deleteIndex, 0, data.Length - deleteCount);
+        var newPos = Math.Clamp(deleteIndex, 0, dataLength - deleteCount);
 
         RaiseEvent(new BytesDeletedEventArgs(BytesDeletedEvent, this, deleteIndex, deleteCount));
 
         _editingHighNibble = false;
         CursorPosition = newPos;
         SelectionStart = newPos;
-        SelectionLength = newPos < data.Length - deleteCount ? 1 : 0;
+        SelectionLength = newPos < dataLength - deleteCount ? 1 : 0;
         _selectionAnchor = newPos;
         EnsureCursorVisible();
     }
