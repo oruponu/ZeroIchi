@@ -6,7 +6,6 @@ public abstract class ByteBuffer : IDisposable
 {
     public abstract long Length { get; }
     public abstract byte ReadByte(long index);
-    public abstract void WriteByte(long index, byte value);
     public abstract void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count);
 
     public byte[] SliceToArray(long offset, int count)
