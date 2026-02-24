@@ -6,13 +6,17 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using System;
 using System.Collections.Generic;
+using ZeroIchi.Models;
 
 namespace ZeroIchi.Controls;
 
 public class HexViewControl : Control, ILogicalScrollable
 {
-    public static readonly StyledProperty<byte[]?> DataProperty =
-        AvaloniaProperty.Register<HexViewControl, byte[]?>(nameof(Data));
+    public static readonly StyledProperty<BinaryDocument?> DocumentProperty =
+        AvaloniaProperty.Register<HexViewControl, BinaryDocument?>(nameof(Document));
+
+    public static readonly StyledProperty<int> DataVersionProperty =
+        AvaloniaProperty.Register<HexViewControl, int>(nameof(DataVersion));
 
     public static readonly StyledProperty<int> CursorPositionProperty =
         AvaloniaProperty.Register<HexViewControl, int>(nameof(CursorPosition), defaultValue: 0,
@@ -58,9 +62,9 @@ public class HexViewControl : Control, ILogicalScrollable
 
     static HexViewControl()
     {
-        AffectsRender<HexViewControl>(DataProperty, CursorPositionProperty,
+        AffectsRender<HexViewControl>(DocumentProperty, DataVersionProperty, CursorPositionProperty,
             SelectionStartProperty, SelectionLengthProperty, ModifiedIndicesProperty);
-        AffectsMeasure<HexViewControl>(DataProperty);
+        AffectsMeasure<HexViewControl>(DocumentProperty, DataVersionProperty);
     }
 
     private double _charWidth;
@@ -87,11 +91,19 @@ public class HexViewControl : Control, ILogicalScrollable
         ClipToBounds = true;
     }
 
-    public byte[]? Data
+    public BinaryDocument? Document
     {
-        get => GetValue(DataProperty);
-        set => SetValue(DataProperty, value);
+        get => GetValue(DocumentProperty);
+        set => SetValue(DocumentProperty, value);
     }
+
+    public int DataVersion
+    {
+        get => GetValue(DataVersionProperty);
+        set => SetValue(DataVersionProperty, value);
+    }
+
+    private byte[]? Data => Document?.Data;
 
     public int CursorPosition
     {
@@ -133,24 +145,18 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == DataProperty)
+        if (change.Property == DocumentProperty)
         {
-            var oldData = change.GetOldValue<byte[]?>();
-            var newData = change.GetNewValue<byte[]?>();
-
-            // 編集操作時はカーソル位置と編集状態を維持
-            if (oldData is not null && newData is not null)
-            {
-                InvalidateScrollable();
-                return;
-            }
-
             CursorPosition = 0;
             SelectionStart = 0;
             SelectionLength = 0;
             _selectionAnchor = 0;
             _editingHighNibble = false;
             _scrollOffset = default;
+            InvalidateScrollable();
+        }
+        else if (change.Property == DataVersionProperty)
+        {
             InvalidateScrollable();
         }
     }
