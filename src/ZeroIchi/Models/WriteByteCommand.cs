@@ -5,7 +5,7 @@ namespace ZeroIchi.Models;
 public class WriteByteCommand(BinaryDocument document, int index, byte newValue, int cursorPosition)
     : IEditCommand
 {
-    private readonly byte _oldValue = document.Data[index];
+    private readonly byte _oldValue = document.Buffer.ReadByte(index);
     private readonly HashSet<int> _modifiedIndicesBefore = [.. document.ModifiedIndices];
 
     public int CursorPositionBefore { get; } = cursorPosition;
@@ -13,13 +13,13 @@ public class WriteByteCommand(BinaryDocument document, int index, byte newValue,
 
     public void Execute()
     {
-        document.Data[index] = newValue;
+        document.Buffer.WriteByte(index, newValue);
         document.ModifiedIndices.Add(index);
     }
 
     public void Undo()
     {
-        document.Data[index] = _oldValue;
+        document.Buffer.WriteByte(index, _oldValue);
         document.ModifiedIndices.Clear();
         document.ModifiedIndices.UnionWith(_modifiedIndicesBefore);
     }
