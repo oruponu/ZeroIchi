@@ -9,15 +9,13 @@ public class AppendByteCommand(BinaryDocument document, byte value, int cursorPo
     public int CursorPositionBefore { get; } = cursorPosition;
     public int CursorPositionAfter { get; set; }
 
-    public void Execute()
-    {
-        document.Data = [.. document.Data, value];
-        document.ModifiedIndices.Add(document.Data.Length - 1);
-    }
+    public void Execute() => document.AppendByte(value);
 
     public void Undo()
     {
-        document.Data = document.Data[..^1];
+        document.EnsureMaterialized();
+        var arr = ((ArrayByteBuffer)document.Buffer).Array;
+        ((ArrayByteBuffer)document.Buffer).Array = arr[..^1];
         document.ModifiedIndices.Clear();
         document.ModifiedIndices.UnionWith(_modifiedIndicesBefore);
     }
