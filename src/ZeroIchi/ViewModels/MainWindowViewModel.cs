@@ -6,7 +6,6 @@ using MimeDetective;
 using MimeDetective.Definitions;
 using MimeDetective.Definitions.Licensing;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime;
@@ -57,9 +56,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private int _selectionLength;
 
     [ObservableProperty]
-    private HashSet<int>? _modifiedIndices;
-
-    [ObservableProperty]
     private string _statusBarPositionText = "00000000";
 
     [ObservableProperty]
@@ -98,7 +94,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         ReplaceDocument(BinaryDocument.CreateNew());
-        ModifiedIndices = null;
         CursorPosition = 0;
         SelectionStart = 0;
         SelectionLength = 0;
@@ -134,7 +129,6 @@ public partial class MainWindowViewModel : ViewModelBase
         CursorPosition = 0;
         SelectionStart = 0;
         SelectionLength = 0;
-        ModifiedIndices = null;
         _undoRedoManager.Clear();
         UpdateUndoRedoState();
     }
@@ -156,7 +150,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _undoRedoManager.ExecuteCommand(command);
         _lastExecutedCommand = command;
         DataVersion++;
-        ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
     }
@@ -178,7 +171,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _undoRedoManager.ExecuteCommand(command);
         command.CursorPositionAfter = CursorPosition;
         DataVersion++;
-        ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
     }
@@ -192,7 +184,6 @@ public partial class MainWindowViewModel : ViewModelBase
         if (command is null) return;
 
         DataVersion++;
-        ModifiedIndices = [.. Document.ModifiedIndices];
         CursorPosition = command.CursorPositionBefore;
         SelectionLength = 0;
         UpdateUndoRedoState();
@@ -208,7 +199,6 @@ public partial class MainWindowViewModel : ViewModelBase
         if (command is null) return;
 
         DataVersion++;
-        ModifiedIndices = [.. Document.ModifiedIndices];
         CursorPosition = command.CursorPositionAfter;
         SelectionLength = 0;
         UpdateUndoRedoState();
@@ -248,7 +238,6 @@ public partial class MainWindowViewModel : ViewModelBase
         command.CursorPositionAfter = CursorPosition;
 
         DataVersion++;
-        ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
     }
@@ -274,7 +263,6 @@ public partial class MainWindowViewModel : ViewModelBase
         insertCommand.CursorPositionAfter = CursorPosition;
 
         DataVersion++;
-        ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
     }
@@ -320,7 +308,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         await Document.SaveAsync();
-        ModifiedIndices = null;
         UpdateTitle();
     }
 
@@ -338,7 +325,6 @@ public partial class MainWindowViewModel : ViewModelBase
         if (file?.TryGetLocalPath() is not { } path) return;
 
         await Document.SaveAsAsync(path);
-        ModifiedIndices = null;
         UpdateTitle();
     }
 

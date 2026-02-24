@@ -6,7 +6,6 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using ZeroIchi.Models;
 
 namespace ZeroIchi.Controls;
@@ -30,9 +29,6 @@ public class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<int> SelectionLengthProperty =
         AvaloniaProperty.Register<HexViewControl, int>(nameof(SelectionLength), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
-
-    public static readonly StyledProperty<HashSet<int>?> ModifiedIndicesProperty =
-        AvaloniaProperty.Register<HexViewControl, HashSet<int>?>(nameof(ModifiedIndices));
 
     public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
         RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
@@ -64,7 +60,7 @@ public class HexViewControl : Control, ILogicalScrollable
     static HexViewControl()
     {
         AffectsRender<HexViewControl>(DocumentProperty, DataVersionProperty, CursorPositionProperty,
-            SelectionStartProperty, SelectionLengthProperty, ModifiedIndicesProperty);
+            SelectionStartProperty, SelectionLengthProperty);
         AffectsMeasure<HexViewControl>(DocumentProperty, DataVersionProperty);
     }
 
@@ -122,12 +118,6 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         get => GetValue(SelectionLengthProperty);
         set => SetValue(SelectionLengthProperty, value);
-    }
-
-    public HashSet<int>? ModifiedIndices
-    {
-        get => GetValue(ModifiedIndicesProperty);
-        set => SetValue(ModifiedIndicesProperty, value);
     }
 
     public event EventHandler<ByteModifiedEventArgs>? ByteModified
@@ -320,7 +310,7 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         var cursor = CursorPosition;
         var hasSelection = SelectionLength > 0;
-        var modified = ModifiedIndices;
+        var doc = Document;
         var hovered = _hoveredByteIndex;
         var buffer = Buffer;
         var dataLength = (int)(buffer?.Length ?? 0);
@@ -352,7 +342,7 @@ public class HexViewControl : Control, ILogicalScrollable
             var byteIndex = byteOffset + i;
             var isCursor = byteIndex == cursor;
             var isSelected = hasSelection && byteIndex >= selStart && byteIndex < selEnd;
-            var isModified = modified is not null && modified.Contains(byteIndex);
+            var isModified = doc?.IsByteModified(byteIndex) == true;
             var isHovered = byteIndex == hovered;
             var highlighted = isCursor || isSelected;
 
@@ -370,7 +360,7 @@ public class HexViewControl : Control, ILogicalScrollable
             if (isModified)
             {
                 bool IsModifiedNeighbor(int index) =>
-                    index >= 0 && index < dataLength && modified!.Contains(index);
+                    index >= 0 && index < dataLength && doc!.IsByteModified(index);
 
                 DrawMergedCells(context, ModifiedBgBrush, hexRect, asciiRect, i,
                     byteIndex >= BytesPerLine && IsModifiedNeighbor(byteIndex - BytesPerLine),
