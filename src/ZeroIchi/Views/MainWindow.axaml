@@ -172,7 +172,6 @@
                                              CursorPosition="{Binding CursorPosition}"
                                              DataVersion="{Binding DataVersion}"
                                              Document="{Binding Document}"
-                                             ModifiedIndices="{Binding ModifiedIndices}"
                                              SelectionLength="{Binding SelectionLength}"
                                              SelectionStart="{Binding SelectionStart}"/>
                 </ScrollViewer>
