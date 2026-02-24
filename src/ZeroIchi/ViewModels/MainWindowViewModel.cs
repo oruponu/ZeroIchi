@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 
@@ -44,7 +45,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _title = "Untitled - ZeroIchi";
 
     [ObservableProperty]
-    private byte[]? _data = [];
+    private int _dataVersion;
 
     [ObservableProperty]
     private int _cursorPosition;
@@ -96,8 +97,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
         }
 
-        Document = BinaryDocument.CreateNew();
-        Data = Document.Data;
+        ReplaceDocument(BinaryDocument.CreateNew());
         ModifiedIndices = null;
         CursorPosition = 0;
         SelectionStart = 0;
@@ -129,12 +129,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task OpenFileAsync(string path)
     {
-        Document = await BinaryDocument.OpenAsync(path);
+        ReplaceDocument(await BinaryDocument.OpenAsync(path));
         UpdateTitle();
         CursorPosition = 0;
         SelectionStart = 0;
         SelectionLength = 0;
-        Data = Document.Data;
         ModifiedIndices = null;
         _undoRedoManager.Clear();
         UpdateUndoRedoState();
@@ -156,7 +155,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _undoRedoManager.ExecuteCommand(command);
         _lastExecutedCommand = command;
-        Data = Document.Data;
+        DataVersion++;
         ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
@@ -178,7 +177,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var command = new DeleteBytesCommand(Document, index, count, CursorPosition);
         _undoRedoManager.ExecuteCommand(command);
         command.CursorPositionAfter = CursorPosition;
-        Data = Document.Data;
+        DataVersion++;
         ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
@@ -192,7 +191,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var command = _undoRedoManager.Undo();
         if (command is null) return;
 
-        Data = Document.Data;
+        DataVersion++;
         ModifiedIndices = [.. Document.ModifiedIndices];
         CursorPosition = command.CursorPositionBefore;
         SelectionLength = 0;
@@ -208,7 +207,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var command = _undoRedoManager.Redo();
         if (command is null) return;
 
-        Data = Document.Data;
+        DataVersion++;
         ModifiedIndices = [.. Document.ModifiedIndices];
         CursorPosition = command.CursorPositionAfter;
         SelectionLength = 0;
@@ -248,7 +247,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectionLength = start < Document.Data.Length ? 1 : 0;
         command.CursorPositionAfter = CursorPosition;
 
-        Data = Document.Data;
+        DataVersion++;
         ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
@@ -274,7 +273,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectionLength = CursorPosition < Document.Data.Length ? 1 : 0;
         insertCommand.CursorPositionAfter = CursorPosition;
 
-        Data = Document.Data;
+        DataVersion++;
         ModifiedIndices = [.. Document.ModifiedIndices];
         UpdateUndoRedoState();
         UpdateTitle();
@@ -283,10 +282,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void SelectAll()
     {
-        if (Data is not { Length: > 0 }) return;
+        if (Document?.Data is not { Length: > 0 } data) return;
 
         SelectionStart = 0;
-        SelectionLength = Data.Length;
+        SelectionLength = data.Length;
         CursorPosition = 0;
     }
 
@@ -364,15 +363,19 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnCursorPositionChanged(int value) => UpdateStatusBar();
     partial void OnSelectionStartChanged(int value) => UpdateStatusBar();
     partial void OnSelectionLengthChanged(int value) => UpdateStatusBar();
-    partial void OnDataChanged(byte[]? value)
+
+    partial void OnDocumentChanged(BinaryDocument? value)
     {
+        StatusBarFileTypeText = value?.Data is { Length: > 0 } data ? DetectFileType(data) : "";
         UpdateStatusBar();
-        StatusBarFileTypeText = value is not null ? DetectFileType(value) : "";
     }
+
+    partial void OnDataVersionChanged(int value) => UpdateStatusBar();
 
     private void UpdateStatusBar()
     {
-        if (Data is null)
+        var data = Document?.Data;
+        if (data is null)
         {
             StatusBarPositionText = "";
             StatusBarFileTypeText = "";
@@ -390,7 +393,7 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusBarPositionText = $"{CursorPosition:X8}";
         }
 
-        StatusBarSizeText = FormatFileSize(Data.Length);
+        StatusBarSizeText = FormatFileSize(data.Length);
     }
 
     private static string DetectFileType(byte[] data)
@@ -413,5 +416,16 @@ public partial class MainWindowViewModel : ViewModelBase
             < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
             _ => $"{bytes / (1024.0 * 1024 * 1024):F1} GB",
         };
+    }
+
+    // Avalonia のバインディングが旧 Document をキャッシュするため、Data を明示的に解放する
+    private void ReplaceDocument(BinaryDocument newDocument)
+    {
+        var oldDocument = Document;
+        Document = newDocument;
+        oldDocument?.ReleaseData();
+
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
     }
 }

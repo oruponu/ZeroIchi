@@ -96,6 +96,8 @@ public class BinaryDocument
         StructurallyModified = true;
     }
 
+    internal void ReleaseData() => Data = [];
+
     public async Task SaveAsync()
     {
         await File.WriteAllBytesAsync(FilePath, Data);
