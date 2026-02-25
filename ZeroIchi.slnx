@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/ZeroIchi/ZeroIchi.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZeroIchi.Tests/ZeroIchi.Tests.csproj" />
+  </Folder>
 </Solution>
