@@ -157,11 +157,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void CaptureCursorAfterEdit()
     {
-        if (_lastExecutedCommand is not null)
-        {
-            _lastExecutedCommand.CursorPositionAfter = CursorPosition;
-            _lastExecutedCommand = null;
-        }
+        _lastExecutedCommand?.CursorPositionAfter = CursorPosition;
+        _lastExecutedCommand = null;
     }
 
     public void OnBytesDeleted(int index, int count)
