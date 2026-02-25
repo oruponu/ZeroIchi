@@ -1,4 +1,6 @@
-namespace ZeroIchi.Models;
+using ZeroIchi.Models.Buffers;
+
+namespace ZeroIchi.Models.PieceTables;
 
 public class PieceTableByteBuffer(PieceTable pieceTable) : ByteBuffer
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace ZeroIchi.Models;
+namespace ZeroIchi.Models.Buffers;
 
 public class ArrayByteBuffer(byte[] array) : ByteBuffer
 {

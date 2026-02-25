@@ -1,5 +1,7 @@
 using System.IO;
 using System.Threading.Tasks;
+using ZeroIchi.Models.Buffers;
+using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models;
 

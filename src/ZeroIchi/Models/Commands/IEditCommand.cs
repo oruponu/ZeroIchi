@@ -1,4 +1,4 @@
-namespace ZeroIchi.Models;
+namespace ZeroIchi.Models.Commands;
 
 public interface IEditCommand
 {

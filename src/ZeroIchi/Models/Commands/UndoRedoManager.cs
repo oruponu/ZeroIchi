@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace ZeroIchi.Models;
+namespace ZeroIchi.Models.Commands;
 
 public class UndoRedoManager
 {

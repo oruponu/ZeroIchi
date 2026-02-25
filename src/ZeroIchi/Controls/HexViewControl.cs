@@ -7,6 +7,7 @@ using Avalonia.Media;
 using System;
 using System.Buffers;
 using ZeroIchi.Models;
+using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Controls;
 

@@ -1,4 +1,6 @@
-namespace ZeroIchi.Models;
+using ZeroIchi.Models.PieceTables;
+
+namespace ZeroIchi.Models.Commands;
 
 public class DeleteBytesCommand(BinaryDocument document, int index, int count, int cursorPosition)
     : IEditCommand

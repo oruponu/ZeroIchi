@@ -1,4 +1,6 @@
-namespace ZeroIchi.Models;
+using ZeroIchi.Models.PieceTables;
+
+namespace ZeroIchi.Models.Commands;
 
 public class InsertBytesCommand(BinaryDocument document, int index, byte[] bytes, int cursorPosition)
     : IEditCommand
