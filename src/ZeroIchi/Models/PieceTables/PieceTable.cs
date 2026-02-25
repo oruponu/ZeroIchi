@@ -28,6 +28,17 @@ public class PieceTable
 
     public bool HasAddPieces => _pieces.Any(p => p.Source == PieceSource.Add);
 
+    public IReadOnlyList<Piece> Pieces => _pieces;
+
+    public int AddBufferLength => _addBuffer.Count;
+
+    public void ReadAddBuffer(long offset, byte[] buffer, int bufferOffset, int count)
+    {
+        CollectionsMarshal.AsSpan(_addBuffer)
+            .Slice((int)offset, count)
+            .CopyTo(buffer.AsSpan(bufferOffset, count));
+    }
+
     public byte ReadByte(long index)
     {
         var (pieceIdx, offsetInPiece) = FindPiece(index);
