@@ -231,8 +231,7 @@ public class PieceTable
         Piece[] oldPieces;
         Piece[] newPieces;
 
-        if (_pieces.Count > 0 && _pieces[^1] is var last
-            && last.Source == PieceSource.Add && last.Offset + last.Length == addOffset)
+        if (_pieces.Count > 0 && _pieces[^1] is { Source: PieceSource.Add } last && last.Offset + last.Length == addOffset)
         {
             pieceIdx = _pieces.Count - 1;
             oldPieces = [last];
