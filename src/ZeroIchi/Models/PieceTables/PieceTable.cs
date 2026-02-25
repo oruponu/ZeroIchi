@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.PieceTables;
@@ -55,8 +56,9 @@ public class PieceTable
             else
             {
                 var srcOffset = (int)(piece.Offset + offsetInPiece);
-                for (var i = 0; i < availableInPiece; i++)
-                    buffer[destOffset + i] = _addBuffer[srcOffset + i];
+                CollectionsMarshal.AsSpan(_addBuffer)
+                    .Slice(srcOffset, availableInPiece)
+                    .CopyTo(buffer.AsSpan(destOffset, availableInPiece));
             }
 
             remaining -= availableInPiece;
@@ -290,8 +292,9 @@ public class PieceTable
                 }
                 else
                 {
-                    for (var i = 0; i < chunk; i++)
-                        buffer[i] = _addBuffer[(int)(srcOffset + i)];
+                    CollectionsMarshal.AsSpan(_addBuffer)
+                        .Slice((int)srcOffset, chunk)
+                        .CopyTo(buffer.AsSpan(0, chunk));
                 }
                 stream.Write(buffer, 0, chunk);
                 srcOffset += chunk;
