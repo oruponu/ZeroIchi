@@ -87,22 +87,22 @@ public class PieceTable
         }
         else if (offsetInPiece == 0)
         {
-            var right = new Piece(piece.Source, piece.Offset + 1, piece.Length - 1);
+            var right = piece with { Offset = piece.Offset + 1, Length = piece.Length - 1 };
             newPieces = [newPiece, right];
             _pieces[pieceIdx] = newPiece;
             _pieces.Insert(pieceIdx + 1, right);
         }
         else if (offsetInPiece == piece.Length - 1)
         {
-            var left = new Piece(piece.Source, piece.Offset, piece.Length - 1);
+            var left = piece with { Length = piece.Length - 1 };
             newPieces = [left, newPiece];
             _pieces[pieceIdx] = left;
             _pieces.Insert(pieceIdx + 1, newPiece);
         }
         else
         {
-            var left = new Piece(piece.Source, piece.Offset, offsetInPiece);
-            var right = new Piece(piece.Source, piece.Offset + offsetInPiece + 1, piece.Length - offsetInPiece - 1);
+            var left = piece with { Length = offsetInPiece };
+            var right = piece with { Offset = piece.Offset + offsetInPiece + 1, Length = piece.Length - offsetInPiece - 1 };
             newPieces = [left, newPiece, right];
             _pieces[pieceIdx] = left;
             _pieces.Insert(pieceIdx + 1, newPiece);
@@ -150,8 +150,8 @@ public class PieceTable
             }
             else
             {
-                var left = new Piece(piece.Source, piece.Offset, offsetInPiece);
-                var right = new Piece(piece.Source, piece.Offset + offsetInPiece, piece.Length - offsetInPiece);
+                var left = piece with { Length = offsetInPiece };
+                var right = piece with { Offset = piece.Offset + offsetInPiece, Length = piece.Length - offsetInPiece };
                 oldPieces = [piece];
                 newPieces = [left, insertPiece, right];
                 _pieces[pieceIdx] = left;
@@ -198,13 +198,13 @@ public class PieceTable
         if (hasLeft)
         {
             var first = _pieces[startPi];
-            newPieces[idx++] = new Piece(first.Source, first.Offset, startOffset);
+            newPieces[idx++] = first with { Length = startOffset };
         }
 
         if (hasRight)
         {
             var last = _pieces[endPi];
-            newPieces[idx] = new Piece(last.Source, last.Offset + endOffsetInPiece, last.Length - endOffsetInPiece);
+            newPieces[idx] = last with { Offset = last.Offset + endOffsetInPiece, Length = last.Length - endOffsetInPiece };
         }
 
         _pieces.RemoveRange(startPi, oldPieceCount);
@@ -236,7 +236,7 @@ public class PieceTable
         {
             pieceIdx = _pieces.Count - 1;
             oldPieces = [last];
-            var extended = new Piece(PieceSource.Add, last.Offset, last.Length + 1);
+            var extended = last with { Length = last.Length + 1 };
             newPieces = [extended];
             _pieces[^1] = extended;
         }
