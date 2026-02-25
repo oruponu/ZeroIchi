@@ -1,6 +1,6 @@
 using System;
 
-namespace ZeroIchi.Models;
+namespace ZeroIchi.Models.Buffers;
 
 public abstract class ByteBuffer : IDisposable
 {

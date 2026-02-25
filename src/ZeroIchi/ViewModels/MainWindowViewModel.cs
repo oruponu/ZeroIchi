@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
+using ZeroIchi.Models.Commands;
 
 namespace ZeroIchi.ViewModels;
 

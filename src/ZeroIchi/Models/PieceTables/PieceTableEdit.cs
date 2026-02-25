@@ -1,4 +1,4 @@
-namespace ZeroIchi.Models;
+namespace ZeroIchi.Models.PieceTables;
 
 public class PieceTableEdit
 {

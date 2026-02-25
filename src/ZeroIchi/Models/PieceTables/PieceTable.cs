@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ZeroIchi.Models.Buffers;
 
-namespace ZeroIchi.Models;
+namespace ZeroIchi.Models.PieceTables;
 
 public class PieceTable
 {
