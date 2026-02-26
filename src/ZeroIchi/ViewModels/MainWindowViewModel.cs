@@ -124,6 +124,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _undoRedoManager.Clear();
         UpdateUndoRedoState();
         UpdateTitle();
+        ClearSearchResults();
     }
 
     [RelayCommand]
@@ -155,6 +156,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectionLength = 0;
         _undoRedoManager.Clear();
         UpdateUndoRedoState();
+        ClearSearchResults();
     }
 
     public void OnByteModified(int index, byte value)
