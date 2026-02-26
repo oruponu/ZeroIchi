@@ -42,10 +42,22 @@ public partial class SaveChangesDialog : Window
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Key == Key.Escape)
+        switch (e.Key)
         {
-            Close();
-            e.Handled = true;
+            case Key.S:
+                Result = SaveChangesResult.Save;
+                Close();
+                e.Handled = true;
+                break;
+            case Key.N:
+                Result = SaveChangesResult.Discard;
+                Close();
+                e.Handled = true;
+                break;
+            case Key.Escape:
+                Close();
+                e.Handled = true;
+                break;
         }
     }
 
