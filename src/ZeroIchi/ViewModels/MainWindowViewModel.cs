@@ -7,7 +7,6 @@ using MimeDetective.Definitions;
 using MimeDetective.Definitions.Licensing;
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Runtime;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
@@ -31,6 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private Func<Task<bool>>? _confirmDiscardChanges;
     private readonly UndoRedoManager _undoRedoManager = new();
     private IEditCommand? _lastExecutedCommand;
+    private byte[]? _copiedBytes;
 
     [ObservableProperty]
     private BinaryDocument? _document = BinaryDocument.CreateNew();
@@ -204,16 +204,18 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task CopyAsync()
+    private Task CopyAsync()
     {
-        if (_clipboard is null || Document is null || SelectionLength <= 0) return;
+        if (Document is null || SelectionLength <= 0) return Task.CompletedTask;
 
         var start = SelectionStart;
         var length = Math.Min(SelectionLength, (int)Document.Buffer.Length - start);
-        if (length <= 0) return;
+        if (length <= 0) return Task.CompletedTask;
 
-        var hex = string.Join(" ", Document.Buffer.SliceToArray(start, length).Select(b => b.ToString("X2")));
-        await _clipboard.SetTextAsync(hex);
+        var bytes = new byte[length];
+        Document.Buffer.ReadBytes(start, bytes, 0, length);
+        _copiedBytes = bytes;
+        return Task.CompletedTask;
     }
 
     [RelayCommand]
@@ -243,12 +245,17 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task PasteAsync()
     {
-        if (_clipboard is null || Document is null) return;
+        if (Document is null) return;
 
-        var text = await _clipboard.TryGetTextAsync();
-        if (string.IsNullOrWhiteSpace(text)) return;
+        byte[]? bytes = null;
+        if (_clipboard is not null)
+        {
+            var text = await _clipboard.TryGetTextAsync();
+            if (!string.IsNullOrWhiteSpace(text))
+                bytes = ParseHexString(text);
+        }
 
-        var bytes = ParseHexString(text);
+        bytes ??= _copiedBytes;
         if (bytes is null || bytes.Length == 0) return;
 
         var insertIndex = CursorPosition;
