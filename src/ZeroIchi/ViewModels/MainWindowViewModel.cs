@@ -6,8 +6,10 @@ using MimeDetective;
 using MimeDetective.Definitions;
 using MimeDetective.Definitions.Licensing;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime;
+using System.Text;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Commands;
@@ -64,6 +66,27 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _statusBarSizeText = "0 B";
+
+    [ObservableProperty]
+    private bool _isSearchVisible;
+
+    [ObservableProperty]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private bool _isHexSearch = true;
+
+    [ObservableProperty]
+    private int[] _searchMatchOffsets = [];
+
+    [ObservableProperty]
+    private int _searchMatchLength;
+
+    [ObservableProperty]
+    private int _currentSearchMatchIndex = -1;
+
+    [ObservableProperty]
+    private string _searchStatusText = "";
 
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
@@ -203,6 +226,12 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateTitle();
     }
 
+    private void UpdateUndoRedoState()
+    {
+        CanUndo = _undoRedoManager.CanUndo;
+        CanRedo = _undoRedoManager.CanRedo;
+    }
+
     [RelayCommand]
     private Task CopyAsync()
     {
@@ -295,10 +324,145 @@ public partial class MainWindowViewModel : ViewModelBase
         return result;
     }
 
-    private void UpdateUndoRedoState()
+    [RelayCommand]
+    private void OpenSearch()
     {
-        CanUndo = _undoRedoManager.CanUndo;
-        CanRedo = _undoRedoManager.CanRedo;
+        IsSearchVisible = true;
+    }
+
+    [RelayCommand]
+    private void CloseSearch()
+    {
+        IsSearchVisible = false;
+        ClearSearchResults();
+    }
+
+    [RelayCommand]
+    private void FindNext()
+    {
+        if (SearchMatchOffsets.Length == 0)
+        {
+            ExecuteSearch();
+            return;
+        }
+
+        CurrentSearchMatchIndex = (CurrentSearchMatchIndex + 1) % SearchMatchOffsets.Length;
+        NavigateToCurrentMatch();
+    }
+
+    [RelayCommand]
+    private void FindPrevious()
+    {
+        if (SearchMatchOffsets.Length == 0)
+        {
+            ExecuteSearch();
+            return;
+        }
+
+        CurrentSearchMatchIndex = (CurrentSearchMatchIndex - 1 + SearchMatchOffsets.Length) % SearchMatchOffsets.Length;
+        NavigateToCurrentMatch();
+    }
+
+    partial void OnSearchTextChanged(string value) => ExecuteSearch();
+    partial void OnIsHexSearchChanged(bool value) => ExecuteSearch();
+
+    private void ClearSearchResults()
+    {
+        SearchMatchOffsets = [];
+        SearchMatchLength = 0;
+        CurrentSearchMatchIndex = -1;
+        SearchStatusText = "";
+    }
+
+    private void ExecuteSearch()
+    {
+        var buffer = Document?.Buffer;
+        if (buffer is null || string.IsNullOrEmpty(SearchText))
+        {
+            ClearSearchResults();
+            return;
+        }
+
+        var pattern = IsHexSearch ? ParseHexString(SearchText) : Encoding.UTF8.GetBytes(SearchText);
+        if (pattern is null || pattern.Length == 0)
+        {
+            ClearSearchResults();
+            if (IsHexSearch) SearchStatusText = "無効な16進数";
+            return;
+        }
+
+        SearchMatchLength = pattern.Length;
+        var dataLength = (int)buffer.Length;
+        var matches = new List<int>();
+
+        const int chunkSize = 65536;
+        var overlap = pattern.Length - 1;
+        var chunk = new byte[chunkSize + overlap];
+
+        for (var offset = 0; offset < dataLength;)
+        {
+            var readStart = offset == 0 ? 0 : offset - overlap;
+            var readLength = Math.Min(chunk.Length, dataLength - readStart);
+            buffer.ReadBytes(readStart, chunk, 0, readLength);
+
+            var searchStart = offset == 0 ? 0 : overlap;
+            var span = chunk.AsSpan(searchStart, readLength - searchStart);
+            var pos = 0;
+            while (pos <= span.Length - pattern.Length)
+            {
+                var idx = span[pos..].IndexOf(pattern);
+                if (idx < 0) break;
+                matches.Add(readStart + searchStart + pos + idx);
+                pos += idx + 1;
+            }
+
+            offset += chunkSize;
+        }
+
+        SearchMatchOffsets = [.. matches];
+
+        if (matches.Count == 0)
+        {
+            CurrentSearchMatchIndex = -1;
+            SearchStatusText = "0/0";
+            return;
+        }
+
+        var closestIndex = FindClosestMatch(matches, CursorPosition);
+        CurrentSearchMatchIndex = closestIndex;
+        NavigateToCurrentMatch();
+    }
+
+    private void NavigateToCurrentMatch()
+    {
+        if (CurrentSearchMatchIndex < 0 || CurrentSearchMatchIndex >= SearchMatchOffsets.Length)
+            return;
+
+        var matchOffset = SearchMatchOffsets[CurrentSearchMatchIndex];
+        CursorPosition = matchOffset;
+        SelectionStart = matchOffset;
+        SelectionLength = SearchMatchLength;
+        SearchStatusText = $"{CurrentSearchMatchIndex + 1}/{SearchMatchOffsets.Length}";
+    }
+
+    private static int FindClosestMatch(List<int> matches, int position)
+    {
+        var lo = 0;
+        var hi = matches.Count - 1;
+        while (lo < hi)
+        {
+            var mid = lo + (hi - lo) / 2;
+            if (matches[mid] < position)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        if (lo >= matches.Count) return matches.Count - 1;
+        if (lo == 0) return 0;
+
+        var distBefore = position - matches[lo - 1];
+        var distAfter = matches[lo] - position;
+        return distBefore <= distAfter ? lo - 1 : lo;
     }
 
     [RelayCommand]
