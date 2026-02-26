@@ -31,6 +31,15 @@ public class HexViewControl : Control, ILogicalScrollable
         AvaloniaProperty.Register<HexViewControl, int>(nameof(SelectionLength), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
+    public static readonly StyledProperty<int[]> SearchMatchOffsetsProperty =
+        AvaloniaProperty.Register<HexViewControl, int[]>(nameof(SearchMatchOffsets), defaultValue: []);
+
+    public static readonly StyledProperty<int> SearchMatchLengthProperty =
+        AvaloniaProperty.Register<HexViewControl, int>(nameof(SearchMatchLength), defaultValue: 0);
+
+    public static readonly StyledProperty<int> CurrentSearchMatchIndexProperty =
+        AvaloniaProperty.Register<HexViewControl, int>(nameof(CurrentSearchMatchIndex), defaultValue: -1);
+
     public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
         RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
 
@@ -55,13 +64,16 @@ public class HexViewControl : Control, ILogicalScrollable
     private static readonly IBrush SelectionBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x26, 0x4F, 0x78)).ToImmutable();
     private static readonly IBrush ModifiedBgBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xE0, 0x8C, 0x00)).ToImmutable();
     private static readonly IBrush HoverBgBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)).ToImmutable();
+    private static readonly IBrush SearchMatchBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xE8, 0xA8, 0x00)).ToImmutable();
+    private static readonly IBrush CurrentSearchMatchBrush = new SolidColorBrush(Color.FromArgb(0x99, 0xE8, 0xA8, 0x00)).ToImmutable();
     private static readonly Pen HeaderSeparatorPen = new(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)).ToImmutable());
     private static readonly string HeaderHexText = BuildHeaderHexText();
 
     static HexViewControl()
     {
         AffectsRender<HexViewControl>(DocumentProperty, DataVersionProperty, CursorPositionProperty,
-            SelectionStartProperty, SelectionLengthProperty);
+            SelectionStartProperty, SelectionLengthProperty,
+            SearchMatchOffsetsProperty, SearchMatchLengthProperty, CurrentSearchMatchIndexProperty);
         AffectsMeasure<HexViewControl>(DocumentProperty, DataVersionProperty);
     }
 
@@ -121,6 +133,24 @@ public class HexViewControl : Control, ILogicalScrollable
         set => SetValue(SelectionLengthProperty, value);
     }
 
+    public int[] SearchMatchOffsets
+    {
+        get => GetValue(SearchMatchOffsetsProperty);
+        set => SetValue(SearchMatchOffsetsProperty, value);
+    }
+
+    public int SearchMatchLength
+    {
+        get => GetValue(SearchMatchLengthProperty);
+        set => SetValue(SearchMatchLengthProperty, value);
+    }
+
+    public int CurrentSearchMatchIndex
+    {
+        get => GetValue(CurrentSearchMatchIndexProperty);
+        set => SetValue(CurrentSearchMatchIndexProperty, value);
+    }
+
     public event EventHandler<ByteModifiedEventArgs>? ByteModified
     {
         add => AddHandler(ByteModifiedEvent, value);
@@ -150,6 +180,10 @@ public class HexViewControl : Control, ILogicalScrollable
         else if (change.Property == DataVersionProperty)
         {
             InvalidateScrollable();
+        }
+        else if (change.Property == CurrentSearchMatchIndexProperty)
+        {
+            EnsureCursorVisible();
         }
     }
 
@@ -315,6 +349,33 @@ public class HexViewControl : Control, ILogicalScrollable
         var hovered = _hoveredByteIndex;
         var buffer = Buffer;
         var dataLength = (int)(buffer?.Length ?? 0);
+
+        var matchOffsets = SearchMatchOffsets;
+        var matchLength = SearchMatchLength;
+        var currentMatchIndex = CurrentSearchMatchIndex;
+        if (matchOffsets.Length > 0 && matchLength > 0)
+        {
+            var lineEnd = byteOffset + bytesInLine;
+            var firstMatch = FindFirstMatchInRange(matchOffsets, byteOffset - matchLength + 1);
+            for (var m = firstMatch; m < matchOffsets.Length; m++)
+            {
+                var matchStart = matchOffsets[m];
+                if (matchStart >= lineEnd) break;
+                var matchEnd = matchStart + matchLength;
+                var drawStart = Math.Max(matchStart, byteOffset);
+                var drawEnd = Math.Min(matchEnd, lineEnd);
+                var brush = m == currentMatchIndex ? CurrentSearchMatchBrush : SearchMatchBrush;
+
+                for (var byteIdx = drawStart; byteIdx < drawEnd; byteIdx++)
+                {
+                    var i = byteIdx - byteOffset;
+                    var hexRect = HexCellRect(i, y);
+                    var asciiRect = new Rect(AsciiCellX(i), y, _asciiCellWidth, _rowHeight);
+                    context.DrawRectangle(brush, null, new RoundedRect(hexRect, HighlightCornerRadius));
+                    context.DrawRectangle(brush, null, new RoundedRect(asciiRect, HighlightCornerRadius));
+                }
+            }
+        }
 
         var cursorOnLine = cursor / BytesPerLine == byteOffset / BytesPerLine;
         var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
@@ -801,6 +862,21 @@ public class HexViewControl : Control, ILogicalScrollable
         Key.F => 0xF,
         _ => null,
     };
+
+    private static int FindFirstMatchInRange(int[] offsets, int rangeStart)
+    {
+        var lo = 0;
+        var hi = offsets.Length;
+        while (lo < hi)
+        {
+            var mid = lo + (hi - lo) / 2;
+            if (offsets[mid] < rangeStart)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        return lo;
+    }
 
     public event EventHandler? ScrollInvalidated;
 

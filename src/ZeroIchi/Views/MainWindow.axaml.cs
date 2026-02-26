@@ -21,6 +21,7 @@ public partial class MainWindow : Window
         HexView.AddHandler(HexViewControl.ByteModifiedEvent, OnByteModified);
         HexView.AddHandler(HexViewControl.BytesDeletedEvent, OnBytesDeleted);
         AddHandler(DragDrop.DropEvent, OnDrop);
+        SearchTextBox.KeyDown += OnSearchTextBoxKeyDown;
         Opened += (_, _) => HexView.Focus();
     }
 
@@ -141,6 +142,49 @@ public partial class MainWindow : Window
                 vm.SelectAllCommand.Execute(null);
                 e.Handled = true;
             }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.F)
+            {
+                vm.OpenSearchCommand.Execute(null);
+                SearchTextBox.Focus();
+                SearchTextBox.SelectAll();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F3 && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+            {
+                vm.FindPreviousCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F3)
+            {
+                vm.FindNextCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape && vm.IsSearchVisible)
+            {
+                vm.CloseSearchCommand.Execute(null);
+                HexView.Focus();
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnSearchTextBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        if (e.Key == Key.Enter)
+        {
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                vm.FindPreviousCommand.Execute(null);
+            else
+                vm.FindNextCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            vm.CloseSearchCommand.Execute(null);
+            HexView.Focus();
+            e.Handled = true;
         }
     }
 

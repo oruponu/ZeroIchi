@@ -50,6 +50,48 @@
         <Style Selector="MenuItem">
             <Setter Property="CornerRadius" Value="4"/>
         </Style>
+
+        <Style Selector="Button.search-button">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#D4D4D4"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.search-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#30FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.search-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="ToggleButton.search-mode">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#808080"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="ToggleButton.search-mode:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#30FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="ToggleButton.search-mode:checked">
+            <Setter Property="Foreground" Value="#E0E0E0"/>
+        </Style>
+        <Style Selector="ToggleButton.search-mode:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
     </Window.Styles>
 
     <Design.DataContext>
@@ -101,6 +143,10 @@
                         <MenuItem Command="{Binding SelectAllCommand}"
                                   Header="すべて選択(_A)"
                                   InputGesture="Ctrl+A"/>
+                        <Separator/>
+                        <MenuItem Command="{Binding OpenSearchCommand}"
+                                  Header="検索(_F)"
+                                  InputGesture="Ctrl+F"/>
                     </MenuItem>
                 </Menu>
 
@@ -163,18 +209,95 @@
                     BoxShadow="0 1 4 0 #20000000"
                     ClipToBounds="True"
                     CornerRadius="8">
-                <ScrollViewer Padding="8"
-                              AllowAutoHide="False"
-                              HorizontalScrollBarVisibility="Auto"
-                              IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}"
-                              VerticalScrollBarVisibility="Auto">
-                    <controls:HexViewControl x:Name="HexView"
-                                             CursorPosition="{Binding CursorPosition}"
-                                             DataVersion="{Binding DataVersion}"
-                                             Document="{Binding Document}"
-                                             SelectionLength="{Binding SelectionLength}"
-                                             SelectionStart="{Binding SelectionStart}"/>
-                </ScrollViewer>
+                <Panel>
+                    <ScrollViewer Padding="8"
+                                  AllowAutoHide="False"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                  VerticalScrollBarVisibility="Auto">
+                        <controls:HexViewControl x:Name="HexView"
+                                                 CurrentSearchMatchIndex="{Binding CurrentSearchMatchIndex}"
+                                                 CursorPosition="{Binding CursorPosition}"
+                                                 DataVersion="{Binding DataVersion}"
+                                                 Document="{Binding Document}"
+                                                 SearchMatchLength="{Binding SearchMatchLength}"
+                                                 SearchMatchOffsets="{Binding SearchMatchOffsets}"
+                                                 SelectionLength="{Binding SelectionLength}"
+                                                 SelectionStart="{Binding SelectionStart}"/>
+                    </ScrollViewer>
+
+                    <Border x:Name="SearchBar"
+                            Margin="0,4,20,0"
+                            Padding="6"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Background="#1E1E1E"
+                            BorderBrush="#3F3F3F"
+                            BorderThickness="1"
+                            BoxShadow="0 2 8 0 #40000000"
+                            CornerRadius="6"
+                            IsVisible="{Binding IsSearchVisible}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBox x:Name="SearchTextBox"
+                                     Width="200"
+                                     Height="28"
+                                     Padding="6,4"
+                                     VerticalContentAlignment="Center"
+                                     Background="#2D2D2D"
+                                     BorderBrush="#3F3F3F"
+                                     BorderThickness="1"
+                                     CornerRadius="4"
+                                     FontFamily="fonts:App#Roboto Mono"
+                                     FontSize="12"
+                                     Foreground="#D4D4D4"
+                                     Text="{Binding SearchText, Mode=TwoWay}"
+                                     Watermark="検索"/>
+                            <Border Background="#2D2D2D"
+                                    BorderBrush="#3F3F3F"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                <StackPanel Orientation="Horizontal" Spacing="1">
+                                    <ToggleButton Classes="search-mode"
+                                                  Content="Hex"
+                                                  FontSize="11"
+                                                  IsChecked="{Binding IsHexSearch}"/>
+                                    <ToggleButton Classes="search-mode"
+                                                  Content="ASCII"
+                                                  FontSize="11"
+                                                  IsChecked="{Binding !IsHexSearch}"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock MinWidth="36"
+                                       Margin="4,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="#A0A0A0"
+                                       Text="{Binding SearchStatusText}"
+                                       TextAlignment="Center"/>
+                            <Button Classes="search-button"
+                                    Command="{Binding FindPreviousCommand}"
+                                    ToolTip.Tip="前を検索 (Shift+F3)">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           FontSize="10"
+                                           Text="&#xE70E;"/>
+                            </Button>
+                            <Button Classes="search-button"
+                                    Command="{Binding FindNextCommand}"
+                                    ToolTip.Tip="次を検索 (F3)">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           FontSize="10"
+                                           Text="&#xE70D;"/>
+                            </Button>
+                            <Button Classes="search-button"
+                                    Command="{Binding CloseSearchCommand}"
+                                    ToolTip.Tip="閉じる (Esc)">
+                                <TextBlock FontFamily="Segoe MDL2 Assets"
+                                           FontSize="10"
+                                           Text="&#xE8BB;"/>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </Panel>
             </Border>
         </DockPanel>
         <Border x:Name="ModalOverlay"
