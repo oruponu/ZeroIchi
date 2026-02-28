@@ -6,6 +6,7 @@ using MimeDetective;
 using MimeDetective.Definitions;
 using MimeDetective.Definitions.Licensing;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime;
@@ -399,26 +400,32 @@ public partial class MainWindowViewModel : ViewModelBase
 
         const int chunkSize = 65536;
         var overlap = pattern.Length - 1;
-        var chunk = new byte[chunkSize + overlap];
-
-        for (var offset = 0; offset < dataLength;)
+        var chunk = ArrayPool<byte>.Shared.Rent(chunkSize + overlap);
+        try
         {
-            var readStart = offset == 0 ? 0 : offset - overlap;
-            var readLength = Math.Min(chunk.Length, dataLength - readStart);
-            buffer.ReadBytes(readStart, chunk, 0, readLength);
-
-            var searchStart = offset == 0 ? 0 : overlap;
-            var span = chunk.AsSpan(searchStart, readLength - searchStart);
-            var pos = 0;
-            while (pos <= span.Length - pattern.Length)
+            for (var offset = 0; offset < dataLength;)
             {
-                var idx = span[pos..].IndexOf(pattern);
-                if (idx < 0) break;
-                matches.Add(readStart + searchStart + pos + idx);
-                pos += idx + 1;
-            }
+                var readStart = offset == 0 ? 0 : offset - overlap;
+                var readLength = Math.Min(chunkSize + overlap, dataLength - readStart);
+                buffer.ReadBytes(readStart, chunk, 0, readLength);
 
-            offset += chunkSize;
+                var searchStart = offset == 0 ? 0 : overlap;
+                var span = chunk.AsSpan(searchStart, readLength - searchStart);
+                var pos = 0;
+                while (pos <= span.Length - pattern.Length)
+                {
+                    var idx = span[pos..].IndexOf(pattern);
+                    if (idx < 0) break;
+                    matches.Add(readStart + searchStart + pos + idx);
+                    pos += idx + 1;
+                }
+
+                offset += chunkSize;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(chunk);
         }
 
         SearchMatchOffsets = [.. matches];
