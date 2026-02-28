@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace ZeroIchi.Models.Commands;
 
-public class UndoRedoManager
+public sealed class UndoRedoManager
 {
     private readonly Stack<IEditCommand> _undoStack = new();
     private readonly Stack<IEditCommand> _redoStack = new();

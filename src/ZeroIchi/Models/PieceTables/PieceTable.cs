@@ -8,7 +8,7 @@ using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.PieceTables;
 
-public class PieceTable
+public sealed class PieceTable
 {
     private readonly ByteBuffer _original;
     private readonly List<byte> _addBuffer = [];
