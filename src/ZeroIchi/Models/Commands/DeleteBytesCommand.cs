@@ -2,7 +2,7 @@ using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models.Commands;
 
-public class DeleteBytesCommand(BinaryDocument document, int index, int count, int cursorPosition)
+public sealed class DeleteBytesCommand(BinaryDocument document, int index, int count, int cursorPosition)
     : IEditCommand
 {
     private PieceTableEdit? _edit;

@@ -8,7 +8,7 @@ using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models;
 
-public class BinaryDocument
+public sealed class BinaryDocument
 {
     private static ReadOnlySpan<byte> JournalMagic => "ZIJF"u8;
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);

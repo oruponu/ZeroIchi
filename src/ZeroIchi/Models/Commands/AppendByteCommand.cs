@@ -2,7 +2,7 @@ using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models.Commands;
 
-public class AppendByteCommand(BinaryDocument document, byte value, int cursorPosition) : IEditCommand
+public sealed class AppendByteCommand(BinaryDocument document, byte value, int cursorPosition) : IEditCommand
 {
     private PieceTableEdit? _edit;
 
