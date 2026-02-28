@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.Threading.Tasks;
@@ -60,30 +61,37 @@ public class BinaryDocument
         if (!IsModified || IsNew) return Task.CompletedTask;
 
         var (entries, finalSize, needsShift) = ComputeWritePlan();
-        var workBuffer = new byte[81920];
-
-        // シフトがなければ非破壊な上書きのみなのでジャーナル不要
-        string? journalPath = null;
-        if (needsShift)
+        var workBuffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
         {
-            journalPath = FilePath + ".journal";
-            WriteJournal(journalPath, entries, finalSize, workBuffer);
+            // シフトがなければ非破壊な上書きのみなのでジャーナル不要
+            string? journalPath = null;
+            if (needsShift)
+            {
+                journalPath = FilePath + ".journal";
+                WriteJournal(journalPath, entries, finalSize, workBuffer);
+            }
+
+            // マッピング中のファイルは上書きできないため先に解放する
+            if (_original is MappedByteBuffer mapped)
+                mapped.ReleaseMapping();
+
+            using (var fs = new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                WritePiecesInPlace(fs, entries, finalSize, workBuffer, _pieceTable.ReadAddBuffer);
+            }
+
+            if (journalPath is not null)
+                File.Delete(journalPath);
+
+            _original.Dispose();
+            ResetPieceTable(new MappedByteBuffer(FilePath));
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(workBuffer);
         }
 
-        // マッピング中のファイルは上書きできないため先に解放する
-        if (_original is MappedByteBuffer mapped)
-            mapped.ReleaseMapping();
-
-        using (var fs = new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
-        {
-            WritePiecesInPlace(fs, entries, finalSize, workBuffer, _pieceTable.ReadAddBuffer);
-        }
-
-        if (journalPath is not null)
-            File.Delete(journalPath);
-
-        _original.Dispose();
-        ResetPieceTable(new MappedByteBuffer(FilePath));
         return Task.CompletedTask;
     }
 
@@ -299,10 +307,15 @@ public class BinaryDocument
             outputOffset += pieces[i].Length;
         }
 
-        using (var fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        var buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
         {
-            var buffer = new byte[81920];
+            using var fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             WritePiecesInPlace(fs, entries, finalSize, buffer, ReadAdd);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
 
         File.Delete(journalPath);

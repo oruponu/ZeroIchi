@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -288,28 +289,35 @@ public class PieceTable
 
     public void WriteTo(Stream stream)
     {
-        var buffer = new byte[81920];
-        foreach (var piece in _pieces)
+        var buffer = ArrayPool<byte>.Shared.Rent(81920);
+        try
         {
-            var remaining = piece.Length;
-            var srcOffset = piece.Offset;
-            while (remaining > 0)
+            foreach (var piece in _pieces)
             {
-                var chunk = (int)Math.Min(remaining, buffer.Length);
-                if (piece.Source == PieceSource.Original)
+                var remaining = piece.Length;
+                var srcOffset = piece.Offset;
+                while (remaining > 0)
                 {
-                    _original.ReadBytes(srcOffset, buffer, 0, chunk);
+                    var chunk = (int)Math.Min(remaining, buffer.Length);
+                    if (piece.Source == PieceSource.Original)
+                    {
+                        _original.ReadBytes(srcOffset, buffer, 0, chunk);
+                    }
+                    else
+                    {
+                        CollectionsMarshal.AsSpan(_addBuffer)
+                            .Slice((int)srcOffset, chunk)
+                            .CopyTo(buffer.AsSpan(0, chunk));
+                    }
+                    stream.Write(buffer, 0, chunk);
+                    srcOffset += chunk;
+                    remaining -= chunk;
                 }
-                else
-                {
-                    CollectionsMarshal.AsSpan(_addBuffer)
-                        .Slice((int)srcOffset, chunk)
-                        .CopyTo(buffer.AsSpan(0, chunk));
-                }
-                stream.Write(buffer, 0, chunk);
-                srcOffset += chunk;
-                remaining -= chunk;
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 
