@@ -1,9 +1,9 @@
 namespace ZeroIchi.Models.PieceTables;
 
-public class PieceTableEdit
+public record PieceTableEdit
 {
-    public int PieceIndex { get; init; }
+    public required int PieceIndex { get; init; }
     public required Piece[] OldPieces { get; init; }
     public required Piece[] NewPieces { get; init; }
-    public long LengthDelta { get; init; }
+    public required long LengthDelta { get; init; }
 }
