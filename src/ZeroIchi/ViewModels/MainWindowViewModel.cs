@@ -89,6 +89,21 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _searchStatusText = "";
 
+    [ObservableProperty]
+    private bool _isInspectorVisible = true;
+
+    [ObservableProperty]
+    private bool _isInspectorBigEndian;
+
+    [ObservableProperty]
+    private List<DataInspectorEntry> _inspectorEntries = [];
+
+    [RelayCommand]
+    private void ToggleInspector()
+    {
+        IsInspectorVisible = !IsInspectorVisible;
+    }
+
     public void SetStorageProvider(IStorageProvider storageProvider)
     {
         _storageProvider = storageProvider;
@@ -524,7 +539,12 @@ public partial class MainWindowViewModel : ViewModelBase
         Title = $"{modified}{Document.FileName} - ZeroIchi";
     }
 
-    partial void OnCursorPositionChanged(int value) => UpdateStatusBar();
+    partial void OnCursorPositionChanged(int value)
+    {
+        UpdateStatusBar();
+        UpdateInspector();
+    }
+
     partial void OnSelectionStartChanged(int value) => UpdateStatusBar();
     partial void OnSelectionLengthChanged(int value) => UpdateStatusBar();
 
@@ -541,9 +561,21 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusBarFileTypeText = "";
         }
         UpdateStatusBar();
+        UpdateInspector();
     }
 
-    partial void OnDataVersionChanged(int value) => UpdateStatusBar();
+    partial void OnDataVersionChanged(int value)
+    {
+        UpdateStatusBar();
+        UpdateInspector();
+    }
+
+    partial void OnIsInspectorVisibleChanged(bool value)
+    {
+        if (value) UpdateInspector();
+    }
+
+    partial void OnIsInspectorBigEndianChanged(bool value) => UpdateInspector();
 
     private void UpdateStatusBar()
     {
@@ -577,6 +609,17 @@ public partial class MainWindowViewModel : ViewModelBase
         var match = results.ByFileExtension();
 
         return match.Length > 0 ? match[0].Extension : "";
+    }
+
+    private void UpdateInspector()
+    {
+        if (!IsInspectorVisible || Document?.Buffer is not { } buffer)
+        {
+            InspectorEntries = [];
+            return;
+        }
+
+        InspectorEntries = DataInspector.Inspect(buffer, CursorPosition, IsInspectorBigEndian);
     }
 
     private static string FormatFileSize(long bytes)
