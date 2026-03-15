@@ -149,6 +149,11 @@ public partial class MainWindow : Window
                 SearchTextBox.SelectAll();
                 e.Handled = true;
             }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.I)
+            {
+                vm.ToggleInspectorCommand.Execute(null);
+                e.Handled = true;
+            }
             else if (e.Key == Key.F3 && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
             {
                 vm.FindPreviousCommand.Execute(null);

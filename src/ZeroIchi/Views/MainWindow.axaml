@@ -4,6 +4,7 @@
         xmlns:controls="using:ZeroIchi.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="using:ZeroIchi.Models"
         xmlns:vm="using:ZeroIchi.ViewModels"
         Title="{Binding Title}"
         Width="900"
@@ -148,6 +149,13 @@
                                   Header="検索(_F)"
                                   InputGesture="Ctrl+F"/>
                     </MenuItem>
+                    <MenuItem Header="表示(_V)">
+                        <MenuItem Command="{Binding ToggleInspectorCommand}"
+                                  Header="インスペクター(_I)"
+                                  InputGesture="Ctrl+I"
+                                  IsChecked="{Binding IsInspectorVisible, Mode=OneWay}"
+                                  ToggleType="CheckBox"/>
+                    </MenuItem>
                 </Menu>
 
                 <TextBlock Grid.Column="1"
@@ -209,95 +217,152 @@
                     BoxShadow="0 1 4 0 #20000000"
                     ClipToBounds="True"
                     CornerRadius="8">
-                <Panel>
-                    <ScrollViewer Padding="8"
-                                  AllowAutoHide="False"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                  VerticalScrollBarVisibility="Auto">
-                        <controls:HexViewControl x:Name="HexView"
-                                                 CurrentSearchMatchIndex="{Binding CurrentSearchMatchIndex}"
-                                                 CursorPosition="{Binding CursorPosition}"
-                                                 DataVersion="{Binding DataVersion}"
-                                                 Document="{Binding Document}"
-                                                 SearchMatchLength="{Binding SearchMatchLength}"
-                                                 SearchMatchOffsets="{Binding SearchMatchOffsets}"
-                                                 SelectionLength="{Binding SelectionLength}"
-                                                 SelectionStart="{Binding SelectionStart}"/>
-                    </ScrollViewer>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Panel>
+                        <ScrollViewer Padding="8"
+                                      AllowAutoHide="False"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                      VerticalScrollBarVisibility="Auto">
+                            <controls:HexViewControl x:Name="HexView"
+                                                     CurrentSearchMatchIndex="{Binding CurrentSearchMatchIndex}"
+                                                     CursorPosition="{Binding CursorPosition}"
+                                                     DataVersion="{Binding DataVersion}"
+                                                     Document="{Binding Document}"
+                                                     SearchMatchLength="{Binding SearchMatchLength}"
+                                                     SearchMatchOffsets="{Binding SearchMatchOffsets}"
+                                                     SelectionLength="{Binding SelectionLength}"
+                                                     SelectionStart="{Binding SelectionStart}"/>
+                        </ScrollViewer>
 
-                    <Border x:Name="SearchBar"
-                            Margin="0,4,20,0"
-                            Padding="6"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
-                            Background="#1E1E1E"
+                        <Border x:Name="SearchBar"
+                                Margin="0,4,20,0"
+                                Padding="6"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="#1E1E1E"
+                                BorderBrush="#3F3F3F"
+                                BorderThickness="1"
+                                BoxShadow="0 2 8 0 #40000000"
+                                CornerRadius="6"
+                                IsVisible="{Binding IsSearchVisible}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBox x:Name="SearchTextBox"
+                                         Width="200"
+                                         Height="28"
+                                         Padding="6,4"
+                                         VerticalContentAlignment="Center"
+                                         Background="#2D2D2D"
+                                         BorderBrush="#3F3F3F"
+                                         BorderThickness="1"
+                                         CornerRadius="4"
+                                         FontFamily="fonts:App#Roboto Mono"
+                                         FontSize="12"
+                                         Foreground="#D4D4D4"
+                                         Text="{Binding SearchText, Mode=TwoWay}"
+                                         Watermark="検索"/>
+                                <Border Background="#2D2D2D"
+                                        BorderBrush="#3F3F3F"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="1">
+                                        <ToggleButton Classes="search-mode"
+                                                      Content="Hex"
+                                                      FontSize="11"
+                                                      IsChecked="{Binding IsHexSearch}"/>
+                                        <ToggleButton Classes="search-mode"
+                                                      Content="ASCII"
+                                                      FontSize="11"
+                                                      IsChecked="{Binding !IsHexSearch}"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock MinWidth="36"
+                                           Margin="4,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="#A0A0A0"
+                                           Text="{Binding SearchStatusText}"
+                                           TextAlignment="Center"/>
+                                <Button Classes="search-button"
+                                        Command="{Binding FindPreviousCommand}"
+                                        ToolTip.Tip="前を検索 (Shift+F3)">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                               FontSize="10"
+                                               Text="&#xE70E;"/>
+                                </Button>
+                                <Button Classes="search-button"
+                                        Command="{Binding FindNextCommand}"
+                                        ToolTip.Tip="次を検索 (F3)">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                               FontSize="10"
+                                               Text="&#xE70D;"/>
+                                </Button>
+                                <Button Classes="search-button"
+                                        Command="{Binding CloseSearchCommand}"
+                                        ToolTip.Tip="閉じる (Esc)">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                               FontSize="10"
+                                               Text="&#xE8BB;"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Panel>
+
+                    <Border Grid.Column="1"
+                            Width="220"
                             BorderBrush="#3F3F3F"
-                            BorderThickness="1"
-                            BoxShadow="0 2 8 0 #40000000"
-                            CornerRadius="6"
-                            IsVisible="{Binding IsSearchVisible}">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBox x:Name="SearchTextBox"
-                                     Width="200"
-                                     Height="28"
-                                     Padding="6,4"
-                                     VerticalContentAlignment="Center"
-                                     Background="#2D2D2D"
-                                     BorderBrush="#3F3F3F"
-                                     BorderThickness="1"
-                                     CornerRadius="4"
-                                     FontFamily="fonts:App#Roboto Mono"
-                                     FontSize="12"
-                                     Foreground="#D4D4D4"
-                                     Text="{Binding SearchText, Mode=TwoWay}"
-                                     Watermark="検索"/>
-                            <Border Background="#2D2D2D"
-                                    BorderBrush="#3F3F3F"
-                                    BorderThickness="1"
-                                    CornerRadius="4">
-                                <StackPanel Orientation="Horizontal" Spacing="1">
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="Hex"
-                                                  FontSize="11"
-                                                  IsChecked="{Binding IsHexSearch}"/>
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="ASCII"
-                                                  FontSize="11"
-                                                  IsChecked="{Binding !IsHexSearch}"/>
-                                </StackPanel>
-                            </Border>
-                            <TextBlock MinWidth="36"
-                                       Margin="4,0"
-                                       VerticalAlignment="Center"
-                                       FontSize="11"
-                                       Foreground="#A0A0A0"
-                                       Text="{Binding SearchStatusText}"
-                                       TextAlignment="Center"/>
-                            <Button Classes="search-button"
-                                    Command="{Binding FindPreviousCommand}"
-                                    ToolTip.Tip="前を検索 (Shift+F3)">
-                                <TextBlock FontFamily="Segoe MDL2 Assets"
-                                           FontSize="10"
-                                           Text="&#xE70E;"/>
-                            </Button>
-                            <Button Classes="search-button"
-                                    Command="{Binding FindNextCommand}"
-                                    ToolTip.Tip="次を検索 (F3)">
-                                <TextBlock FontFamily="Segoe MDL2 Assets"
-                                           FontSize="10"
-                                           Text="&#xE70D;"/>
-                            </Button>
-                            <Button Classes="search-button"
-                                    Command="{Binding CloseSearchCommand}"
-                                    ToolTip.Tip="閉じる (Esc)">
-                                <TextBlock FontFamily="Segoe MDL2 Assets"
-                                           FontSize="10"
-                                           Text="&#xE8BB;"/>
-                            </Button>
-                        </StackPanel>
+                            BorderThickness="1,0,0,0"
+                            IsVisible="{Binding IsInspectorVisible}">
+                        <DockPanel>
+                            <DockPanel Margin="8,6" DockPanel.Dock="Top">
+                                <Border Background="#2D2D2D"
+                                        BorderBrush="#3F3F3F"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        DockPanel.Dock="Right">
+                                    <StackPanel Orientation="Horizontal" Spacing="1">
+                                        <ToggleButton Classes="search-mode"
+                                                      Content="LE"
+                                                      FontSize="10"
+                                                      IsChecked="{Binding !IsInspectorBigEndian}"/>
+                                        <ToggleButton Classes="search-mode"
+                                                      Content="BE"
+                                                      FontSize="10"
+                                                      IsChecked="{Binding IsInspectorBigEndian}"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#D4D4D4"
+                                           Text="インスペクター"/>
+                            </DockPanel>
+
+                            <Border Height="1"
+                                    Background="#3F3F3F"
+                                    DockPanel.Dock="Top"/>
+
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl Margin="0,4" ItemsSource="{Binding InspectorEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:DataInspectorEntry">
+                                            <DockPanel Margin="8,2.5">
+                                                <TextBlock Width="52"
+                                                           FontSize="11"
+                                                           Foreground="#808080"
+                                                           Text="{Binding Label}"/>
+                                                <TextBlock FontFamily="fonts:App#Roboto Mono"
+                                                           FontSize="11"
+                                                           Foreground="#D4D4D4"
+                                                           Text="{Binding Value}"
+                                                           TextAlignment="Right"/>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
                     </Border>
-                </Panel>
+                </Grid>
             </Border>
         </DockPanel>
         <Border x:Name="ModalOverlay"
