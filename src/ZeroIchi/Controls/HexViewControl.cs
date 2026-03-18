@@ -234,53 +234,56 @@ public class HexViewControl : Control, ILogicalScrollable
         // ポインターイベントのために透明背景を描画
         context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
 
-        DrawHeader(context);
-
-        var buffer = Buffer;
-        if (buffer is null) return;
-
-        var dataLength = (int)buffer.Length;
-        var dataTop = _dataTop;
-        var totalLines = dataLength / BytesPerLine + 1;
-        var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
-        var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
-        var lastLine = Math.Min(totalLines, firstLine + visibleLineCount);
-
-        var selStart = SelectionStart;
-        var selEnd = selStart + SelectionLength;
-
-        var visibleBytes = (lastLine - firstLine) * BytesPerLine;
-        var rentedBuffer = ArrayPool<byte>.Shared.Rent(visibleBytes);
-        try
+        using (context.PushTransform(Matrix.CreateTranslation(-_scrollOffset.X, 0)))
         {
-            var startOffset = firstLine * BytesPerLine;
-            var bytesToRead = Math.Min(visibleBytes, dataLength - startOffset);
-            if (bytesToRead > 0)
-                buffer.ReadBytes(startOffset, rentedBuffer, 0, bytesToRead);
+            DrawHeader(context);
 
-            using (context.PushClip(new Rect(0, dataTop, Bounds.Width, Bounds.Height - dataTop)))
+            var buffer = Buffer;
+            if (buffer is null) return;
+
+            var dataLength = (int)buffer.Length;
+            var dataTop = _dataTop;
+            var totalLines = dataLength / BytesPerLine + 1;
+            var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
+            var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
+            var lastLine = Math.Min(totalLines, firstLine + visibleLineCount);
+
+            var selStart = SelectionStart;
+            var selEnd = selStart + SelectionLength;
+
+            var visibleBytes = (lastLine - firstLine) * BytesPerLine;
+            var rentedBuffer = ArrayPool<byte>.Shared.Rent(visibleBytes);
+            try
             {
-                for (var line = firstLine; line < lastLine; line++)
-                {
-                    var y = dataTop + line * _rowHeight - _scrollOffset.Y;
-                    var byteOffset = line * BytesPerLine;
-                    var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+                var startOffset = firstLine * BytesPerLine;
+                var bytesToRead = Math.Min(visibleBytes, dataLength - startOffset);
+                if (bytesToRead > 0)
+                    buffer.ReadBytes(startOffset, rentedBuffer, 0, bytesToRead);
 
-                    DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
-                    var textY = y + CellPaddingY;
-                    DrawText(context, byteOffset.ToString("X8"), CellPaddingX, textY, MonospaceTypeface, OffsetBrush);
-                    if (bytesInLine > 0)
+                using (context.PushClip(new Rect(_scrollOffset.X, dataTop, Bounds.Width, Bounds.Height - dataTop)))
+                {
+                    for (var line = firstLine; line < lastLine; line++)
                     {
-                        var bufferOffset = byteOffset - startOffset;
-                        DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
-                        DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                        var y = dataTop + line * _rowHeight - _scrollOffset.Y;
+                        var byteOffset = line * BytesPerLine;
+                        var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+
+                        DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
+                        var textY = y + CellPaddingY;
+                        DrawText(context, byteOffset.ToString("X8"), CellPaddingX, textY, MonospaceTypeface, OffsetBrush);
+                        if (bytesInLine > 0)
+                        {
+                            var bufferOffset = byteOffset - startOffset;
+                            DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                            DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                        }
                     }
                 }
             }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(rentedBuffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
     }
 
