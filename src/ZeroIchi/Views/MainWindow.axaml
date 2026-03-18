@@ -345,12 +345,14 @@
                                 <ItemsControl Margin="0,4" ItemsSource="{Binding InspectorEntries}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="models:DataInspectorEntry">
-                                            <DockPanel Margin="8,2.5">
-                                                <TextBlock Width="52"
+                                            <DockPanel Height="20" Margin="8,0">
+                                                <TextBlock Width="62"
+                                                           VerticalAlignment="Center"
                                                            FontSize="11"
                                                            Foreground="#808080"
                                                            Text="{Binding Label}"/>
-                                                <TextBlock FontFamily="fonts:App#Roboto Mono"
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontFamily="fonts:App#Roboto Mono"
                                                            FontSize="11"
                                                            Foreground="#D4D4D4"
                                                            Text="{Binding Value}"
