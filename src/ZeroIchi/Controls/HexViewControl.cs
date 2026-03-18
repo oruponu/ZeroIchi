@@ -234,55 +234,72 @@ public class HexViewControl : Control, ILogicalScrollable
         // ポインターイベントのために透明背景を描画
         context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
 
+        var separatorY = Math.Floor((_rowHeight + _dataTop) / 2) - 0.5;
+        context.DrawLine(HeaderSeparatorPen, new Point(0, separatorY), new Point(Bounds.Width, separatorY));
+
+        var buffer = Buffer;
+        var dataLength = buffer is null ? 0 : (int)buffer.Length;
+        var dataTop = _dataTop;
+        var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
+        var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
+        var lastLine = buffer is null ? 0 : Math.Min(dataLength / BytesPerLine + 1, firstLine + visibleLineCount);
+
+        var selStart = SelectionStart;
+        var selEnd = selStart + SelectionLength;
+
+        var contentLeft = _hexStartX - CellPaddingX;
+        using (context.PushClip(new Rect(contentLeft, 0, Bounds.Width - contentLeft, Bounds.Height)))
         using (context.PushTransform(Matrix.CreateTranslation(-_scrollOffset.X, 0)))
         {
             DrawHeader(context);
 
-            var buffer = Buffer;
-            if (buffer is null) return;
-
-            var dataLength = (int)buffer.Length;
-            var dataTop = _dataTop;
-            var totalLines = dataLength / BytesPerLine + 1;
-            var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
-            var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
-            var lastLine = Math.Min(totalLines, firstLine + visibleLineCount);
-
-            var selStart = SelectionStart;
-            var selEnd = selStart + SelectionLength;
-
-            var visibleBytes = (lastLine - firstLine) * BytesPerLine;
-            var rentedBuffer = ArrayPool<byte>.Shared.Rent(visibleBytes);
-            try
+            if (buffer is not null)
             {
-                var startOffset = firstLine * BytesPerLine;
-                var bytesToRead = Math.Min(visibleBytes, dataLength - startOffset);
-                if (bytesToRead > 0)
-                    buffer.ReadBytes(startOffset, rentedBuffer, 0, bytesToRead);
-
-                using (context.PushClip(new Rect(_scrollOffset.X, dataTop, Bounds.Width, Bounds.Height - dataTop)))
+                var visibleBytes = (lastLine - firstLine) * BytesPerLine;
+                var rentedBuffer = ArrayPool<byte>.Shared.Rent(visibleBytes);
+                try
                 {
-                    for (var line = firstLine; line < lastLine; line++)
-                    {
-                        var y = dataTop + line * _rowHeight - _scrollOffset.Y;
-                        var byteOffset = line * BytesPerLine;
-                        var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+                    var startOffset = firstLine * BytesPerLine;
+                    var bytesToRead = Math.Min(visibleBytes, dataLength - startOffset);
+                    if (bytesToRead > 0)
+                        buffer.ReadBytes(startOffset, rentedBuffer, 0, bytesToRead);
 
-                        DrawHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
-                        var textY = y + CellPaddingY;
-                        DrawText(context, byteOffset.ToString("X8"), CellPaddingX, textY, MonospaceTypeface, OffsetBrush);
-                        if (bytesInLine > 0)
+                    using (context.PushClip(new Rect(_scrollOffset.X + contentLeft, dataTop,
+                        Bounds.Width - contentLeft, Bounds.Height - dataTop)))
+                    {
+                        for (var line = firstLine; line < lastLine; line++)
                         {
-                            var bufferOffset = byteOffset - startOffset;
-                            DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
-                            DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                            var y = dataTop + line * _rowHeight - _scrollOffset.Y;
+                            var byteOffset = line * BytesPerLine;
+                            var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+
+                            DrawContentHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
+                            var textY = y + CellPaddingY;
+                            if (bytesInLine > 0)
+                            {
+                                var bufferOffset = byteOffset - startOffset;
+                                DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                                DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                            }
                         }
                     }
                 }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
             }
-            finally
+        }
+
+        using (context.PushClip(new Rect(0, dataTop, contentLeft, Bounds.Height - dataTop)))
+        {
+            for (var line = firstLine; line < lastLine; line++)
             {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
+                var y = dataTop + line * _rowHeight - _scrollOffset.Y;
+                var byteOffset = line * BytesPerLine;
+
+                DrawAddressHighlight(context, byteOffset, y, selStart, selEnd, dataLength);
+                DrawText(context, byteOffset.ToString("X8"), CellPaddingX, y + CellPaddingY, MonospaceTypeface, OffsetBrush);
             }
         }
     }
@@ -339,11 +356,38 @@ public class HexViewControl : Control, ILogicalScrollable
         }
 
         DrawText(context, HeaderHexText, _hexStartX, CellPaddingY, MonospaceTypeface, OffsetBrush);
-        var separatorY = Math.Floor((_rowHeight + _dataTop) / 2) - 0.5;
-        context.DrawLine(HeaderSeparatorPen, new Point(0, separatorY), new Point(Bounds.Width, separatorY));
     }
 
-    private void DrawHighlights(DrawingContext context, int byteOffset, int bytesInLine,
+    private void DrawAddressHighlight(DrawingContext context, int byteOffset,
+        double y, int selStart, int selEnd, int dataLength)
+    {
+        var cursor = CursorPosition;
+        var hasSelection = SelectionLength > 0;
+        var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+        var cursorOnLine = cursor / BytesPerLine == byteOffset / BytesPerLine;
+        var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
+
+        if (!cursorOnLine && !selectionOnLine) return;
+
+        var addrAbove = IsAddrRowHighlighted(byteOffset - BytesPerLine);
+        var addrBelow = IsAddrRowHighlighted(byteOffset + BytesPerLine);
+        var r = HighlightCornerRadius;
+
+        var offsetRect = new Rect(0, y, OffsetChars * _charWidth + 2 * CellPaddingX, _rowHeight);
+        FillRoundedRect(context, cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect,
+            addrAbove ? 0 : r, addrAbove ? 0 : r, addrBelow ? 0 : r, addrBelow ? 0 : r);
+        return;
+
+        bool IsAddrRowHighlighted(int rowOffset)
+        {
+            if (rowOffset < 0 || rowOffset > dataLength) return false;
+            if (cursor / BytesPerLine == rowOffset / BytesPerLine) return true;
+            var rowEnd = Math.Min(rowOffset + BytesPerLine, dataLength);
+            return hasSelection && selStart < rowEnd && selEnd > rowOffset;
+        }
+    }
+
+    private void DrawContentHighlights(DrawingContext context, int byteOffset, int bytesInLine,
         double y, int selStart, int selEnd)
     {
         var cursor = CursorPosition;
@@ -378,28 +422,6 @@ public class HexViewControl : Control, ILogicalScrollable
                     context.DrawRectangle(brush, null, new RoundedRect(asciiRect, HighlightCornerRadius));
                 }
             }
-        }
-
-        var cursorOnLine = cursor / BytesPerLine == byteOffset / BytesPerLine;
-        var selectionOnLine = hasSelection && selStart < byteOffset + bytesInLine && selEnd > byteOffset;
-
-        if (cursorOnLine || selectionOnLine)
-        {
-            bool IsAddrRowHighlighted(int rowOffset)
-            {
-                if (rowOffset < 0 || rowOffset > dataLength) return false;
-                if (cursor / BytesPerLine == rowOffset / BytesPerLine) return true;
-                var rowEnd = Math.Min(rowOffset + BytesPerLine, dataLength);
-                return hasSelection && selStart < rowEnd && selEnd > rowOffset;
-            }
-
-            var addrAbove = IsAddrRowHighlighted(byteOffset - BytesPerLine);
-            var addrBelow = IsAddrRowHighlighted(byteOffset + BytesPerLine);
-            var r = HighlightCornerRadius;
-
-            var offsetRect = new Rect(0, y, OffsetChars * _charWidth + 2 * CellPaddingX, _rowHeight);
-            FillRoundedRect(context, cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect,
-                addrAbove ? 0 : r, addrAbove ? 0 : r, addrBelow ? 0 : r, addrBelow ? 0 : r);
         }
 
         for (var i = 0; i < bytesInLine; i++)
