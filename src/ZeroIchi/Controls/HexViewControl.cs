@@ -927,6 +927,7 @@ public class HexViewControl : Control, ILogicalScrollable
             if (_scrollOffset == clamped) return;
             _scrollOffset = clamped;
             InvalidateVisual();
+            InvalidateScrollable();
         }
     }
 
