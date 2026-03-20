@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
 using System;
 using System.Buffers;
 using ZeroIchi.Models;
@@ -94,6 +95,8 @@ public class HexViewControl : Control, ILogicalScrollable
     private int _selectionAnchor;
     private bool _editingHighNibble;
     private int _hoveredByteIndex = -1;
+    private DispatcherTimer? _autoScrollTimer;
+    private Point _lastPointerPosition;
 
     public HexViewControl()
     {
@@ -585,6 +588,20 @@ public class HexViewControl : Control, ILogicalScrollable
     private static char ToHexChar(int nibble) =>
         (char)(nibble < 10 ? '0' + nibble : 'A' + nibble - 10);
 
+    private int HitTestColumn(double x)
+    {
+        if (x >= _asciiStartX && x < AsciiCellX(BytesPerLine))
+            return Math.Clamp((int)((x - _asciiStartX) / _asciiCellWidth), 0, BytesPerLine - 1);
+
+        if (x >= _hexStartX && x < _hexEndX)
+        {
+            var relChar = (x - _hexStartX) / _charWidth;
+            return Math.Clamp((int)((relChar - (relChar >= 24 ? 1 : 0)) / 3), 0, BytesPerLine - 1);
+        }
+
+        return -1;
+    }
+
     private int HitTestByte(Point point)
     {
         EnsureMetrics();
@@ -595,26 +612,57 @@ public class HexViewControl : Control, ILogicalScrollable
         var line = (int)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         if (line < 0 || line >= TotalLines) return -1;
 
-        int byteInLine;
+        var byteInLine = HitTestColumn(point.X);
+        if (byteInLine < 0) return -1;
 
-        var asciiEndX = AsciiCellX(BytesPerLine);
-        if (point.X >= _asciiStartX && point.X < asciiEndX)
-        {
-            byteInLine = (int)((point.X - _asciiStartX) / _asciiCellWidth);
-        }
-        else if (point.X >= _hexStartX && point.X < _hexEndX)
-        {
-            var relChar = (point.X - _hexStartX) / _charWidth;
-            byteInLine = (int)((relChar - (relChar >= 24 ? 1 : 0)) / 3);
-        }
-        else
-        {
-            return -1;
-        }
+        return Math.Min(line * BytesPerLine + byteInLine, (int)buffer.Length);
+    }
 
-        byteInLine = Math.Clamp(byteInLine, 0, BytesPerLine - 1);
-        var byteIndex = line * BytesPerLine + byteInLine;
-        return Math.Min(byteIndex, (int)buffer.Length);
+    private int HitTestByteDrag(Point point)
+    {
+        EnsureMetrics();
+
+        var buffer = Buffer;
+        if (buffer is null || buffer.Length == 0) return -1;
+
+        var line = (int)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
+        line = Math.Clamp(line, 0, TotalLines - 1);
+
+        var byteInLine = HitTestColumn(point.X);
+        if (byteInLine < 0)
+            byteInLine = point.X < _hexStartX ? 0 : BytesPerLine - 1;
+
+        return Math.Min(line * BytesPerLine + byteInLine, (int)buffer.Length);
+    }
+
+    private void StartAutoScroll()
+    {
+        if (_autoScrollTimer != null) return;
+        _autoScrollTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _autoScrollTimer.Tick += OnAutoScrollTick;
+        _autoScrollTimer.Start();
+    }
+
+    private void StopAutoScroll()
+    {
+        if (_autoScrollTimer == null) return;
+        _autoScrollTimer.Stop();
+        _autoScrollTimer.Tick -= OnAutoScrollTick;
+        _autoScrollTimer = null;
+    }
+
+    private void OnAutoScrollTick(object? sender, EventArgs e)
+    {
+        if (!_isDragging) { StopAutoScroll(); return; }
+        UpdateDragSelection();
+    }
+
+    private void UpdateDragSelection()
+    {
+        var byteIndex = HitTestByteDrag(_lastPointerPosition);
+        if (byteIndex < 0) return;
+        UpdateSelection(_selectionAnchor, byteIndex);
+        EnsureCursorVisible();
     }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
@@ -651,16 +699,23 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         base.OnPointerMoved(e);
 
-        var byteIndex = HitTestByte(e.GetPosition(this));
+        var pos = e.GetPosition(this);
 
         if (_isDragging)
         {
-            if (byteIndex < 0) return;
-            UpdateSelection(_selectionAnchor, byteIndex);
+            _lastPointerPosition = pos;
+            UpdateDragSelection();
+
+            if (pos.Y < _dataTop || pos.Y > Bounds.Height)
+                StartAutoScroll();
+            else
+                StopAutoScroll();
+
             e.Handled = true;
             return;
         }
 
+        var byteIndex = HitTestByte(pos);
         var newHover = byteIndex >= 0 ? byteIndex : -1;
         if (newHover != _hoveredByteIndex)
         {
@@ -686,6 +741,7 @@ public class HexViewControl : Control, ILogicalScrollable
 
         if (!_isDragging) return;
 
+        StopAutoScroll();
         _isDragging = false;
         e.Pointer.Capture(null);
         e.Handled = true;
