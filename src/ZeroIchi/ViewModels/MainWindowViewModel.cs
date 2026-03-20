@@ -13,7 +13,9 @@ using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
+using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Commands;
+using ZeroIchi.Models.FileStructure;
 
 namespace ZeroIchi.ViewModels;
 
@@ -90,6 +92,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _searchStatusText = "";
 
     [ObservableProperty]
+    private bool _isStructureTreeVisible = true;
+
+    [ObservableProperty]
+    private List<FileStructureNode> _structureTreeRoots = [];
+
+    [ObservableProperty]
+    private FileStructureNode? _selectedStructureNode;
+
+    [ObservableProperty]
     private bool _isInspectorVisible = true;
 
     [ObservableProperty]
@@ -97,6 +108,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private List<DataInspectorEntry> _inspectorEntries = [];
+
+    [RelayCommand]
+    private void ToggleStructureTree()
+    {
+        IsStructureTreeVisible = !IsStructureTreeVisible;
+    }
 
     [RelayCommand]
     private void ToggleInspector()
@@ -555,10 +572,13 @@ public partial class MainWindowViewModel : ViewModelBase
             var length = (int)Math.Min(buffer.Length, 1024);
             var header = buffer.SliceToArray(0, length);
             StatusBarFileTypeText = DetectFileType(header);
+            UpdateStructureTree(buffer);
         }
         else
         {
             StatusBarFileTypeText = "";
+            StructureTreeRoots = [];
+            SelectedStructureNode = null;
         }
         UpdateStatusBar();
         UpdateInspector();
@@ -568,6 +588,14 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         UpdateStatusBar();
         UpdateInspector();
+    }
+
+    partial void OnSelectedStructureNodeChanged(FileStructureNode? value)
+    {
+        if (value is null || Document?.Buffer is null) return;
+        CursorPosition = (int)value.Offset;
+        SelectionStart = (int)value.Offset;
+        SelectionLength = value.Length;
     }
 
     partial void OnIsInspectorVisibleChanged(bool value)
@@ -609,6 +637,16 @@ public partial class MainWindowViewModel : ViewModelBase
         var match = results.ByFileExtension();
 
         return match.Length > 0 ? match[0].Extension : "";
+    }
+
+    private void UpdateStructureTree(ByteBuffer buffer)
+    {
+        var definition = DefinitionRegistry.TryMatch(buffer);
+        if (definition is not null)
+            StructureTreeRoots = [StructureParser.Parse(definition, buffer)];
+        else
+            StructureTreeRoots = [];
+        SelectedStructureNode = null;
     }
 
     private void UpdateInspector()

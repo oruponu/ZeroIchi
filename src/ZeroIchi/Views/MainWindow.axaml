@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:ZeroIchi.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:fs="using:ZeroIchi.Models.FileStructure"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="using:ZeroIchi.Models"
         xmlns:vm="using:ZeroIchi.ViewModels"
@@ -150,6 +151,11 @@
                                   InputGesture="Ctrl+F"/>
                     </MenuItem>
                     <MenuItem Header="表示(_V)">
+                        <MenuItem Command="{Binding ToggleStructureTreeCommand}"
+                                  Header="ファイル構造(_S)"
+                                  InputGesture="Ctrl+T"
+                                  IsChecked="{Binding IsStructureTreeVisible, Mode=OneWay}"
+                                  ToggleType="CheckBox"/>
                         <MenuItem Command="{Binding ToggleInspectorCommand}"
                                   Header="インスペクター(_I)"
                                   InputGesture="Ctrl+I"
@@ -217,8 +223,46 @@
                     BoxShadow="0 1 4 0 #20000000"
                     ClipToBounds="True"
                     CornerRadius="8">
-                <Grid ColumnDefinitions="*,Auto">
-                    <Panel>
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border Width="260"
+                            BorderBrush="#3F3F3F"
+                            BorderThickness="0,0,1,0"
+                            IsVisible="{Binding IsStructureTreeVisible}">
+                        <DockPanel>
+                            <DockPanel Margin="8,6" DockPanel.Dock="Top">
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#D4D4D4"
+                                           Text="ファイル構造"/>
+                            </DockPanel>
+                            <Border Height="1"
+                                    Background="#3F3F3F"
+                                    DockPanel.Dock="Top"/>
+                            <TreeView Background="Transparent"
+                                      ItemsSource="{Binding StructureTreeRoots}"
+                                      SelectedItem="{Binding SelectedStructureNode, Mode=TwoWay}">
+                                <TreeView.Styles>
+                                    <Style Selector="TreeViewItem">
+                                        <Setter Property="IsExpanded" Value="True"/>
+                                    </Style>
+                                </TreeView.Styles>
+                                <TreeView.ItemTemplate>
+                                    <TreeDataTemplate x:DataType="fs:FileStructureNode" ItemsSource="{Binding Children}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock FontSize="11"
+                                                       Foreground="#D4D4D4"
+                                                       Text="{Binding Name}"/>
+                                            <TextBlock FontSize="10"
+                                                       Foreground="#808080"
+                                                       Text="{Binding Description}"/>
+                                        </StackPanel>
+                                    </TreeDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+                        </DockPanel>
+                    </Border>
+
+                    <Panel Grid.Column="1">
                         <ScrollViewer Padding="8"
                                       AllowAutoHide="False"
                                       HorizontalScrollBarVisibility="Auto"
@@ -308,7 +352,7 @@
                         </Border>
                     </Panel>
 
-                    <Border Grid.Column="1"
+                    <Border Grid.Column="2"
                             Width="220"
                             BorderBrush="#3F3F3F"
                             BorderThickness="1,0,0,0"

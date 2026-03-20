@@ -184,6 +184,10 @@ public class HexViewControl : Control, ILogicalScrollable
         {
             InvalidateScrollable();
         }
+        else if (change.Property == CursorPositionProperty)
+        {
+            EnsureCursorVisible();
+        }
         else if (change.Property == CurrentSearchMatchIndexProperty)
         {
             EnsureCursorVisible();
