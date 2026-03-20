@@ -1,0 +1,27 @@
+{
+  "name": "PNG",
+  "extensions": ["png"],
+  "magic": "89 50 4E 47 0D 0A 1A 0A",
+  "endian": "big",
+  "fields": [
+    {
+      "id": "signature",
+      "name": "Signature",
+      "type": "bytes",
+      "size": 8
+    },
+    {
+      "id": "chunks",
+      "name": "Chunks",
+      "type": "repeat",
+      "until": "eof",
+      "nameTemplate": "${chunkType}",
+      "fields": [
+        { "id": "dataLength", "name": "Data Length", "type": "uint32" },
+        { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
+        { "id": "chunkData", "name": "Chunk Data", "type": "bytes", "size": "dataLength" },
+        { "id": "crc", "name": "CRC", "type": "uint32" }
+      ]
+    }
+  ]
+}
