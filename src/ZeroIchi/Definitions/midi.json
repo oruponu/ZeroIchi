@@ -1,0 +1,32 @@
+{
+  "name": "MIDI",
+  "extensions": ["mid", "midi"],
+  "magic": "4D 54 68 64",
+  "endian": "big",
+  "fields": [
+    {
+      "id": "header",
+      "name": "Header Chunk",
+      "type": "group",
+      "fields": [
+        { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
+        { "id": "chunkLength", "name": "Chunk Length", "type": "uint32" },
+        { "id": "format", "name": "Format", "type": "uint16" },
+        { "id": "numTracks", "name": "Number of Tracks", "type": "uint16" },
+        { "id": "division", "name": "Division", "type": "uint16" }
+      ]
+    },
+    {
+      "id": "tracks",
+      "name": "Tracks",
+      "type": "repeat",
+      "until": "eof",
+      "nameTemplate": "Track Chunk",
+      "fields": [
+        { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
+        { "id": "chunkLength", "name": "Chunk Length", "type": "uint32" },
+        { "id": "trackData", "name": "Track Data", "type": "bytes", "size": "chunkLength" }
+      ]
+    }
+  ]
+}
