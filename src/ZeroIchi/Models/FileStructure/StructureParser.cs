@@ -121,7 +121,7 @@ public static class StructureParser
         FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
         Dictionary<string, long> siblingValues)
     {
-        var size = ResolveSize(field, siblingValues);
+        var size = ResolveSize(field, siblingValues, buffer.Length, offset);
         if (size < 0) size = 0;
 
         // 残りのバッファサイズを超えないよう制限
@@ -149,7 +149,8 @@ public static class StructureParser
         return node;
     }
 
-    private static int ResolveSize(FieldDefinition field, Dictionary<string, long> siblingValues)
+    private static int ResolveSize(
+        FieldDefinition field, Dictionary<string, long> siblingValues, long bufferLength, long offset)
     {
         if (field.FixedSize >= 0)
             return field.FixedSize;
@@ -163,6 +164,8 @@ public static class StructureParser
         if (sizeElement.ValueKind == JsonValueKind.String)
         {
             var refId = sizeElement.GetString()!;
+            if (refId == "rest")
+                return (int)Math.Min(bufferLength - offset, int.MaxValue);
             return siblingValues.TryGetValue(refId, out var v) ? (int)v : 0;
         }
 
