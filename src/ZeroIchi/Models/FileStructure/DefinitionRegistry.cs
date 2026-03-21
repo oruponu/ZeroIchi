@@ -48,7 +48,7 @@ public static class DefinitionRegistry
             var match = true;
             for (var i = 0; i < magic.Length; i++)
             {
-                if (buffer.ReadByte(i) != magic[i])
+                if (magic[i] is { } expected && buffer.ReadByte(i) != expected)
                 {
                     match = false;
                     break;
