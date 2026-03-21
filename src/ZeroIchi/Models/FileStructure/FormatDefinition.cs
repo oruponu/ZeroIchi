@@ -16,5 +16,7 @@ public sealed class FormatDefinition
     public bool IsBigEndian => Endian == "big";
 
     [JsonIgnore]
-    public byte[] MagicBytes => field ??= [.. Magic.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(s => Convert.ToByte(s, 16))];
+    public byte?[] MagicBytes => field ??= [.. Magic
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => s == "??" ? (byte?)null : Convert.ToByte(s, 16))];
 }
