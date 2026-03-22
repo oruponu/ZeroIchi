@@ -643,7 +643,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var definition = DefinitionRegistry.TryMatch(buffer);
         if (definition is not null)
-            StructureTreeRoots = [StructureParser.Parse(definition, buffer)];
+            StructureTreeRoots = StructureParser.Parse(definition, buffer).Children;
         else
             StructureTreeRoots = [];
         SelectedStructureNode = null;
