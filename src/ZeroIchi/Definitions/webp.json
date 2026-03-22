@@ -1,0 +1,30 @@
+{
+  "name": "WebP",
+  "extensions": ["webp"],
+  "magic": "52 49 46 46 ?? ?? ?? ?? 57 45 42 50",
+  "endian": "little",
+  "fields": [
+    {
+      "id": "riffHeader",
+      "name": "RIFF Header",
+      "type": "group",
+      "fields": [
+        { "id": "chunkId", "name": "Chunk ID", "type": "ascii", "size": 4 },
+        { "id": "chunkSize", "name": "Chunk Size", "type": "uint32" },
+        { "id": "format", "name": "Format", "type": "ascii", "size": 4 }
+      ]
+    },
+    {
+      "id": "subChunks",
+      "name": "Sub-Chunks",
+      "type": "repeat",
+      "until": "eof",
+      "nameTemplate": "${subChunkId}",
+      "fields": [
+        { "id": "subChunkId", "name": "Sub-Chunk ID", "type": "ascii", "size": 4 },
+        { "id": "subChunkSize", "name": "Sub-Chunk Size", "type": "uint32" },
+        { "id": "subChunkData", "name": "Sub-Chunk Data", "type": "bytes", "size": "subChunkSize" }
+      ]
+    }
+  ]
+}
