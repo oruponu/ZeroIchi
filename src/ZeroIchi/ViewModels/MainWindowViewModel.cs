@@ -8,6 +8,7 @@ using MimeDetective.Definitions.Licensing;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Runtime;
 using System.Text;
@@ -94,11 +95,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isStructureTreeVisible = true;
 
-    [ObservableProperty]
-    private List<FileStructureNode> _structureTreeRoots = [];
+    public ObservableCollection<StructureTreeItem> StructureTreeItems { get; } = [];
 
     [ObservableProperty]
-    private FileStructureNode? _selectedStructureNode;
+    private StructureTreeItem? _selectedStructureItem;
 
     [ObservableProperty]
     private bool _isInspectorVisible = true;
@@ -577,8 +577,8 @@ public partial class MainWindowViewModel : ViewModelBase
         else
         {
             StatusBarFileTypeText = "";
-            StructureTreeRoots = [];
-            SelectedStructureNode = null;
+            StructureTreeItems.Clear();
+            SelectedStructureItem = null;
         }
         UpdateStatusBar();
         UpdateInspector();
@@ -590,12 +590,12 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateInspector();
     }
 
-    partial void OnSelectedStructureNodeChanged(FileStructureNode? value)
+    partial void OnSelectedStructureItemChanged(StructureTreeItem? value)
     {
         if (value is null || Document?.Buffer is null) return;
-        CursorPosition = (int)value.Offset;
-        SelectionStart = (int)value.Offset;
-        SelectionLength = value.Length;
+        CursorPosition = (int)value.Node.Offset;
+        SelectionStart = (int)value.Node.Offset;
+        SelectionLength = value.Node.Length;
     }
 
     partial void OnIsInspectorVisibleChanged(bool value)
@@ -641,12 +641,54 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void UpdateStructureTree(ByteBuffer buffer)
     {
+        StructureTreeItems.Clear();
+        SelectedStructureItem = null;
+
         var definition = DefinitionRegistry.TryMatch(buffer);
-        if (definition is not null)
-            StructureTreeRoots = StructureParser.Parse(definition, buffer).Children;
+        if (definition is null) return;
+
+        var root = StructureParser.Parse(definition, buffer);
+        foreach (var child in root.Children)
+            AddTreeItem(child, 0);
+    }
+
+    private void AddTreeItem(FileStructureNode node, int depth)
+    {
+        var item = new StructureTreeItem(node, depth, node.IsExpanded) { ToggleExpandCommand = ToggleExpandCommand };
+        StructureTreeItems.Add(item);
+
+        if (item.IsExpanded)
+        {
+            foreach (var child in node.Children)
+                AddTreeItem(child, depth + 1);
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleExpand(StructureTreeItem item)
+    {
+        var index = StructureTreeItems.IndexOf(item);
+        if (index < 0) return;
+
+        if (item.IsExpanded)
+        {
+            item.IsExpanded = false;
+            var removeStart = index + 1;
+            while (removeStart < StructureTreeItems.Count
+                   && StructureTreeItems[removeStart].Depth > item.Depth)
+            {
+                StructureTreeItems.RemoveAt(removeStart);
+            }
+        }
         else
-            StructureTreeRoots = [];
-        SelectedStructureNode = null;
+        {
+            item.IsExpanded = true;
+            var insertIndex = index + 1;
+            foreach (var child in item.Node.Children)
+            {
+                StructureTreeItems.Insert(insertIndex++, new StructureTreeItem(child, item.Depth + 1) { ToggleExpandCommand = ToggleExpandCommand });
+            }
+        }
     }
 
     private void UpdateInspector()
