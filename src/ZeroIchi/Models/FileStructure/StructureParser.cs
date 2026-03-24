@@ -143,6 +143,7 @@ public static class StructureParser
             Offset = offset,
             Length = actualSize,
             Description = description,
+            ValueKind = GetValueKind(field.Type, numericValue.HasValue),
         };
 
         offset += actualSize;
@@ -196,6 +197,17 @@ public static class StructureParser
             default:
                 return "";
         }
+    }
+
+    private static ValueKind GetValueKind(string type, bool isNumeric)
+    {
+        if (isNumeric) return ValueKind.Numeric;
+        return type switch
+        {
+            "ascii" => ValueKind.Ascii,
+            "bytes" => ValueKind.Bytes,
+            _ => ValueKind.None,
+        };
     }
 
     private static long? ReadNumericValue(string type, ByteBuffer buffer, long offset, int size, bool bigEndian)
