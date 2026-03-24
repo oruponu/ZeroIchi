@@ -73,6 +73,7 @@ public class HexViewControl : Control, ILogicalScrollable
     private static readonly IBrush CurrentSearchMatchBrush = new SolidColorBrush(Color.FromArgb(0x99, 0xE8, 0xA8, 0x00)).ToImmutable();
     private static readonly IBrush NumericTextBrush = new SolidColorBrush(Color.Parse("#B5CEA8")).ToImmutable();
     private static readonly IBrush AsciiTextBrush = new SolidColorBrush(Color.Parse("#CE9178")).ToImmutable();
+    private static readonly IBrush ZeroByteBrush = new SolidColorBrush(Color.Parse("#606060")).ToImmutable();
     private static readonly Pen HeaderSeparatorPen = new(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)).ToImmutable());
     private static readonly string HeaderHexText = BuildHeaderHexText();
 
@@ -571,42 +572,28 @@ public class HexViewControl : Control, ILogicalScrollable
         context.DrawText(formatted, new Point(x, y));
     }
 
-    private static IBrush GetStructureBrush(StructureColorMap map, int fileOffset)
+    private static IBrush GetStructureBrush(StructureColorMap? map, int fileOffset, byte value)
     {
-        return map.GetValueKind(fileOffset) switch
+        if (map is not null)
         {
-            ValueKind.Numeric => NumericTextBrush,
-            ValueKind.Ascii => AsciiTextBrush,
-            _ => TextBrush,
-        };
+            var kind = map.GetValueKind(fileOffset);
+            if (kind == ValueKind.Numeric) return NumericTextBrush;
+            if (kind == ValueKind.Ascii) return AsciiTextBrush;
+        }
+        return value == 0 ? ZeroByteBrush : TextBrush;
     }
 
     private void DrawHexBytes(DrawingContext context, byte[] data, int bufferOffset, int fileOffset,
         int bytesInLine, double y, Typeface typeface)
     {
         var map = StructureColors;
-        if (map is null)
-        {
-            Span<char> buf = stackalloc char[HexChars];
-            buf.Fill(' ');
-            for (var i = 0; i < bytesInLine; i++)
-            {
-                var charPos = i * 3 + (i >= 8 ? 1 : 0);
-                var b = data[bufferOffset + i];
-                buf[charPos] = ToHexChar(b >> 4);
-                buf[charPos + 1] = ToHexChar(b & 0xF);
-            }
-            DrawText(context, new string(buf), _hexStartX, y, typeface, TextBrush);
-            return;
-        }
-
         Span<char> colorBuf = stackalloc char[HexChars];
         var runStart = 0;
-        var runBrush = GetStructureBrush(map, fileOffset);
+        var runBrush = GetStructureBrush(map, fileOffset, data[bufferOffset]);
 
         for (var i = 1; i <= bytesInLine; i++)
         {
-            var brush = i < bytesInLine ? GetStructureBrush(map, fileOffset + i) : null;
+            var brush = i < bytesInLine ? GetStructureBrush(map, fileOffset + i, data[bufferOffset + i]) : null;
             if (ReferenceEquals(brush, runBrush) && i < bytesInLine) continue;
 
             colorBuf.Fill(' ');
@@ -632,7 +619,7 @@ public class HexViewControl : Control, ILogicalScrollable
         {
             var b = data[bufferOffset + i];
             var ch = b is >= 0x20 and <= 0x7E ? (char)b : '.';
-            var brush = map is not null ? GetStructureBrush(map, fileOffset + i) : TextBrush;
+            var brush = GetStructureBrush(map, fileOffset + i, b);
             var formatted = new FormattedText(ch.ToString(), System.Globalization.CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight, typeface, FontSize, brush);
             var x = AsciiCellX(i) + CellPaddingX;
