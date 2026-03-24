@@ -275,7 +275,7 @@
                                                        Text="{Binding Name}"/>
                                             <TextBlock Margin="6,0,0,0"
                                                        FontSize="10"
-                                                       Foreground="#808080"
+                                                       Foreground="{Binding DescriptionForeground}"
                                                        Text="{Binding Description}"/>
                                         </StackPanel>
                                     </DataTemplate>
