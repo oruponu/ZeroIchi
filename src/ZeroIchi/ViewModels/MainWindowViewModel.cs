@@ -98,6 +98,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<StructureTreeItem> StructureTreeItems { get; } = [];
 
     [ObservableProperty]
+    private StructureColorMap? _structureColors;
+
+    [ObservableProperty]
     private StructureTreeItem? _selectedStructureItem;
 
     [ObservableProperty]
@@ -578,6 +581,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             StatusBarFileTypeText = "";
             StructureTreeItems.Clear();
+            StructureColors = null;
             SelectedStructureItem = null;
         }
         UpdateStatusBar();
@@ -645,9 +649,14 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedStructureItem = null;
 
         var definition = DefinitionRegistry.TryMatch(buffer);
-        if (definition is null) return;
+        if (definition is null)
+        {
+            StructureColors = null;
+            return;
+        }
 
         var root = StructureParser.Parse(definition, buffer);
+        StructureColors = StructureColorMap.Build(root);
         foreach (var child in root.Children)
             AddTreeItem(child, 0);
     }

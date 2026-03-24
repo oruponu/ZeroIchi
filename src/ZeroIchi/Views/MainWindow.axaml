@@ -298,7 +298,8 @@
                                                      SearchMatchLength="{Binding SearchMatchLength}"
                                                      SearchMatchOffsets="{Binding SearchMatchOffsets}"
                                                      SelectionLength="{Binding SelectionLength}"
-                                                     SelectionStart="{Binding SelectionStart}"/>
+                                                     SelectionStart="{Binding SelectionStart}"
+                                                     StructureColors="{Binding StructureColors}"/>
                         </ScrollViewer>
 
                         <Border x:Name="SearchBar"
