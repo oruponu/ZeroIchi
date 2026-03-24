@@ -270,10 +270,12 @@
                                             </Button>
                                             <Panel Width="16" IsVisible="{Binding !HasChildren}"/>
                                             <TextBlock Margin="2,0,0,0"
+                                                       VerticalAlignment="Center"
                                                        FontSize="11"
                                                        Foreground="#D4D4D4"
                                                        Text="{Binding Name}"/>
                                             <TextBlock Margin="6,0,0,0"
+                                                       VerticalAlignment="Center"
                                                        FontSize="10"
                                                        Foreground="{Binding DescriptionForeground}"
                                                        Text="{Binding Description}"/>
