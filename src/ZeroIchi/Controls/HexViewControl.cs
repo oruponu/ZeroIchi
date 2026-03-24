@@ -9,6 +9,7 @@ using System;
 using System.Buffers;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
+using ZeroIchi.Models.FileStructure;
 
 namespace ZeroIchi.Controls;
 
@@ -41,6 +42,9 @@ public class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<int> CurrentSearchMatchIndexProperty =
         AvaloniaProperty.Register<HexViewControl, int>(nameof(CurrentSearchMatchIndex), defaultValue: -1);
 
+    public static readonly StyledProperty<StructureColorMap?> StructureColorsProperty =
+        AvaloniaProperty.Register<HexViewControl, StructureColorMap?>(nameof(StructureColors));
+
     public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
         RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
 
@@ -67,6 +71,8 @@ public class HexViewControl : Control, ILogicalScrollable
     private static readonly IBrush HoverBgBrush = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)).ToImmutable();
     private static readonly IBrush SearchMatchBrush = new SolidColorBrush(Color.FromArgb(0x66, 0xE8, 0xA8, 0x00)).ToImmutable();
     private static readonly IBrush CurrentSearchMatchBrush = new SolidColorBrush(Color.FromArgb(0x99, 0xE8, 0xA8, 0x00)).ToImmutable();
+    private static readonly IBrush NumericTextBrush = new SolidColorBrush(Color.Parse("#B5CEA8")).ToImmutable();
+    private static readonly IBrush AsciiTextBrush = new SolidColorBrush(Color.Parse("#CE9178")).ToImmutable();
     private static readonly Pen HeaderSeparatorPen = new(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)).ToImmutable());
     private static readonly string HeaderHexText = BuildHeaderHexText();
 
@@ -74,7 +80,8 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         AffectsRender<HexViewControl>(DocumentProperty, DataVersionProperty, CursorPositionProperty,
             SelectionStartProperty, SelectionLengthProperty,
-            SearchMatchOffsetsProperty, SearchMatchLengthProperty, CurrentSearchMatchIndexProperty);
+            SearchMatchOffsetsProperty, SearchMatchLengthProperty, CurrentSearchMatchIndexProperty,
+            StructureColorsProperty);
         AffectsMeasure<HexViewControl>(DocumentProperty, DataVersionProperty);
     }
 
@@ -152,6 +159,12 @@ public class HexViewControl : Control, ILogicalScrollable
     {
         get => GetValue(CurrentSearchMatchIndexProperty);
         set => SetValue(CurrentSearchMatchIndexProperty, value);
+    }
+
+    public StructureColorMap? StructureColors
+    {
+        get => GetValue(StructureColorsProperty);
+        set => SetValue(StructureColorsProperty, value);
     }
 
     public event EventHandler<ByteModifiedEventArgs>? ByteModified
@@ -285,8 +298,8 @@ public class HexViewControl : Control, ILogicalScrollable
                             if (bytesInLine > 0)
                             {
                                 var bufferOffset = byteOffset - startOffset;
-                                DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
-                                DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY, MonospaceTypeface);
+                                DrawHexBytes(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
+                                DrawAscii(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
                             }
                         }
                     }
@@ -558,32 +571,70 @@ public class HexViewControl : Control, ILogicalScrollable
         context.DrawText(formatted, new Point(x, y));
     }
 
-    private void DrawHexBytes(DrawingContext context, byte[] data, int byteOffset, int bytesInLine,
-        double y, Typeface typeface)
+    private static IBrush GetStructureBrush(StructureColorMap map, int fileOffset)
     {
-        Span<char> buf = stackalloc char[HexChars];
-        buf.Fill(' ');
-
-        for (var i = 0; i < bytesInLine; i++)
+        return map.GetValueKind(fileOffset) switch
         {
-            var charPos = i * 3 + (i >= 8 ? 1 : 0);
-            var b = data[byteOffset + i];
-            buf[charPos] = ToHexChar(b >> 4);
-            buf[charPos + 1] = ToHexChar(b & 0xF);
-        }
-
-        DrawText(context, new string(buf), _hexStartX, y, typeface, TextBrush);
+            ValueKind.Numeric => NumericTextBrush,
+            ValueKind.Ascii => AsciiTextBrush,
+            _ => TextBrush,
+        };
     }
 
-    private void DrawAscii(DrawingContext context, byte[] data, int byteOffset, int bytesInLine,
-        double y, Typeface typeface)
+    private void DrawHexBytes(DrawingContext context, byte[] data, int bufferOffset, int fileOffset,
+        int bytesInLine, double y, Typeface typeface)
     {
+        var map = StructureColors;
+        if (map is null)
+        {
+            Span<char> buf = stackalloc char[HexChars];
+            buf.Fill(' ');
+            for (var i = 0; i < bytesInLine; i++)
+            {
+                var charPos = i * 3 + (i >= 8 ? 1 : 0);
+                var b = data[bufferOffset + i];
+                buf[charPos] = ToHexChar(b >> 4);
+                buf[charPos + 1] = ToHexChar(b & 0xF);
+            }
+            DrawText(context, new string(buf), _hexStartX, y, typeface, TextBrush);
+            return;
+        }
+
+        Span<char> colorBuf = stackalloc char[HexChars];
+        var runStart = 0;
+        var runBrush = GetStructureBrush(map, fileOffset);
+
+        for (var i = 1; i <= bytesInLine; i++)
+        {
+            var brush = i < bytesInLine ? GetStructureBrush(map, fileOffset + i) : null;
+            if (ReferenceEquals(brush, runBrush) && i < bytesInLine) continue;
+
+            colorBuf.Fill(' ');
+            for (var j = runStart; j < i; j++)
+            {
+                var charPos = j * 3 + (j >= 8 ? 1 : 0);
+                var b = data[bufferOffset + j];
+                colorBuf[charPos] = ToHexChar(b >> 4);
+                colorBuf[charPos + 1] = ToHexChar(b & 0xF);
+            }
+            DrawText(context, new string(colorBuf), _hexStartX, y, typeface, runBrush);
+
+            runStart = i;
+            runBrush = brush!;
+        }
+    }
+
+    private void DrawAscii(DrawingContext context, byte[] data, int bufferOffset, int fileOffset,
+        int bytesInLine, double y, Typeface typeface)
+    {
+        var map = StructureColors;
         for (var i = 0; i < bytesInLine; i++)
         {
-            var b = data[byteOffset + i];
+            var b = data[bufferOffset + i];
             var ch = b is >= 0x20 and <= 0x7E ? (char)b : '.';
+            var brush = map is not null ? GetStructureBrush(map, fileOffset + i) : TextBrush;
             var formatted = new FormattedText(ch.ToString(), System.Globalization.CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight, typeface, FontSize, TextBrush);
+                FlowDirection.LeftToRight, typeface, FontSize, brush);
             var x = AsciiCellX(i) + CellPaddingX;
             context.DrawText(formatted, new Point(x, y));
         }
