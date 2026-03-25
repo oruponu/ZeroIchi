@@ -572,9 +572,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (value?.Buffer is { Length: > 0 } buffer)
         {
-            var length = (int)Math.Min(buffer.Length, 1024);
-            var header = buffer.SliceToArray(0, length);
-            StatusBarFileTypeText = DetectFileType(header);
+            UpdateFileType(buffer);
             UpdateStructureTree(buffer);
         }
         else
@@ -590,6 +588,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnDataVersionChanged(int value)
     {
+        if (Document?.Buffer is { Length: > 0 } buffer)
+            UpdateFileType(buffer);
+
         UpdateStatusBar();
         UpdateInspector();
     }
@@ -633,14 +634,13 @@ public partial class MainWindowViewModel : ViewModelBase
         StatusBarSizeText = FormatFileSize(buffer.Length);
     }
 
-    private static string DetectFileType(byte[] headerBytes)
+    private void UpdateFileType(ByteBuffer buffer)
     {
-        if (headerBytes.Length == 0) return "";
-
-        var results = Inspector.Inspect(new ReadOnlySpan<byte>(headerBytes, 0, headerBytes.Length));
+        var length = (int)Math.Min(buffer.Length, 1024);
+        var header = buffer.SliceToArray(0, length);
+        var results = Inspector.Inspect(header);
         var match = results.ByFileExtension();
-
-        return match.Length > 0 ? match[0].Extension : "";
+        StatusBarFileTypeText = match.Length > 0 ? match[0].Extension : "";
     }
 
     private void UpdateStructureTree(ByteBuffer buffer)
