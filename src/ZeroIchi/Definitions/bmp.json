@@ -1,0 +1,44 @@
+{
+  "name": "BMP",
+  "extensions": ["bmp", "dib"],
+  "magic": "42 4D",
+  "endian": "little",
+  "fields": [
+    {
+      "id": "fileHeader",
+      "name": "File Header",
+      "type": "group",
+      "fields": [
+        { "id": "signature", "name": "Signature", "type": "ascii", "size": 2 },
+        { "id": "fileSize", "name": "File Size", "type": "uint32" },
+        { "id": "reserved1", "name": "Reserved 1", "type": "uint16" },
+        { "id": "reserved2", "name": "Reserved 2", "type": "uint16" },
+        { "id": "dataOffset", "name": "Data Offset", "type": "uint32" }
+      ]
+    },
+    {
+      "id": "dibHeader",
+      "name": "DIB Header",
+      "type": "group",
+      "fields": [
+        { "id": "headerSize", "name": "Header Size", "type": "uint32" },
+        { "id": "width", "name": "Width", "type": "int32" },
+        { "id": "height", "name": "Height", "type": "int32" },
+        { "id": "colorPlanes", "name": "Color Planes", "type": "uint16" },
+        { "id": "bitsPerPixel", "name": "Bits Per Pixel", "type": "uint16" },
+        { "id": "compression", "name": "Compression", "type": "uint32" },
+        { "id": "imageSize", "name": "Image Size", "type": "uint32" },
+        { "id": "xPixelsPerMeter", "name": "X Pixels Per Meter", "type": "int32" },
+        { "id": "yPixelsPerMeter", "name": "Y Pixels Per Meter", "type": "int32" },
+        { "id": "colorsUsed", "name": "Colors Used", "type": "uint32" },
+        { "id": "importantColors", "name": "Important Colors", "type": "uint32" }
+      ]
+    },
+    {
+      "id": "pixelData",
+      "name": "Pixel Data",
+      "type": "bytes",
+      "size": "rest"
+    }
+  ]
+}
