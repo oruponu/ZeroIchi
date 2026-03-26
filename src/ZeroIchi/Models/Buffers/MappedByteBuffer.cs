@@ -4,7 +4,7 @@ using System.IO.MemoryMappedFiles;
 
 namespace ZeroIchi.Models.Buffers;
 
-public class MappedByteBuffer : ByteBuffer
+public sealed class MappedByteBuffer : ByteBuffer
 {
     private MemoryMappedFile? _mmf;
     private MemoryMappedViewAccessor? _accessor;
