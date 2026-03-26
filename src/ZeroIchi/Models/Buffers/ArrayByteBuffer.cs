@@ -2,7 +2,7 @@ using System;
 
 namespace ZeroIchi.Models.Buffers;
 
-public class ArrayByteBuffer(byte[] array) : ByteBuffer
+public sealed class ArrayByteBuffer(byte[] array) : ByteBuffer
 {
     public override long Length => array.Length;
 

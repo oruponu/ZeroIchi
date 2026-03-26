@@ -2,7 +2,7 @@ using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.PieceTables;
 
-public class PieceTableByteBuffer(PieceTable pieceTable) : ByteBuffer
+public sealed class PieceTableByteBuffer(PieceTable pieceTable) : ByteBuffer
 {
     public override long Length => pieceTable.Length;
 
