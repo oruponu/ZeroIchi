@@ -654,6 +654,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void UpdateStructureTree(ByteBuffer buffer)
     {
+        var collapsed = new HashSet<(string name, int depth)>();
+        foreach (var item in StructureTreeItems)
+        {
+            if (item.HasChildren && !item.IsExpanded)
+                collapsed.Add((item.Name, item.Depth));
+        }
+
         StructureTreeItems.Clear();
         SelectedStructureItem = null;
 
@@ -667,18 +674,19 @@ public partial class MainWindowViewModel : ViewModelBase
         var root = StructureParser.Parse(definition, buffer);
         StructureColors = StructureColorMap.Build(root);
         foreach (var child in root.Children)
-            AddTreeItem(child, 0);
+            AddTreeItem(child, 0, collapsed);
     }
 
-    private void AddTreeItem(FileStructureNode node, int depth)
+    private void AddTreeItem(FileStructureNode node, int depth, HashSet<(string name, int depth)> collapsed)
     {
-        var item = new StructureTreeItem(node, depth, node.IsExpanded) { ToggleExpandCommand = ToggleExpandCommand };
+        var isExpanded = node.IsExpanded && !collapsed.Contains((node.Name, depth));
+        var item = new StructureTreeItem(node, depth, isExpanded) { ToggleExpandCommand = ToggleExpandCommand };
         StructureTreeItems.Add(item);
 
         if (item.IsExpanded)
         {
             foreach (var child in node.Children)
-                AddTreeItem(child, depth + 1);
+                AddTreeItem(child, depth + 1, collapsed);
         }
     }
 
