@@ -589,7 +589,16 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnDataVersionChanged(int value)
     {
         if (Document?.Buffer is { Length: > 0 } buffer)
+        {
             UpdateFileType(buffer);
+            UpdateStructureTree(buffer);
+        }
+        else
+        {
+            StructureTreeItems.Clear();
+            StructureColors = null;
+            SelectedStructureItem = null;
+        }
 
         UpdateStatusBar();
         UpdateInspector();
