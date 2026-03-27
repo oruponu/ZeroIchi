@@ -177,26 +177,24 @@ public static class StructureParser
     {
         if (size <= 0) return "";
 
-        switch (type)
+        return type switch
         {
-            case "ascii":
-                return Encoding.ASCII.GetString(buffer.SliceToArray(offset, size));
-            case "bytes":
-                {
-                    var displaySize = Math.Min(size, 16);
-                    var bytes = buffer.SliceToArray(offset, displaySize);
-                    var hex = new StringBuilder(displaySize * 3);
-                    for (var i = 0; i < displaySize; i++)
-                    {
-                        if (i > 0) hex.Append(' ');
-                        hex.Append(bytes[i].ToString("X2"));
-                    }
-                    if (size > 16) hex.Append(" ...");
-                    return hex.ToString();
-                }
-            default:
-                return "";
-        }
+            "ascii" => Encoding.ASCII.GetString(buffer.SliceToArray(offset, size)),
+            "bytes" => FormatBytesHex(buffer, offset, size),
+            _ => "",
+        };
+    }
+
+    private static string FormatBytesHex(ByteBuffer buffer, long offset, int size)
+    {
+        var displaySize = Math.Min(size, 16);
+        var hex = Convert.ToHexString(buffer.SliceToArray(offset, displaySize));
+        var spaced = string.Create(displaySize * 3 - 1, hex, (span, h) =>
+        {
+            for (var i = 0; i < span.Length; i++)
+                span[i] = (i + 1) % 3 == 0 ? ' ' : h[i - i / 3];
+        });
+        return size > 16 ? $"{spaced} ..." : spaced;
     }
 
     private static ValueKind GetValueKind(string type, bool isNumeric)
@@ -212,58 +210,20 @@ public static class StructureParser
 
     private static long? ReadNumericValue(string type, ByteBuffer buffer, long offset, int size, bool bigEndian)
     {
-        if (size <= 0) return null;
+        if (size is <= 0 or > 8) return null;
 
-        switch (type)
+        var bytes = buffer.SliceToArray(offset, size);
+        return type switch
         {
-            case "uint8":
-                return buffer.ReadByte(offset);
-            case "int8":
-                return (sbyte)buffer.ReadByte(offset);
-            case "uint16":
-                {
-                    var bytes = buffer.SliceToArray(offset, size);
-                    return bigEndian
-                        ? BinaryPrimitives.ReadUInt16BigEndian(bytes)
-                        : BinaryPrimitives.ReadUInt16LittleEndian(bytes);
-                }
-            case "int16":
-                {
-                    var bytes = buffer.SliceToArray(offset, size);
-                    return bigEndian
-                        ? BinaryPrimitives.ReadInt16BigEndian(bytes)
-                        : BinaryPrimitives.ReadInt16LittleEndian(bytes);
-                }
-            case "uint32":
-                {
-                    var bytes = buffer.SliceToArray(offset, size);
-                    return bigEndian
-                        ? BinaryPrimitives.ReadUInt32BigEndian(bytes)
-                        : BinaryPrimitives.ReadUInt32LittleEndian(bytes);
-                }
-            case "int32":
-                {
-                    var bytes = buffer.SliceToArray(offset, size);
-                    return bigEndian
-                        ? BinaryPrimitives.ReadInt32BigEndian(bytes)
-                        : BinaryPrimitives.ReadInt32LittleEndian(bytes);
-                }
-            case "uint64":
-                {
-                    var bytes = buffer.SliceToArray(offset, size);
-                    return (long)(bigEndian
-                        ? BinaryPrimitives.ReadUInt64BigEndian(bytes)
-                        : BinaryPrimitives.ReadUInt64LittleEndian(bytes));
-                }
-            case "int64":
-                {
-                    var bytes = buffer.SliceToArray(offset, size);
-                    return bigEndian
-                        ? BinaryPrimitives.ReadInt64BigEndian(bytes)
-                        : BinaryPrimitives.ReadInt64LittleEndian(bytes);
-                }
-            default:
-                return null;
-        }
+            "uint8" => bytes[0],
+            "int8" => (sbyte)bytes[0],
+            "uint16" => bigEndian ? BinaryPrimitives.ReadUInt16BigEndian(bytes) : BinaryPrimitives.ReadUInt16LittleEndian(bytes),
+            "int16" => bigEndian ? BinaryPrimitives.ReadInt16BigEndian(bytes) : BinaryPrimitives.ReadInt16LittleEndian(bytes),
+            "uint32" => bigEndian ? BinaryPrimitives.ReadUInt32BigEndian(bytes) : BinaryPrimitives.ReadUInt32LittleEndian(bytes),
+            "int32" => bigEndian ? BinaryPrimitives.ReadInt32BigEndian(bytes) : BinaryPrimitives.ReadInt32LittleEndian(bytes),
+            "uint64" => (long)(bigEndian ? BinaryPrimitives.ReadUInt64BigEndian(bytes) : BinaryPrimitives.ReadUInt64LittleEndian(bytes)),
+            "int64" => bigEndian ? BinaryPrimitives.ReadInt64BigEndian(bytes) : BinaryPrimitives.ReadInt64LittleEndian(bytes),
+            _ => null,
+        };
     }
 }
