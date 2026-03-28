@@ -109,12 +109,13 @@ public static class StructureParser
 
     private static string ResolveNameTemplate(string template, List<FileStructureNode> children)
     {
+        var sb = new StringBuilder(template);
         foreach (var child in children)
         {
-            if (child.FieldId is not null && template.Contains($"${{{child.FieldId}}}"))
-                template = template.Replace($"${{{child.FieldId}}}", child.Description);
+            if (child.FieldId is not null)
+                sb.Replace($"${{{child.FieldId}}}", child.Description);
         }
-        return template;
+        return sb.ToString();
     }
 
     private static FileStructureNode ParseLeafField(
