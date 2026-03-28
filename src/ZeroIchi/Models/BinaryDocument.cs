@@ -35,13 +35,13 @@ public sealed class BinaryDocument
 
     public static BinaryDocument CreateNew() => new("", new ArrayByteBuffer([]));
 
-    public static Task<BinaryDocument> OpenAsync(string path)
+    public static BinaryDocument Open(string path)
     {
         var journalPath = path + ".journal";
         if (File.Exists(journalPath))
             RecoverFromJournal(path, journalPath);
 
-        return Task.FromResult(new BinaryDocument(path, new MappedByteBuffer(path)));
+        return new BinaryDocument(path, new MappedByteBuffer(path));
     }
 
     public PieceTableEdit WriteByte(long index, byte value) => _pieceTable.WriteByte(index, value);
@@ -56,9 +56,9 @@ public sealed class BinaryDocument
 
     public bool IsByteModified(long index) => _pieceTable.IsModified(index);
 
-    public Task SaveAsync()
+    public void Save()
     {
-        if (!IsModified || IsNew) return Task.CompletedTask;
+        if (!IsModified || IsNew) return;
 
         var (entries, finalSize, needsShift) = ComputeWritePlan();
         var workBuffer = ArrayPool<byte>.Shared.Rent(81920);
@@ -91,8 +91,6 @@ public sealed class BinaryDocument
         {
             ArrayPool<byte>.Shared.Return(workBuffer);
         }
-
-        return Task.CompletedTask;
     }
 
     public async Task SaveAsAsync(string path)

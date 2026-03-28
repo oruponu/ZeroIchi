@@ -185,7 +185,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task OpenFileAsync(string path)
     {
-        ReplaceDocument(await BinaryDocument.OpenAsync(path));
+        ReplaceDocument(BinaryDocument.Open(path));
         UpdateTitle();
         CursorPosition = 0;
         SelectionStart = 0;
@@ -520,7 +520,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        await Document.SaveAsync();
+        Document.Save();
         UpdateTitle();
     }
 

@@ -56,16 +56,16 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_WriteByte_OnlyModifiedBytesChange()
+    public async Task Save_WriteByte_OnlyModifiedBytesChange()
     {
         var original = MakeSequential(256);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
         doc.WriteByte(100, 0xAA);
         doc.WriteByte(255, 0xBB);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -79,14 +79,14 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_InsertBytes_FileGrowsCorrectly()
+    public async Task Save_InsertBytes_FileGrowsCorrectly()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xDE, 0xAD, 0xBE, 0xEF]);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -103,14 +103,14 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_InsertAtBeginning()
+    public async Task Save_InsertAtBeginning()
     {
         var original = MakeSequential(50);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.InsertBytes(0, [0xAA, 0xBB]);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -122,14 +122,14 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_AppendByte()
+    public async Task Save_AppendByte()
     {
         var original = MakeSequential(10);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.AppendByte(0xFF);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -140,14 +140,14 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_DeleteBytes_FileShrinks()
+    public async Task Save_DeleteBytes_FileShrinks()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(20, 10);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -160,14 +160,14 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_DeleteFromEnd()
+    public async Task Save_DeleteFromEnd()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(90, 10);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -177,16 +177,16 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_DeleteOnly_IsModifiedTrue()
+    public async Task Save_DeleteOnly_IsModifiedTrue()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(0, 50);
 
         Assert.True(doc.IsModified);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -196,15 +196,15 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_InsertAndDelete_MixedShift()
+    public async Task Save_InsertAndDelete_MixedShift()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.InsertBytes(20, [0xAA, 0xBB, 0xCC]);
         doc.DeleteBytes(60, 10);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         // 100 + 3 - 10 = 93
@@ -221,15 +221,15 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_DeleteThenInsert_MixedShift()
+    public async Task Save_DeleteThenInsert_MixedShift()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(10, 20);
         doc.InsertBytes(50, [0x11, 0x22, 0x33, 0x44, 0x55]);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var expected = new byte[100 - 20 + 5];
@@ -247,21 +247,21 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_WriteByteOnly_SkipsJournal()
+    public async Task Save_WriteByteOnly_SkipsJournal()
     {
         var path = CreateTestFile(MakeSequential(50));
         var journalPath = path + ".journal";
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         Assert.False(File.Exists(journalPath));
     }
 
     [Fact]
-    public async Task SaveAsync_WithShift_CreatesAndDeletesJournal()
+    public async Task Save_WithShift_CreatesAndDeletesJournal()
     {
         var path = CreateTestFile(MakeSequential(50));
         var journalPath = path + ".journal";
@@ -271,9 +271,9 @@ public class BinaryDocumentSaveTests : IDisposable
         watcher.Created += (_, _) => journalCreated.Set();
         watcher.EnableRaisingEvents = true;
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.InsertBytes(10, [0xAA]);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         Assert.True(journalCreated.Wait(TimeSpan.FromSeconds(5)));
@@ -281,20 +281,20 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_NoChangeNoJournal()
+    public async Task Save_NoChangeNoJournal()
     {
         var path = CreateTestFile(MakeSequential(50));
         var journalPath = path + ".journal";
 
-        var doc = await BinaryDocument.OpenAsync(path);
-        await doc.SaveAsync();
+        var doc = BinaryDocument.Open(path);
+        doc.Save();
         doc.ReleaseData();
 
         Assert.False(File.Exists(journalPath));
     }
 
     [Fact]
-    public async Task OpenAsync_RecoverFromJournal_RestoresCorrectData()
+    public async Task Open_RecoverFromJournal_RestoresCorrectData()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
@@ -307,7 +307,7 @@ public class BinaryDocumentSaveTests : IDisposable
             (0, 50, 50),
         ], [0xAA, 0xBB]);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -326,17 +326,17 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_LargeFile_WriteByte()
+    public async Task Save_LargeFile_WriteByte()
     {
         const int size = 1_000_000;
         var original = MakeSequential(size);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
         doc.WriteByte(size / 2, 0xAA);
         doc.WriteByte(size - 1, 0xBB);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
@@ -347,18 +347,18 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_LargeFile_InsertAndDelete()
+    public async Task Save_LargeFile_InsertAndDelete()
     {
         const int size = 500_000;
         var original = MakeSequential(size);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         var insertData = new byte[1000];
         Array.Fill(insertData, (byte)0xCC);
         doc.InsertBytes(100_000, insertData);
         doc.DeleteBytes(300_000, 2000);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var expected = new byte[size + 1000 - 2000];
@@ -372,24 +372,24 @@ public class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAsync_MultipleSavesInSequence()
+    public async Task Save_MultipleSavesInSequence()
     {
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = await BinaryDocument.OpenAsync(path);
+        var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0x11);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
-        doc = await BinaryDocument.OpenAsync(path);
+        doc = BinaryDocument.Open(path);
         doc.WriteByte(1, 0x22);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
-        doc = await BinaryDocument.OpenAsync(path);
+        doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xAA, 0xBB]);
-        await doc.SaveAsync();
+        doc.Save();
         doc.ReleaseData();
 
         var saved = await File.ReadAllBytesAsync(path);
