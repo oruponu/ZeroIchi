@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using ZeroIchi.Models.Buffers;
 
@@ -27,7 +26,7 @@ public sealed class PieceTable
 
     public long Length { get; private set; }
 
-    public bool HasAddPieces => _pieces.Any(p => p.Source == PieceSource.Add);
+    public bool HasAddPieces => _pieces.Exists(p => p.Source == PieceSource.Add);
 
     public IReadOnlyList<Piece> Pieces => _pieces;
 
