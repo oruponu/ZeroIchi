@@ -25,7 +25,104 @@
       "fields": [
         { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
         { "id": "chunkLength", "name": "Chunk Length", "type": "uint32" },
-        { "id": "trackData", "name": "Track Data", "type": "bytes", "size": "chunkLength" }
+        {
+          "id": "trackData",
+          "name": "Track Data",
+          "type": "repeat",
+          "size": "chunkLength",
+          "nameTemplate": "${event}",
+          "fields": [
+            { "id": "deltaTime", "name": "Delta Time", "type": "vlq" },
+            { "id": "status", "name": "Status", "type": "uint8", "peekMin": 128 },
+            {
+              "id": "event",
+              "name": "Event",
+              "type": "match",
+              "on": "status",
+              "cases": [
+                {
+                  "name": "Meta Event",
+                  "range": [255, 255],
+                  "fields": [
+                    { "id": "metaType", "name": "Meta Type", "type": "uint8" },
+                    { "id": "length", "name": "Length", "type": "vlq" },
+                    { "id": "data", "name": "Data", "type": "bytes", "size": "length" }
+                  ]
+                },
+                {
+                  "name": "SysEx",
+                  "range": [240, 240],
+                  "fields": [
+                    { "id": "length", "name": "Length", "type": "vlq" },
+                    { "id": "data", "name": "Data", "type": "bytes", "size": "length" }
+                  ]
+                },
+                {
+                  "name": "SysEx Escape",
+                  "range": [247, 247],
+                  "fields": [
+                    { "id": "length", "name": "Length", "type": "vlq" },
+                    { "id": "data", "name": "Data", "type": "bytes", "size": "length" }
+                  ]
+                },
+                {
+                  "name": "Note Off",
+                  "range": [128, 143],
+                  "fields": [
+                    { "id": "note", "name": "Note", "type": "uint8" },
+                    { "id": "velocity", "name": "Velocity", "type": "uint8" }
+                  ]
+                },
+                {
+                  "name": "Note On",
+                  "range": [144, 159],
+                  "fields": [
+                    { "id": "note", "name": "Note", "type": "uint8" },
+                    { "id": "velocity", "name": "Velocity", "type": "uint8" }
+                  ]
+                },
+                {
+                  "name": "Poly Pressure",
+                  "range": [160, 175],
+                  "fields": [
+                    { "id": "note", "name": "Note", "type": "uint8" },
+                    { "id": "pressure", "name": "Pressure", "type": "uint8" }
+                  ]
+                },
+                {
+                  "name": "Control Change",
+                  "range": [176, 191],
+                  "fields": [
+                    { "id": "controller", "name": "Controller", "type": "uint8" },
+                    { "id": "value", "name": "Value", "type": "uint8" }
+                  ]
+                },
+                {
+                  "name": "Program Change",
+                  "range": [192, 207],
+                  "fields": [
+                    { "id": "program", "name": "Program", "type": "uint8" }
+                  ]
+                },
+                {
+                  "name": "Channel Pressure",
+                  "range": [208, 223],
+                  "fields": [
+                    { "id": "pressure", "name": "Pressure", "type": "uint8" }
+                  ]
+                },
+                {
+                  "name": "Pitch Bend",
+                  "range": [224, 239],
+                  "fields": [
+                    { "id": "lsb", "name": "LSB", "type": "uint8" },
+                    { "id": "msb", "name": "MSB", "type": "uint8" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       ]
     }
   ]
