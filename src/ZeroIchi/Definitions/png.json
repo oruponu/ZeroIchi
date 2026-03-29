@@ -18,7 +18,7 @@
       "nameTemplate": "${chunkType}",
       "fields": [
         { "id": "dataLength", "name": "Data Length", "type": "uint32" },
-        { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
+        { "id": "chunkType", "name": "Chunk Type", "type": "text", "size": 4 },
         { "id": "chunkData", "name": "Chunk Data", "type": "bytes", "size": "dataLength" },
         { "id": "crc", "name": "CRC", "type": "uint32" }
       ]

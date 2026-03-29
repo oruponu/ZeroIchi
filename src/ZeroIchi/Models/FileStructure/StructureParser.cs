@@ -286,16 +286,27 @@ public static class StructureParser
         return 0;
     }
 
+    private static readonly Encoding ShiftJis =
+        Encoding.GetEncoding(932);
+
     private static string ReadNonNumericDescription(string type, ByteBuffer buffer, long offset, int size)
     {
         if (size <= 0) return "";
 
         return type switch
         {
-            "ascii" => Encoding.ASCII.GetString(buffer.SliceToArray(offset, size)),
+            "text" => DecodeText(buffer.SliceToArray(offset, size)),
             "bytes" => FormatBytesHex(buffer, offset, size),
             _ => "",
         };
+    }
+
+    private static string DecodeText(byte[] bytes)
+    {
+        if (System.Text.Unicode.Utf8.IsValid(bytes))
+            return Encoding.UTF8.GetString(bytes);
+
+        return ShiftJis.GetString(bytes);
     }
 
     private static string FormatBytesHex(ByteBuffer buffer, long offset, int size)
@@ -315,7 +326,7 @@ public static class StructureParser
         if (isNumeric) return ValueKind.Numeric;
         return type switch
         {
-            "ascii" => ValueKind.Ascii,
+            "text" => ValueKind.Ascii,
             "bytes" => ValueKind.Bytes,
             _ => ValueKind.None,
         };

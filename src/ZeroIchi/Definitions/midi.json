@@ -9,7 +9,7 @@
       "name": "Header Chunk",
       "type": "group",
       "fields": [
-        { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
+        { "id": "chunkType", "name": "Chunk Type", "type": "text", "size": 4 },
         { "id": "chunkLength", "name": "Chunk Length", "type": "uint32" },
         { "id": "format", "name": "Format", "type": "uint16" },
         { "id": "numTracks", "name": "Number of Tracks", "type": "uint16" },
@@ -23,7 +23,7 @@
       "until": "eof",
       "nameTemplate": "Track Chunk",
       "fields": [
-        { "id": "chunkType", "name": "Chunk Type", "type": "ascii", "size": 4 },
+        { "id": "chunkType", "name": "Chunk Type", "type": "text", "size": 4 },
         { "id": "chunkLength", "name": "Chunk Length", "type": "uint32" },
         {
           "id": "trackData",
@@ -56,7 +56,7 @@
                           "range": [1, 7],
                           "fields": [
                             { "id": "length", "name": "Length", "type": "vlq" },
-                            { "id": "text", "name": "Text", "type": "ascii", "size": "length" }
+                            { "id": "text", "name": "Text", "type": "text", "size": "length" }
                           ]
                         },
                         {
