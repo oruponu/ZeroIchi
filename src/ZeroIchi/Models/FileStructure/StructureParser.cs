@@ -43,6 +43,11 @@ public static class StructureParser
                 case "repeat":
                     nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian));
                     break;
+                case "match":
+                    var matchNode = ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues);
+                    if (matchNode.Length > 0)
+                        nodes.Add(matchNode);
+                    break;
                 case "vlq":
                     var vlqNode = ParseVlqField(field, buffer, ref offset, siblingValues);
                     if (vlqNode.Length > 0)
@@ -109,6 +114,50 @@ public static class StructureParser
             Offset = startOffset,
             Length = (int)(offset - startOffset),
             Children = children,
+        };
+    }
+
+    private static FileStructureNode ParseMatch(
+        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
+        Dictionary<string, long> siblingValues)
+    {
+        if (field is not { On: { } on, Cases: { } cases }
+            || !siblingValues.TryGetValue(on, out var matchValue))
+        {
+            return new FileStructureNode
+            {
+                Name = field.Name,
+                FieldId = field.Id,
+                Offset = offset,
+                Length = 0,
+            };
+        }
+
+        foreach (var c in cases)
+        {
+            if (c.Range is not { Length: >= 2 } || matchValue < c.Range[0] || matchValue > c.Range[1])
+                continue;
+
+            var startOffset = offset;
+            var children = ParseFields(c.Fields ?? [], buffer, ref offset, bigEndian);
+
+            return new FileStructureNode
+            {
+                Name = c.Name,
+                FieldId = field.Id,
+                Offset = startOffset,
+                Length = (int)(offset - startOffset),
+                Description = c.Name,
+                Children = children,
+            };
+        }
+
+        return new FileStructureNode
+        {
+            Name = field.Name,
+            FieldId = field.Id,
+            Offset = offset,
+            Length = 0,
         };
     }
 

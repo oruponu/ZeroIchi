@@ -13,6 +13,8 @@ public sealed class FieldDefinition
     public string? Until { get; init; }
     public string? NameTemplate { get; init; }
     public string? Endian { get; init; }
+    public string? On { get; init; }
+    public CaseDefinition[]? Cases { get; init; }
 
     [JsonIgnore]
     public int FixedSize => Type switch
