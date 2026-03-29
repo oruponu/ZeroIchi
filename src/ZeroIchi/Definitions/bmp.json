@@ -9,7 +9,7 @@
       "name": "File Header",
       "type": "group",
       "fields": [
-        { "id": "signature", "name": "Signature", "type": "ascii", "size": 2 },
+        { "id": "signature", "name": "Signature", "type": "text", "size": 2 },
         { "id": "fileSize", "name": "File Size", "type": "uint32" },
         { "id": "reserved1", "name": "Reserved 1", "type": "uint16" },
         { "id": "reserved2", "name": "Reserved 2", "type": "uint16" },

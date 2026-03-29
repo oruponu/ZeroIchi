@@ -52,9 +52,9 @@ public class StructureParserTests
               "name": "RIFF Header",
               "type": "group",
               "fields": [
-                { "id": "chunkId", "name": "Chunk ID", "type": "ascii", "size": 4 },
+                { "id": "chunkId", "name": "Chunk ID", "type": "text", "size": 4 },
                 { "id": "chunkSize", "name": "Chunk Size", "type": "uint32" },
-                { "id": "format", "name": "Format", "type": "ascii", "size": 4 }
+                { "id": "format", "name": "Format", "type": "text", "size": 4 }
               ]
             },
             {
@@ -64,7 +64,7 @@ public class StructureParserTests
               "until": "eof",
               "nameTemplate": "${subChunkId}",
               "fields": [
-                { "id": "subChunkId", "name": "Sub-Chunk ID", "type": "ascii", "size": 4 },
+                { "id": "subChunkId", "name": "Sub-Chunk ID", "type": "text", "size": 4 },
                 { "id": "subChunkSize", "name": "Sub-Chunk Size", "type": "uint32" },
                 { "id": "subChunkData", "name": "Sub-Chunk Data", "type": "bytes", "size": "subChunkSize" }
               ]
@@ -113,9 +113,9 @@ public class StructureParserTests
               "name": "RIFF Header",
               "type": "group",
               "fields": [
-                { "id": "chunkId", "name": "Chunk ID", "type": "ascii", "size": 4 },
+                { "id": "chunkId", "name": "Chunk ID", "type": "text", "size": 4 },
                 { "id": "fileSize", "name": "File Size", "type": "uint32" },
-                { "id": "format", "name": "Format", "type": "ascii", "size": 4 }
+                { "id": "format", "name": "Format", "type": "text", "size": 4 }
               ]
             },
             {
