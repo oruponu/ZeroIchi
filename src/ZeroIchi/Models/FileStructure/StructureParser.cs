@@ -43,6 +43,11 @@ public static class StructureParser
                 case "repeat":
                     nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian));
                     break;
+                case "vlq":
+                    var vlqNode = ParseVlqField(field, buffer, ref offset, siblingValues);
+                    if (vlqNode.Length > 0)
+                        nodes.Add(vlqNode);
+                    break;
                 default:
                     var leaf = ParseLeafField(field, buffer, ref offset, fieldBigEndian, siblingValues);
                     if (leaf.Length > 0)
@@ -104,6 +109,33 @@ public static class StructureParser
             Offset = startOffset,
             Length = (int)(offset - startOffset),
             Children = children,
+        };
+    }
+
+    private static FileStructureNode ParseVlqField(
+        FieldDefinition field, ByteBuffer buffer, ref long offset,
+        Dictionary<string, long> siblingValues)
+    {
+        var startOffset = offset;
+        var value = 0L;
+
+        for (var i = 0; i < 4 && offset < buffer.Length; i++)
+        {
+            var b = buffer.ReadByte(offset++);
+            value = (value << 7) | (b & 0x7FL);
+            if ((b & 0x80) == 0) break;
+        }
+
+        siblingValues[field.Id] = value;
+
+        return new FileStructureNode
+        {
+            Name = field.Name,
+            FieldId = field.Id,
+            Offset = startOffset,
+            Length = (int)(offset - startOffset),
+            Description = value.ToString(),
+            ValueKind = ValueKind.Numeric,
         };
     }
 
