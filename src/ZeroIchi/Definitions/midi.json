@@ -45,8 +45,38 @@
                   "range": [255, 255],
                   "fields": [
                     { "id": "metaType", "name": "Meta Type", "type": "uint8" },
-                    { "id": "length", "name": "Length", "type": "vlq" },
-                    { "id": "data", "name": "Data", "type": "bytes", "size": "length" }
+                    {
+                      "id": "body",
+                      "name": "Body",
+                      "type": "match",
+                      "on": "metaType",
+                      "cases": [
+                        {
+                          "name": "Text",
+                          "range": [1, 7],
+                          "fields": [
+                            { "id": "length", "name": "Length", "type": "vlq" },
+                            { "id": "text", "name": "Text", "type": "ascii", "size": "length" }
+                          ]
+                        },
+                        {
+                          "name": "Data",
+                          "range": [0, 0],
+                          "fields": [
+                            { "id": "length", "name": "Length", "type": "vlq" },
+                            { "id": "data", "name": "Data", "type": "bytes", "size": "length" }
+                          ]
+                        },
+                        {
+                          "name": "Data",
+                          "range": [8, 255],
+                          "fields": [
+                            { "id": "length", "name": "Length", "type": "vlq" },
+                            { "id": "data", "name": "Data", "type": "bytes", "size": "length" }
+                          ]
+                        }
+                      ]
+                    }
                   ]
                 },
                 {
