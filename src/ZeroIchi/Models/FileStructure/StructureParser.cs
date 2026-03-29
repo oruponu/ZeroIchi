@@ -24,7 +24,8 @@ public static class StructureParser
     }
 
     private static List<FileStructureNode> ParseFields(
-        FieldDefinition[] fields, ByteBuffer buffer, ref long offset, bool bigEndian)
+        FieldDefinition[] fields, ByteBuffer buffer, ref long offset, bool bigEndian,
+        Dictionary<string, long>? persistentValues = null)
     {
         var nodes = new List<FileStructureNode>();
         var siblingValues = new Dictionary<string, long>();
@@ -32,6 +33,18 @@ public static class StructureParser
         foreach (var field in fields)
         {
             if (offset >= buffer.Length) break;
+
+            // 条件を満たさない場合は前回の値を再利用してフィールドをスキップ
+            if (field.PeekMin is { } peekMin)
+            {
+                var peekByte = buffer.ReadByte(offset);
+                if (peekByte < peekMin)
+                {
+                    if (persistentValues is not null && persistentValues.TryGetValue(field.Id, out var pv))
+                        siblingValues[field.Id] = pv;
+                    continue;
+                }
+            }
 
             var fieldBigEndian = field.Endian is not null ? field.Endian == "big" : bigEndian;
 
@@ -58,6 +71,12 @@ public static class StructureParser
                     if (leaf.Length > 0)
                         nodes.Add(leaf);
                     break;
+            }
+
+            if (field.PeekMin is not null && persistentValues is not null
+                && siblingValues.TryGetValue(field.Id, out var newValue))
+            {
+                persistentValues[field.Id] = newValue;
             }
         }
 
@@ -94,12 +113,14 @@ public static class StructureParser
             end = Math.Min(offset + size, buffer.Length);
         }
 
+        var persistentValues = new Dictionary<string, long>();
         var repeatFields = field.Fields ?? [];
 
         while (offset < end)
         {
             var iterationOffset = offset;
-            var iterationChildren = ParseFields(repeatFields, buffer, ref offset, bigEndian);
+            var iterationChildren = ParseFields(
+                repeatFields, buffer, ref offset, bigEndian, persistentValues);
 
             if (offset == iterationOffset) break; // 無限ループ防止
 
