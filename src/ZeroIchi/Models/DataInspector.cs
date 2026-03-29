@@ -6,7 +6,7 @@ using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models;
 
-public sealed record DataInspectorEntry(string Label, string Value);
+public readonly record struct DataInspectorEntry(string Label, string Value);
 
 public static class DataInspector
 {
