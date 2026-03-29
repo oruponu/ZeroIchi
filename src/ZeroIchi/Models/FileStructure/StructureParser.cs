@@ -41,7 +41,7 @@ public static class StructureParser
                     nodes.Add(ParseGroup(field, buffer, ref offset, fieldBigEndian));
                     break;
                 case "repeat":
-                    nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian));
+                    nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian, siblingValues));
                     break;
                 case "match":
                     var matchNode = ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues);
@@ -81,15 +81,25 @@ public static class StructureParser
     }
 
     private static FileStructureNode ParseRepeat(
-        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian)
+        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
+        Dictionary<string, long> siblingValues)
     {
         var startOffset = offset;
         var children = new List<FileStructureNode>();
 
-        while (offset < buffer.Length)
+        var end = buffer.Length;
+        if (field.Size is not null)
+        {
+            var size = Math.Max(ResolveSize(field, siblingValues, buffer.Length, offset), 0);
+            end = Math.Min(offset + size, buffer.Length);
+        }
+
+        var repeatFields = field.Fields ?? [];
+
+        while (offset < end)
         {
             var iterationOffset = offset;
-            var iterationChildren = ParseFields(field.Fields ?? [], buffer, ref offset, bigEndian);
+            var iterationChildren = ParseFields(repeatFields, buffer, ref offset, bigEndian);
 
             if (offset == iterationOffset) break; // 無限ループ防止
 
