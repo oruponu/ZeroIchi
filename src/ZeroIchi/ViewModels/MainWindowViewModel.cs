@@ -73,6 +73,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _statusBarSizeText = "0 B";
 
     [ObservableProperty]
+    private bool _isGoToOffsetVisible;
+
+    [ObservableProperty]
+    private string _goToOffsetText = "";
+
+    [ObservableProperty]
+    private string _goToOffsetError = "";
+
+    [ObservableProperty]
     private bool _isSearchVisible;
 
     [ObservableProperty]
@@ -361,6 +370,60 @@ public partial class MainWindowViewModel : ViewModelBase
             result[i] = b;
         }
         return result;
+    }
+
+    [RelayCommand]
+    private void OpenGoToOffset()
+    {
+        IsGoToOffsetVisible = true;
+        GoToOffsetError = "";
+    }
+
+    [RelayCommand]
+    private void CloseGoToOffset()
+    {
+        IsGoToOffsetVisible = false;
+        GoToOffsetText = "";
+        GoToOffsetError = "";
+    }
+
+    [RelayCommand]
+    private void GoToOffset()
+    {
+        if (Document?.Buffer is not { } buffer)
+            return;
+
+        var text = GoToOffsetText.Trim();
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        if (!TryParseOffset(text, out var offset))
+        {
+            GoToOffsetError = "無効な値";
+            return;
+        }
+
+        if (offset < 0 || offset >= buffer.Length)
+        {
+            GoToOffsetError = $"範囲外 (0 - {buffer.Length - 1:X})";
+            return;
+        }
+
+        CursorPosition = (int)offset;
+        SelectionStart = (int)offset;
+        SelectionLength = 1;
+        CloseGoToOffset();
+    }
+
+    private static bool TryParseOffset(ReadOnlySpan<char> text, out long offset)
+    {
+        if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            return long.TryParse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out offset);
+
+        if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out offset))
+            return true;
+
+        return long.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out offset);
     }
 
     [RelayCommand]
