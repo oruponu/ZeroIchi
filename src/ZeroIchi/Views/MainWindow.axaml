@@ -149,6 +149,9 @@
                         <MenuItem Command="{Binding OpenSearchCommand}"
                                   Header="検索(_F)"
                                   InputGesture="Ctrl+F"/>
+                        <MenuItem Command="{Binding OpenGoToOffsetCommand}"
+                                  Header="アドレスに移動(_G)"
+                                  InputGesture="Ctrl+G"/>
                     </MenuItem>
                     <MenuItem Header="表示(_V)">
                         <MenuItem Command="{Binding ToggleStructureTreeCommand}"
@@ -303,6 +306,56 @@
                                                      SelectionStart="{Binding SelectionStart}"
                                                      StructureColors="{Binding StructureColors}"/>
                         </ScrollViewer>
+
+                        <Border x:Name="GoToOffsetBar"
+                                Margin="0,4,20,0"
+                                Padding="6"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Background="#1E1E1E"
+                                BorderBrush="#3F3F3F"
+                                BorderThickness="1"
+                                BoxShadow="0 2 8 0 #40000000"
+                                CornerRadius="6"
+                                IsVisible="{Binding IsGoToOffsetVisible}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBox x:Name="GoToOffsetTextBox"
+                                         Width="200"
+                                         Height="28"
+                                         Padding="6,4"
+                                         VerticalContentAlignment="Center"
+                                         Background="#2D2D2D"
+                                         BorderBrush="#3F3F3F"
+                                         BorderThickness="1"
+                                         CornerRadius="4"
+                                         FontFamily="fonts:App#Roboto Mono"
+                                         FontSize="12"
+                                         Foreground="#D4D4D4"
+                                         Text="{Binding GoToOffsetText, Mode=TwoWay}"
+                                         Watermark="アドレス (例: 0x1A, 100)"/>
+                                <TextBlock MinWidth="36"
+                                           Margin="4,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="#E05050"
+                                           Text="{Binding GoToOffsetError}"
+                                           TextAlignment="Center"/>
+                                <Button Classes="search-button"
+                                        Command="{Binding GoToOffsetCommand}"
+                                        ToolTip.Tip="移動 (Enter)">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                               FontSize="10"
+                                               Text="&#xE76C;"/>
+                                </Button>
+                                <Button Classes="search-button"
+                                        Command="{Binding CloseGoToOffsetCommand}"
+                                        ToolTip.Tip="閉じる (Esc)">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                               FontSize="10"
+                                               Text="&#xE8BB;"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
 
                         <Border x:Name="SearchBar"
                                 Margin="0,4,20,0"

@@ -22,6 +22,7 @@ public partial class MainWindow : Window
         HexView.AddHandler(HexViewControl.BytesDeletedEvent, OnBytesDeleted);
         AddHandler(DragDrop.DropEvent, OnDrop);
         SearchTextBox.KeyDown += OnSearchTextBoxKeyDown;
+        GoToOffsetTextBox.KeyDown += OnGoToOffsetTextBoxKeyDown;
         Opened += (_, _) => HexView.Focus();
     }
 
@@ -154,6 +155,13 @@ public partial class MainWindow : Window
                 vm.ToggleInspectorCommand.Execute(null);
                 e.Handled = true;
             }
+            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.G)
+            {
+                vm.OpenGoToOffsetCommand.Execute(null);
+                GoToOffsetTextBox.Focus();
+                GoToOffsetTextBox.SelectAll();
+                e.Handled = true;
+            }
             else if (e.Key == Key.F3 && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
             {
                 vm.FindPreviousCommand.Execute(null);
@@ -162,6 +170,12 @@ public partial class MainWindow : Window
             else if (e.Key == Key.F3)
             {
                 vm.FindNextCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape && vm.IsGoToOffsetVisible)
+            {
+                vm.CloseGoToOffsetCommand.Execute(null);
+                HexView.Focus();
                 e.Handled = true;
             }
             else if (e.Key == Key.Escape && vm.IsSearchVisible)
@@ -188,6 +202,25 @@ public partial class MainWindow : Window
         else if (e.Key == Key.Escape)
         {
             vm.CloseSearchCommand.Execute(null);
+            HexView.Focus();
+            e.Handled = true;
+        }
+    }
+
+    private void OnGoToOffsetTextBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        if (e.Key == Key.Enter)
+        {
+            vm.GoToOffsetCommand.Execute(null);
+            if (!vm.IsGoToOffsetVisible)
+                HexView.Focus();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            vm.CloseGoToOffsetCommand.Execute(null);
             HexView.Focus();
             e.Handled = true;
         }
