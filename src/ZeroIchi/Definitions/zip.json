@@ -1,0 +1,84 @@
+{
+  "name": "ZIP",
+  "extensions": ["zip"],
+  "magic": "50 4B 03 04",
+  "endian": "little",
+  "fields": [
+    {
+      "id": "entries",
+      "name": "Entries",
+      "type": "repeat",
+      "until": "eof",
+      "nameTemplate": "${content}",
+      "fields": [
+        { "id": "signature", "name": "Signature", "type": "uint32" },
+        {
+          "id": "content",
+          "name": "Content",
+          "type": "match",
+          "on": "signature",
+          "cases": [
+            {
+              "name": "Local File",
+              "range": [67324752, 67324752],
+              "fields": [
+                { "id": "versionNeeded", "name": "Version Needed", "type": "uint16" },
+                { "id": "generalPurposeFlag", "name": "General Purpose Flag", "type": "uint16" },
+                { "id": "compressionMethod", "name": "Compression Method", "type": "uint16" },
+                { "id": "modTime", "name": "Last Modified Time", "type": "uint16" },
+                { "id": "modDate", "name": "Last Modified Date", "type": "uint16" },
+                { "id": "crc32", "name": "CRC-32", "type": "uint32" },
+                { "id": "compressedSize", "name": "Compressed Size", "type": "uint32" },
+                { "id": "uncompressedSize", "name": "Uncompressed Size", "type": "uint32" },
+                { "id": "fileNameLength", "name": "File Name Length", "type": "uint16" },
+                { "id": "extraFieldLength", "name": "Extra Field Length", "type": "uint16" },
+                { "id": "fileName", "name": "File Name", "type": "text", "size": "fileNameLength" },
+                { "id": "extraField", "name": "Extra Field", "type": "bytes", "size": "extraFieldLength" },
+                { "id": "fileData", "name": "File Data", "type": "bytes", "size": "compressedSize" }
+              ]
+            },
+            {
+              "name": "Central Directory",
+              "range": [33639248, 33639248],
+              "fields": [
+                { "id": "versionMadeBy", "name": "Version Made By", "type": "uint16" },
+                { "id": "versionNeeded", "name": "Version Needed", "type": "uint16" },
+                { "id": "generalPurposeFlag", "name": "General Purpose Flag", "type": "uint16" },
+                { "id": "compressionMethod", "name": "Compression Method", "type": "uint16" },
+                { "id": "modTime", "name": "Last Modified Time", "type": "uint16" },
+                { "id": "modDate", "name": "Last Modified Date", "type": "uint16" },
+                { "id": "crc32", "name": "CRC-32", "type": "uint32" },
+                { "id": "compressedSize", "name": "Compressed Size", "type": "uint32" },
+                { "id": "uncompressedSize", "name": "Uncompressed Size", "type": "uint32" },
+                { "id": "fileNameLength", "name": "File Name Length", "type": "uint16" },
+                { "id": "extraFieldLength", "name": "Extra Field Length", "type": "uint16" },
+                { "id": "commentLength", "name": "File Comment Length", "type": "uint16" },
+                { "id": "diskNumberStart", "name": "Disk Number Start", "type": "uint16" },
+                { "id": "internalFileAttrs", "name": "Internal File Attributes", "type": "uint16" },
+                { "id": "externalFileAttrs", "name": "External File Attributes", "type": "uint32" },
+                { "id": "localHeaderOffset", "name": "Local Header Offset", "type": "uint32" },
+                { "id": "fileName", "name": "File Name", "type": "text", "size": "fileNameLength" },
+                { "id": "extraField", "name": "Extra Field", "type": "bytes", "size": "extraFieldLength" },
+                { "id": "comment", "name": "File Comment", "type": "text", "size": "commentLength" }
+              ]
+            },
+            {
+              "name": "End of Central Directory",
+              "range": [101010256, 101010256],
+              "fields": [
+                { "id": "diskNumber", "name": "Disk Number", "type": "uint16" },
+                { "id": "cdStartDiskNumber", "name": "CD Start Disk Number", "type": "uint16" },
+                { "id": "cdEntryCountOnDisk", "name": "CD Entry Count on Disk", "type": "uint16" },
+                { "id": "cdEntryCountTotal", "name": "CD Entry Count Total", "type": "uint16" },
+                { "id": "cdSize", "name": "CD Size", "type": "uint32" },
+                { "id": "cdOffset", "name": "CD Offset", "type": "uint32" },
+                { "id": "commentLength", "name": "Comment Length", "type": "uint16" },
+                { "id": "comment", "name": "Comment", "type": "text", "size": "commentLength" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
