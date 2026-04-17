@@ -342,8 +342,24 @@ public partial class HexViewControl : Control, ILogicalScrollable
 
     public event EventHandler? ScrollInvalidated;
 
-    bool ILogicalScrollable.CanHorizontallyScroll { get; set; }
-    bool ILogicalScrollable.CanVerticallyScroll { get; set; }
+    private bool _canHorizontallyScroll;
+    private bool _canVerticallyScroll;
+
+    bool IScrollable.CanHorizontallyScroll => _canHorizontallyScroll;
+    bool IScrollable.CanVerticallyScroll => _canVerticallyScroll;
+
+    bool ILogicalScrollable.CanHorizontallyScroll
+    {
+        get => _canHorizontallyScroll;
+        set => _canHorizontallyScroll = value;
+    }
+
+    bool ILogicalScrollable.CanVerticallyScroll
+    {
+        get => _canVerticallyScroll;
+        set => _canVerticallyScroll = value;
+    }
+
     bool ILogicalScrollable.IsLogicalScrollEnabled => true;
     Size ILogicalScrollable.ScrollSize => new(_charWidth * 4, _rowHeight);
     Size ILogicalScrollable.PageScrollSize => new(_scrollViewport.Width, Math.Max(_rowHeight, _scrollViewport.Height - _rowHeight * 2));
