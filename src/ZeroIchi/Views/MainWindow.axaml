@@ -1,6 +1,7 @@
 <Window x:Class="ZeroIchi.Views.MainWindow"
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
         xmlns:controls="using:ZeroIchi.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:fs="using:ZeroIchi.Models.FileStructure"
@@ -15,11 +16,11 @@
         x:DataType="vm:MainWindowViewModel"
         Background="Transparent"
         DragDrop.AllowDrop="True"
-        ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="32"
         ExtendClientAreaToDecorationsHint="True"
         Icon="/Assets/avalonia-logo.ico"
         TransparencyLevelHint="Mica"
+        WindowDecorations="Full"
         mc:Ignorable="d">
 
     <Window.Styles>
@@ -105,7 +106,7 @@
             <Grid Height="32"
                   ColumnDefinitions="Auto,*,Auto"
                   DockPanel.Dock="Top">
-                <Menu Grid.Column="0">
+                <Menu Grid.Column="0" chrome:WindowDecorationProperties.ElementRole="User">
                     <MenuItem Header="ファイル(_F)">
                         <MenuItem Command="{Binding NewFileCommand}"
                                   Header="新規(_N)"
@@ -176,12 +177,16 @@
                            Text="{Binding Title}"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Classes="caption-button" Click="OnMinimizeClick">
+                    <Button chrome:WindowDecorationProperties.ElementRole="MinimizeButton"
+                            Classes="caption-button"
+                            Click="OnMinimizeClick">
                         <TextBlock FontFamily="Segoe MDL2 Assets"
                                    FontSize="10"
                                    Text="&#xE921;"/>
                     </Button>
-                    <Button Classes="caption-button" Click="OnMaximizeRestoreClick">
+                    <Button chrome:WindowDecorationProperties.ElementRole="MaximizeButton"
+                            Classes="caption-button"
+                            Click="OnMaximizeRestoreClick">
                         <Panel>
                             <TextBlock x:Name="MaximizeIcon"
                                        FontFamily="Segoe MDL2 Assets"
@@ -194,7 +199,9 @@
                                        Text="&#xE923;"/>
                         </Panel>
                     </Button>
-                    <Button Classes="caption-button caption-close" Click="OnCloseClick">
+                    <Button chrome:WindowDecorationProperties.ElementRole="CloseButton"
+                            Classes="caption-button caption-close"
+                            Click="OnCloseClick">
                         <TextBlock FontFamily="Segoe MDL2 Assets"
                                    FontSize="10"
                                    Text="&#xE8BB;"/>
