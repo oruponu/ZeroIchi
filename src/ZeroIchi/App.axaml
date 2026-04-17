@@ -1,12 +1,31 @@
 <Application x:Class="ZeroIchi.App"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:chrome="using:Avalonia.Controls.Chrome"
              xmlns:local="using:ZeroIchi"
              RequestedThemeVariant="Dark">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
 
     <Application.Resources>
         <FontFamily x:Key="DefaultFontFamily">Inter</FontFamily>
+        <ControlTheme x:Key="{x:Type chrome:WindowDrawnDecorations}" TargetType="chrome:WindowDrawnDecorations">
+            <Setter Property="Template">
+                <WindowDrawnDecorationsTemplate>
+                    <WindowDrawnDecorationsContent>
+                        <WindowDrawnDecorationsContent.Underlay>
+                            <Panel>
+                                <Panel x:Name="PART_TitleBar"
+                                       Height="{TemplateBinding TitleBarHeight}"
+                                       VerticalAlignment="Top"
+                                       chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                                       Background="Transparent"
+                                       IsVisible="{TemplateBinding HasTitleBar}"/>
+                            </Panel>
+                        </WindowDrawnDecorationsContent.Underlay>
+                    </WindowDrawnDecorationsContent>
+                </WindowDrawnDecorationsTemplate>
+            </Setter>
+        </ControlTheme>
     </Application.Resources>
 
     <Application.DataTemplates>
