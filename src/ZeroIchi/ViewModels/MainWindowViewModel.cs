@@ -70,6 +70,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public partial string StatusBarSizeText { get; set; } = "0 B";
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CloseOverlayCommand))]
     public partial bool IsGoToOffsetVisible { get; set; }
 
     [ObservableProperty]
@@ -79,6 +80,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public partial string GoToOffsetError { get; set; } = "";
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CloseOverlayCommand))]
     public partial bool IsSearchVisible { get; set; }
 
     [ObservableProperty]

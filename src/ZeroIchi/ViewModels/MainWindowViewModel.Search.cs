@@ -76,6 +76,15 @@ public partial class MainWindowViewModel
         ClearSearchResults();
     }
 
+    [RelayCommand(CanExecute = nameof(CanCloseOverlay))]
+    private void CloseOverlay()
+    {
+        if (IsGoToOffsetVisible) CloseGoToOffset();
+        else if (IsSearchVisible) CloseSearch();
+    }
+
+    private bool CanCloseOverlay() => IsGoToOffsetVisible || IsSearchVisible;
+
     [RelayCommand]
     private void FindNext()
     {
