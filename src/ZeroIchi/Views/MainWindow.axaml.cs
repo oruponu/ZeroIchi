@@ -13,7 +13,7 @@ using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Views;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IShellWindow
 {
     private bool _isClosingConfirmed;
     private MainWindowViewModel? _viewModel;
@@ -47,6 +47,8 @@ public partial class MainWindow : Window
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
     }
+
+    public void SetModalOverlayVisible(bool visible) => ModalOverlay.IsVisible = visible;
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
