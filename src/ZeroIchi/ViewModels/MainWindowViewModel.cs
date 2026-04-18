@@ -37,87 +37,87 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _isSyncingSelection;
 
     [ObservableProperty]
-    private BinaryDocument? _document = BinaryDocument.CreateNew();
+    public partial BinaryDocument? Document { get; set; } = BinaryDocument.CreateNew();
 
     [ObservableProperty]
-    private bool _canUndo;
+    public partial bool CanUndo { get; set; }
 
     [ObservableProperty]
-    private bool _canRedo;
+    public partial bool CanRedo { get; set; }
 
     [ObservableProperty]
-    private string _title = "Untitled - ZeroIchi";
+    public partial string Title { get; set; } = "Untitled - ZeroIchi";
 
     [ObservableProperty]
-    private int _dataVersion;
+    public partial int DataVersion { get; set; }
 
     [ObservableProperty]
-    private int _cursorPosition;
+    public partial int CursorPosition { get; set; }
 
     [ObservableProperty]
-    private int _selectionStart;
+    public partial int SelectionStart { get; set; }
 
     [ObservableProperty]
-    private int _selectionLength;
+    public partial int SelectionLength { get; set; }
 
     [ObservableProperty]
-    private string _statusBarPositionText = "00000000";
+    public partial string StatusBarPositionText { get; set; } = "00000000";
 
     [ObservableProperty]
-    private string _statusBarFileTypeText = "";
+    public partial string StatusBarFileTypeText { get; set; } = "";
 
     [ObservableProperty]
-    private string _statusBarSizeText = "0 B";
+    public partial string StatusBarSizeText { get; set; } = "0 B";
 
     [ObservableProperty]
-    private bool _isGoToOffsetVisible;
+    public partial bool IsGoToOffsetVisible { get; set; }
 
     [ObservableProperty]
-    private string _goToOffsetText = "";
+    public partial string GoToOffsetText { get; set; } = "";
 
     [ObservableProperty]
-    private string _goToOffsetError = "";
+    public partial string GoToOffsetError { get; set; } = "";
 
     [ObservableProperty]
-    private bool _isSearchVisible;
+    public partial bool IsSearchVisible { get; set; }
 
     [ObservableProperty]
-    private string _searchText = "";
+    public partial string SearchText { get; set; } = "";
 
     [ObservableProperty]
-    private bool _isHexSearch = true;
+    public partial bool IsHexSearch { get; set; } = true;
 
     [ObservableProperty]
-    private int[] _searchMatchOffsets = [];
+    public partial int[] SearchMatchOffsets { get; set; } = [];
 
     [ObservableProperty]
-    private int _searchMatchLength;
+    public partial int SearchMatchLength { get; set; }
 
     [ObservableProperty]
-    private int _currentSearchMatchIndex = -1;
+    public partial int CurrentSearchMatchIndex { get; set; } = -1;
 
     [ObservableProperty]
-    private string _searchStatusText = "";
+    public partial string SearchStatusText { get; set; } = "";
 
     [ObservableProperty]
-    private bool _isStructureTreeVisible = true;
+    public partial bool IsStructureTreeVisible { get; set; } = true;
 
     public ObservableCollection<StructureTreeItem> StructureTreeItems { get; } = [];
 
     [ObservableProperty]
-    private StructureColorMap? _structureColors;
+    public partial StructureColorMap? StructureColors { get; set; }
 
     [ObservableProperty]
-    private StructureTreeItem? _selectedStructureItem;
+    public partial StructureTreeItem? SelectedStructureItem { get; set; }
 
     [ObservableProperty]
-    private bool _isInspectorVisible = true;
+    public partial bool IsInspectorVisible { get; set; } = true;
 
     [ObservableProperty]
-    private bool _isInspectorBigEndian;
+    public partial bool IsInspectorBigEndian { get; set; }
 
     [ObservableProperty]
-    private List<DataInspectorEntry> _inspectorEntries = [];
+    public partial List<DataInspectorEntry> InspectorEntries { get; set; } = [];
 
     [RelayCommand]
     private void ToggleStructureTree()

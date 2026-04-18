@@ -16,7 +16,7 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExpandIcon))]
-    private bool _isExpanded = isExpanded;
+    public partial bool IsExpanded { get; set; } = isExpanded;
 
     public FileStructureNode Node { get; } = node;
     public int Depth { get; } = depth;
