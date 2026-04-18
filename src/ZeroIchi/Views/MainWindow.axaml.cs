@@ -7,9 +7,7 @@ using Avalonia.Threading;
 using System;
 using System.ComponentModel;
 using System.Linq;
-using System.Threading.Tasks;
 using ZeroIchi.Controls;
-using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Views;
@@ -40,13 +38,7 @@ public partial class MainWindow : Window, IShellWindow
         _viewModel = DataContext as MainWindowViewModel;
 
         if (_viewModel is not null)
-        {
-            _viewModel.SetStorageProvider(StorageProvider);
-            _viewModel.SetClipboard(Clipboard);
-            _viewModel.SetCloseAction(Close);
-            _viewModel.SetShowSaveChangesDialog(ShowSaveChangesDialogAsync);
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-        }
     }
 
     public void SetModalOverlayVisible(bool visible) => ModalOverlay.IsVisible = visible;
@@ -100,9 +92,6 @@ public partial class MainWindow : Window, IShellWindow
             Console.Error.WriteLine(ex);
         }
     }
-
-    private Task<SaveChangesResult> ShowSaveChangesDialogAsync() =>
-        SaveChangesDialog.ShowAsync(this, visible => ModalOverlay.IsVisible = visible);
 
     private void OnSearchTextBoxKeyDown(object? sender, KeyEventArgs e)
     {

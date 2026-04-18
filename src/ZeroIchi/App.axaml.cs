@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using System.Collections.Generic;
 using System.Globalization;
+using ZeroIchi.Infrastructure;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
 
@@ -24,10 +25,12 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = new MainWindowViewModel(),
-            };
+            var window = new MainWindow();
+            var dialog = new AvaloniaDialogService(window, window);
+            var clipboard = new AvaloniaClipboardService(window);
+            var windowService = new AvaloniaWindowService(window);
+            window.DataContext = new MainWindowViewModel(dialog, clipboard, windowService);
+            desktop.MainWindow = window;
         }
 
         base.OnFrameworkInitializationCompleted();
