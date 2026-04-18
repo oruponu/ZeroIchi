@@ -8,8 +8,8 @@
         CanResize="False"
         ShowInTaskbar="False"
         SizeToContent="WidthAndHeight"
-        SystemDecorations="None"
         TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
         WindowStartupLocation="CenterOwner">
 
     <Window.Styles>

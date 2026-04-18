@@ -338,8 +338,8 @@
                                          FontFamily="fonts:App#Roboto Mono"
                                          FontSize="12"
                                          Foreground="#D4D4D4"
-                                         Text="{Binding GoToOffsetText, Mode=TwoWay}"
-                                         Watermark="アドレス (例: 0x1A, 100)"/>
+                                         PlaceholderText="アドレス (例: 0x1A, 100)"
+                                         Text="{Binding GoToOffsetText, Mode=TwoWay}"/>
                                 <TextBlock MinWidth="36"
                                            Margin="4,0"
                                            VerticalAlignment="Center"
@@ -388,8 +388,8 @@
                                          FontFamily="fonts:App#Roboto Mono"
                                          FontSize="12"
                                          Foreground="#D4D4D4"
-                                         Text="{Binding SearchText, Mode=TwoWay}"
-                                         Watermark="検索"/>
+                                         PlaceholderText="検索"
+                                         Text="{Binding SearchText, Mode=TwoWay}"/>
                                 <Border Background="#2D2D2D"
                                         BorderBrush="#3F3F3F"
                                         BorderThickness="1"
