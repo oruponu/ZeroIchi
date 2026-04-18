@@ -112,35 +112,6 @@ public partial class MainWindow : Window
         return result == SaveChangesResult.Discard;
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
-
-        if (DataContext is not MainWindowViewModel vm)
-            return;
-
-        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.F)
-        {
-            vm.OpenSearchCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.G)
-        {
-            vm.OpenGoToOffsetCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Escape && vm.IsGoToOffsetVisible)
-        {
-            vm.CloseGoToOffsetCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Escape && vm.IsSearchVisible)
-        {
-            vm.CloseSearchCommand.Execute(null);
-            e.Handled = true;
-        }
-    }
-
     private void OnSearchTextBoxKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm) return;
@@ -153,11 +124,6 @@ public partial class MainWindow : Window
                 vm.FindNextCommand.Execute(null);
             e.Handled = true;
         }
-        else if (e.Key == Key.Escape)
-        {
-            vm.CloseSearchCommand.Execute(null);
-            e.Handled = true;
-        }
     }
 
     private void OnGoToOffsetTextBoxKeyDown(object? sender, KeyEventArgs e)
@@ -167,11 +133,6 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter)
         {
             vm.GoToOffsetCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Escape)
-        {
-            vm.CloseGoToOffsetCommand.Execute(null);
             e.Handled = true;
         }
     }
