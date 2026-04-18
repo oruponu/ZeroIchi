@@ -86,104 +86,34 @@ public partial class MainWindow : Window
     {
         base.OnKeyDown(e);
 
-        if (DataContext is MainWindowViewModel vm)
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.F)
         {
-            if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.N)
-            {
-                vm.NewFileCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.O)
-            {
-                vm.OpenFileCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.S)
-            {
-                vm.SaveAsFileCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.S)
-            {
-                vm.SaveFileCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.Z)
-            {
-                vm.RedoCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.Z)
-            {
-                vm.UndoCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.Y)
-            {
-                vm.RedoCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.C)
-            {
-                vm.CopyCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.X)
-            {
-                vm.CutCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.V)
-            {
-                vm.PasteCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.A)
-            {
-                vm.SelectAllCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.F)
-            {
-                vm.OpenSearchCommand.Execute(null);
-                SearchTextBox.Focus();
-                SearchTextBox.SelectAll();
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.I)
-            {
-                vm.ToggleInspectorCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.G)
-            {
-                vm.OpenGoToOffsetCommand.Execute(null);
-                GoToOffsetTextBox.Focus();
-                GoToOffsetTextBox.SelectAll();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.F3 && e.KeyModifiers.HasFlag(KeyModifiers.Shift))
-            {
-                vm.FindPreviousCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.F3)
-            {
-                vm.FindNextCommand.Execute(null);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Escape && vm.IsGoToOffsetVisible)
-            {
-                vm.CloseGoToOffsetCommand.Execute(null);
-                HexView.Focus();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Escape && vm.IsSearchVisible)
-            {
-                vm.CloseSearchCommand.Execute(null);
-                HexView.Focus();
-                e.Handled = true;
-            }
+            vm.OpenSearchCommand.Execute(null);
+            SearchTextBox.Focus();
+            SearchTextBox.SelectAll();
+            e.Handled = true;
+        }
+        else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.G)
+        {
+            vm.OpenGoToOffsetCommand.Execute(null);
+            GoToOffsetTextBox.Focus();
+            GoToOffsetTextBox.SelectAll();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && vm.IsGoToOffsetVisible)
+        {
+            vm.CloseGoToOffsetCommand.Execute(null);
+            HexView.Focus();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape && vm.IsSearchVisible)
+        {
+            vm.CloseSearchCommand.Execute(null);
+            HexView.Focus();
+            e.Handled = true;
         }
     }
 
