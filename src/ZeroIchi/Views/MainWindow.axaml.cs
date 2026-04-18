@@ -32,13 +32,9 @@ public partial class MainWindow : Window, IShellWindow
     {
         base.OnDataContextChanged(e);
 
-        if (_viewModel is not null)
-            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
-
+        _viewModel?.PropertyChanged -= OnViewModelPropertyChanged;
         _viewModel = DataContext as MainWindowViewModel;
-
-        if (_viewModel is not null)
-            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        _viewModel?.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     public void SetModalOverlayVisible(bool visible) => ModalOverlay.IsVisible = visible;
