@@ -1,10 +1,13 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Globalization;
 using ZeroIchi.Infrastructure;
+using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
 
@@ -25,11 +28,18 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var window = new MainWindow();
-            var dialog = new AvaloniaDialogService(window, window);
-            var clipboard = new AvaloniaClipboardService(window);
-            var windowService = new AvaloniaWindowService(window);
-            window.DataContext = new MainWindowViewModel(dialog, clipboard, windowService);
+            var services = new ServiceCollection();
+            services.AddSingleton<MainWindow>();
+            services.AddSingleton<Window>(sp => sp.GetRequiredService<MainWindow>());
+            services.AddSingleton<IShellWindow>(sp => sp.GetRequiredService<MainWindow>());
+            services.AddSingleton<IDialogService, AvaloniaDialogService>();
+            services.AddSingleton<IWindowService, AvaloniaWindowService>();
+            services.AddSingleton<IClipboardService, AvaloniaClipboardService>();
+            services.AddSingleton<MainWindowViewModel>();
+
+            var provider = services.BuildServiceProvider();
+            var window = provider.GetRequiredService<MainWindow>();
+            window.DataContext = provider.GetRequiredService<MainWindowViewModel>();
             desktop.MainWindow = window;
         }
 
