@@ -3,10 +3,9 @@ using Avalonia.Input;
 using Avalonia.Media;
 using System;
 using System.Threading.Tasks;
+using ZeroIchi.Services;
 
 namespace ZeroIchi.Views;
-
-public enum SaveChangesResult { Save, Discard, Cancel }
 
 public partial class SaveChangesDialog : Window
 {
