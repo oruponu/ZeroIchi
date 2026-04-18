@@ -1,26 +1,26 @@
 using Avalonia;
 using Avalonia.Media;
-using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using System.Windows.Input;
 using ZeroIchi.Models.FileStructure;
 
 namespace ZeroIchi.ViewModels;
 
-public sealed class StructureTreeItem(FileStructureNode node, int depth, bool isExpanded = false)
-    : INotifyPropertyChanged
+public sealed partial class StructureTreeItem(FileStructureNode node, int depth, bool isExpanded = false)
+    : ObservableObject
 {
-    private static readonly PropertyChangedEventArgs IsExpandedChanged = new(nameof(IsExpanded));
-    private static readonly PropertyChangedEventArgs ExpandIconChanged = new(nameof(ExpandIcon));
+    private static readonly IBrush DefaultBrush = new SolidColorBrush(Color.Parse("#808080"));
+    private static readonly IBrush NumericBrush = new SolidColorBrush(Color.Parse("#B5CEA8"));
+    private static readonly IBrush AsciiBrush = new SolidColorBrush(Color.Parse("#CE9178"));
+    private static readonly IBrush BytesBrush = DefaultBrush;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ExpandIcon))]
     private bool _isExpanded = isExpanded;
 
     public FileStructureNode Node { get; } = node;
     public int Depth { get; } = depth;
     public bool HasChildren { get; } = node.HasChildren;
-    private static readonly IBrush DefaultBrush = new SolidColorBrush(Color.Parse("#808080"));
-    private static readonly IBrush NumericBrush = new SolidColorBrush(Color.Parse("#B5CEA8"));
-    private static readonly IBrush AsciiBrush = new SolidColorBrush(Color.Parse("#CE9178"));
-    private static readonly IBrush BytesBrush = DefaultBrush;
 
     public string Name => Node.Name;
     public string Description => Node.Description;
@@ -33,21 +33,8 @@ public sealed class StructureTreeItem(FileStructureNode node, int depth, bool is
         ValueKind.Bytes => BytesBrush,
         _ => DefaultBrush,
     };
+
     public ICommand? ToggleExpandCommand { get; init; }
 
-    public string ExpandIcon => _isExpanded ? "\u25bc" : "\u25b6";
-
-    public bool IsExpanded
-    {
-        get => _isExpanded;
-        set
-        {
-            if (_isExpanded == value) return;
-            _isExpanded = value;
-            PropertyChanged?.Invoke(this, IsExpandedChanged);
-            PropertyChanged?.Invoke(this, ExpandIconChanged);
-        }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public string ExpandIcon => IsExpanded ? "\u25bc" : "\u25b6";
 }
