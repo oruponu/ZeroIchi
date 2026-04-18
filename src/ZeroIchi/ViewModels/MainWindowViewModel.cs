@@ -1,5 +1,3 @@
-using Avalonia.Input.Platform;
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MimeDetective;
@@ -9,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime;
-using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Commands;
@@ -18,7 +15,8 @@ using ZeroIchi.Services;
 
 namespace ZeroIchi.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
+    : ViewModelBase
 {
     private static readonly IContentInspector Inspector = new ContentInspectorBuilder
     {
@@ -28,10 +26,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }.Build(),
     }.Build();
 
-    private IStorageProvider? _storageProvider;
-    private IClipboard? _clipboard;
-    private Action? _closeAction;
-    private Func<Task<SaveChangesResult>>? _showSaveChangesDialog;
     private readonly UndoRedoManager _undoRedoManager = new();
     private IEditCommand? _lastExecutedCommand;
     private byte[]? _copiedBytes;
@@ -132,26 +126,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ToggleInspector()
     {
         IsInspectorVisible = !IsInspectorVisible;
-    }
-
-    public void SetStorageProvider(IStorageProvider storageProvider)
-    {
-        _storageProvider = storageProvider;
-    }
-
-    public void SetClipboard(IClipboard? clipboard)
-    {
-        _clipboard = clipboard;
-    }
-
-    public void SetCloseAction(Action closeAction)
-    {
-        _closeAction = closeAction;
-    }
-
-    public void SetShowSaveChangesDialog(Func<Task<SaveChangesResult>> showSaveChangesDialog)
-    {
-        _showSaveChangesDialog = showSaveChangesDialog;
     }
 
     partial void OnCursorPositionChanged(int value)

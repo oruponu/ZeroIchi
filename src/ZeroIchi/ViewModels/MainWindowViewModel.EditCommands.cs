@@ -1,4 +1,3 @@
-using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Globalization;
@@ -129,12 +128,9 @@ public partial class MainWindowViewModel
         if (Document is null) return;
 
         byte[]? bytes = null;
-        if (_clipboard is not null)
-        {
-            var text = await _clipboard.TryGetTextAsync();
-            if (!string.IsNullOrWhiteSpace(text))
-                bytes = ParseHexString(text);
-        }
+        var text = await clipboard.GetTextAsync();
+        if (!string.IsNullOrWhiteSpace(text))
+            bytes = ParseHexString(text);
 
         bytes ??= _copiedBytes;
         if (bytes is null || bytes.Length == 0) return;

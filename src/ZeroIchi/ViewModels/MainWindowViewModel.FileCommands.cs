@@ -1,4 +1,3 @@
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
@@ -27,18 +26,8 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task OpenFileAsync()
     {
-        if (_storageProvider is null)
-            return;
-
-        var files = await _storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "ファイルを開く",
-        });
-
-        if (files.Count == 0)
-            return;
-
-        if (files[0].TryGetLocalPath() is not { } path)
+        var path = await dialog.PickOpenFileAsync("ファイルを開く");
+        if (path is null)
             return;
 
         await OpenFileAsync(path);
@@ -74,15 +63,10 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task SaveAsFileAsync()
     {
-        if (_storageProvider is null || Document is null) return;
+        if (Document is null) return;
 
-        var file = await _storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "名前を付けて保存",
-            SuggestedFileName = Document.FileName,
-        });
-
-        if (file?.TryGetLocalPath() is not { } path) return;
+        var path = await dialog.PickSaveFileAsync("名前を付けて保存", Document.FileName);
+        if (path is null) return;
 
         await Document.SaveAsAsync(path);
         UpdateTitle();
@@ -91,15 +75,15 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void Exit()
     {
-        _closeAction?.Invoke();
+        window.Close();
     }
 
     public async Task<bool> ConfirmDiscardChangesAsync()
     {
-        if (Document is not { IsModified: true } || _showSaveChangesDialog is null)
+        if (Document is not { IsModified: true })
             return true;
 
-        var result = await _showSaveChangesDialog();
+        var result = await dialog.ShowSaveChangesDialogAsync();
 
         if (result == SaveChangesResult.Save)
         {
