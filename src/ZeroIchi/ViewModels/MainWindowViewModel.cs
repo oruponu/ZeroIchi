@@ -14,6 +14,7 @@ using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Commands;
 using ZeroIchi.Models.FileStructure;
+using ZeroIchi.Services;
 
 namespace ZeroIchi.ViewModels;
 
@@ -30,7 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private IStorageProvider? _storageProvider;
     private IClipboard? _clipboard;
     private Action? _closeAction;
-    private Func<Task<bool>>? _confirmDiscardChanges;
+    private Func<Task<SaveChangesResult>>? _showSaveChangesDialog;
     private readonly UndoRedoManager _undoRedoManager = new();
     private IEditCommand? _lastExecutedCommand;
     private byte[]? _copiedBytes;
@@ -148,9 +149,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _closeAction = closeAction;
     }
 
-    public void SetConfirmDiscardChanges(Func<Task<bool>> confirmDiscardChanges)
+    public void SetShowSaveChangesDialog(Func<Task<SaveChangesResult>> showSaveChangesDialog)
     {
-        _confirmDiscardChanges = confirmDiscardChanges;
+        _showSaveChangesDialog = showSaveChangesDialog;
     }
 
     partial void OnCursorPositionChanged(int value)

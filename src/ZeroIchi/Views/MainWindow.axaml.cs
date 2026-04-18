@@ -44,7 +44,7 @@ public partial class MainWindow : Window, IShellWindow
             _viewModel.SetStorageProvider(StorageProvider);
             _viewModel.SetClipboard(Clipboard);
             _viewModel.SetCloseAction(Close);
-            _viewModel.SetConfirmDiscardChanges(ConfirmDiscardChangesAsync);
+            _viewModel.SetShowSaveChangesDialog(ShowSaveChangesDialogAsync);
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         }
     }
@@ -81,16 +81,19 @@ public partial class MainWindow : Window, IShellWindow
             if (_isClosingConfirmed)
                 return;
 
-            if (DataContext is MainWindowViewModel { Document.IsModified: true })
-            {
-                e.Cancel = true;
+            if (DataContext is not MainWindowViewModel vm)
+                return;
 
-                if (!await ConfirmDiscardChangesAsync())
-                    return;
+            if (vm.Document is not { IsModified: true })
+                return;
 
-                _isClosingConfirmed = true;
-                Close();
-            }
+            e.Cancel = true;
+
+            if (!await vm.ConfirmDiscardChangesAsync())
+                return;
+
+            _isClosingConfirmed = true;
+            Close();
         }
         catch (Exception ex)
         {
@@ -98,22 +101,8 @@ public partial class MainWindow : Window, IShellWindow
         }
     }
 
-    private async Task<bool> ConfirmDiscardChangesAsync()
-    {
-        if (DataContext is not MainWindowViewModel vm)
-            return false;
-
-        var result = await SaveChangesDialog.ShowAsync(this,
-            visible => ModalOverlay.IsVisible = visible);
-
-        if (result == SaveChangesResult.Save)
-        {
-            await vm.SaveFileCommand.ExecuteAsync(null);
-            return vm.Document is not { IsModified: true };
-        }
-
-        return result == SaveChangesResult.Discard;
-    }
+    private Task<SaveChangesResult> ShowSaveChangesDialogAsync() =>
+        SaveChangesDialog.ShowAsync(this, visible => ModalOverlay.IsVisible = visible);
 
     private void OnSearchTextBoxKeyDown(object? sender, KeyEventArgs e)
     {
