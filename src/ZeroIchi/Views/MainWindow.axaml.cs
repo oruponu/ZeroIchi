@@ -3,7 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using ZeroIchi.Controls;
@@ -14,6 +16,7 @@ namespace ZeroIchi.Views;
 public partial class MainWindow : Window
 {
     private bool _isClosingConfirmed;
+    private MainWindowViewModel? _viewModel;
 
     public MainWindow()
     {
@@ -30,12 +33,39 @@ public partial class MainWindow : Window
     {
         base.OnDataContextChanged(e);
 
-        if (DataContext is MainWindowViewModel vm)
+        if (_viewModel is not null)
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+
+        _viewModel = DataContext as MainWindowViewModel;
+
+        if (_viewModel is not null)
         {
-            vm.SetStorageProvider(StorageProvider);
-            vm.SetClipboard(Clipboard);
-            vm.SetCloseAction(Close);
-            vm.SetConfirmDiscardChanges(ConfirmDiscardChangesAsync);
+            _viewModel.SetStorageProvider(StorageProvider);
+            _viewModel.SetClipboard(Clipboard);
+            _viewModel.SetCloseAction(Close);
+            _viewModel.SetConfirmDiscardChanges(ConfirmDiscardChangesAsync);
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_viewModel is null) return;
+
+        switch (e.PropertyName)
+        {
+            case nameof(MainWindowViewModel.IsSearchVisible):
+                if (_viewModel.IsSearchVisible)
+                    Dispatcher.UIThread.Post(() => { SearchTextBox.Focus(); SearchTextBox.SelectAll(); });
+                else
+                    Dispatcher.UIThread.Post(() => HexView.Focus());
+                break;
+            case nameof(MainWindowViewModel.IsGoToOffsetVisible):
+                if (_viewModel.IsGoToOffsetVisible)
+                    Dispatcher.UIThread.Post(() => { GoToOffsetTextBox.Focus(); GoToOffsetTextBox.SelectAll(); });
+                else
+                    Dispatcher.UIThread.Post(() => HexView.Focus());
+                break;
         }
     }
 
@@ -92,27 +122,21 @@ public partial class MainWindow : Window
         if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.F)
         {
             vm.OpenSearchCommand.Execute(null);
-            SearchTextBox.Focus();
-            SearchTextBox.SelectAll();
             e.Handled = true;
         }
         else if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.G)
         {
             vm.OpenGoToOffsetCommand.Execute(null);
-            GoToOffsetTextBox.Focus();
-            GoToOffsetTextBox.SelectAll();
             e.Handled = true;
         }
         else if (e.Key == Key.Escape && vm.IsGoToOffsetVisible)
         {
             vm.CloseGoToOffsetCommand.Execute(null);
-            HexView.Focus();
             e.Handled = true;
         }
         else if (e.Key == Key.Escape && vm.IsSearchVisible)
         {
             vm.CloseSearchCommand.Execute(null);
-            HexView.Focus();
             e.Handled = true;
         }
     }
@@ -132,7 +156,6 @@ public partial class MainWindow : Window
         else if (e.Key == Key.Escape)
         {
             vm.CloseSearchCommand.Execute(null);
-            HexView.Focus();
             e.Handled = true;
         }
     }
@@ -144,14 +167,11 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter)
         {
             vm.GoToOffsetCommand.Execute(null);
-            if (!vm.IsGoToOffsetVisible)
-                HexView.Focus();
             e.Handled = true;
         }
         else if (e.Key == Key.Escape)
         {
             vm.CloseGoToOffsetCommand.Execute(null);
-            HexView.Focus();
             e.Handled = true;
         }
     }
