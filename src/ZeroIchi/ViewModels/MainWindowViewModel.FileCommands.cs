@@ -2,6 +2,7 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
+using ZeroIchi.Services;
 
 namespace ZeroIchi.ViewModels;
 
@@ -10,11 +11,8 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task NewFileAsync()
     {
-        if (Document is { IsModified: true } && _confirmDiscardChanges is not null)
-        {
-            if (!await _confirmDiscardChanges())
-                return;
-        }
+        if (!await ConfirmDiscardChangesAsync())
+            return;
 
         ReplaceDocument(BinaryDocument.CreateNew());
         CursorPosition = 0;
@@ -94,6 +92,22 @@ public partial class MainWindowViewModel
     private void Exit()
     {
         _closeAction?.Invoke();
+    }
+
+    public async Task<bool> ConfirmDiscardChangesAsync()
+    {
+        if (Document is not { IsModified: true } || _showSaveChangesDialog is null)
+            return true;
+
+        var result = await _showSaveChangesDialog();
+
+        if (result == SaveChangesResult.Save)
+        {
+            await SaveFileAsync();
+            return Document is not { IsModified: true };
+        }
+
+        return result == SaveChangesResult.Discard;
     }
 
     private void UpdateTitle()
