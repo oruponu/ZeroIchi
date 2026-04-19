@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -141,18 +140,6 @@ public partial class MainWindow : Window, IShellWindow
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-        if (change.Property == WindowStateProperty)
-        {
-            var isMaximized = WindowState == WindowState.Maximized;
-            MaximizeIcon?.IsVisible = !isMaximized;
-            RestoreIcon?.IsVisible = isMaximized;
-            RootPanel?.Margin = isMaximized ? new Thickness(8) : new Thickness(0);
-        }
-    }
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
