@@ -95,6 +95,19 @@
             <Setter Property="Background" Value="#20FFFFFF"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+
+        <Style Selector="TextBlock#RestoreIcon">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="Window[WindowState=Maximized] TextBlock#MaximizeIcon">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector="Window[WindowState=Maximized] TextBlock#RestoreIcon">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector="Window[WindowState=Maximized] DockPanel#RootPanel">
+            <Setter Property="Margin" Value="8"/>
+        </Style>
     </Window.Styles>
 
     <Window.KeyBindings>
@@ -215,7 +228,6 @@
                             <TextBlock x:Name="RestoreIcon"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="10"
-                                       IsVisible="False"
                                        Text="&#xE923;"/>
                         </Panel>
                     </Button>
