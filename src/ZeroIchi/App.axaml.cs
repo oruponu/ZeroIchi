@@ -36,8 +36,11 @@ public partial class App : Application
             services.AddSingleton<IWindowService, AvaloniaWindowService>();
             services.AddSingleton<IClipboardService, AvaloniaClipboardService>();
             services.AddSingleton<MainWindowViewModel>();
+            services.AddSingleton<ViewLocator>();
 
             var provider = services.BuildServiceProvider();
+            DataTemplates.Add(provider.GetRequiredService<ViewLocator>());
+
             var window = provider.GetRequiredService<MainWindow>();
             window.DataContext = provider.GetRequiredService<MainWindowViewModel>();
             desktop.MainWindow = window;

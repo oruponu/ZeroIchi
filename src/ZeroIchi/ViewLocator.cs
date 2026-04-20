@@ -1,37 +1,20 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using ZeroIchi.ViewModels;
+using ZeroIchi.Views;
 
 namespace ZeroIchi;
 
-/// <summary>
-/// Given a view model, returns the corresponding view if possible.
-/// </summary>
-[RequiresUnreferencedCode(
-    "Default implementation of ViewLocator involves reflection which may be trimmed away.",
-    Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]
-public class ViewLocator : IDataTemplate
+public class ViewLocator(IServiceProvider services) : IDataTemplate
 {
-    public Control? Build(object? param)
+    public Control? Build(object? data) => data switch
     {
-        if (param is null)
-            return null;
-        
-        var name = param.GetType().FullName!.Replace("ViewModel", "View", StringComparison.Ordinal);
-        var type = Type.GetType(name);
+        MainWindowViewModel => services.GetRequiredService<MainWindow>(),
+        null => null,
+        _ => new TextBlock { Text = $"No view for {data.GetType().Name}" },
+    };
 
-        if (type != null)
-        {
-            return (Control)Activator.CreateInstance(type)!;
-        }
-        
-        return new TextBlock { Text = "Not Found: " + name };
-    }
-
-    public bool Match(object? data)
-    {
-        return data is ViewModelBase;
-    }
+    public bool Match(object? data) => data is ViewModelBase;
 }
