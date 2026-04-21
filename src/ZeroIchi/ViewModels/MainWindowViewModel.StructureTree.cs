@@ -49,11 +49,11 @@ public partial class MainWindowViewModel
 
     private void UpdateStructureTree(ByteBuffer buffer)
     {
-        var collapsed = new HashSet<(string name, int depth)>();
+        var expanded = new HashSet<(string name, int depth)>();
         foreach (var item in StructureTreeItems)
         {
-            if (item.HasChildren && !item.IsExpanded)
-                collapsed.Add((item.Name, item.Depth));
+            if (item.HasChildren && item.IsExpanded)
+                expanded.Add((item.Name, item.Depth));
         }
 
         StructureTreeItems.Clear();
@@ -69,19 +69,19 @@ public partial class MainWindowViewModel
         var root = StructureParser.Parse(definition, buffer);
         StructureColors = StructureColorMap.Build(root);
         foreach (var child in root.Children)
-            AddTreeItem(child, 0, collapsed);
+            AddTreeItem(child, 0, expanded);
     }
 
-    private void AddTreeItem(FileStructureNode node, int depth, HashSet<(string name, int depth)> collapsed)
+    private void AddTreeItem(FileStructureNode node, int depth, HashSet<(string name, int depth)> expanded)
     {
-        var isExpanded = node.IsExpanded && !collapsed.Contains((node.Name, depth));
+        var isExpanded = expanded.Contains((node.Name, depth));
         var item = new StructureTreeItem(node, depth, isExpanded) { ToggleExpandCommand = ToggleExpandCommand };
         StructureTreeItems.Add(item);
 
         if (item.IsExpanded)
         {
             foreach (var child in node.Children)
-                AddTreeItem(child, depth + 1, collapsed);
+                AddTreeItem(child, depth + 1, expanded);
         }
     }
 
