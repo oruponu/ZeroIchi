@@ -280,7 +280,8 @@
                             <Border Height="1"
                                     Background="#3F3F3F"
                                     DockPanel.Dock="Top"/>
-                            <ListBox Background="Transparent"
+                            <ListBox AutoScrollToSelectedItem="False"
+                                     Background="Transparent"
                                      ItemsSource="{Binding StructureTreeItems}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                      SelectedItem="{Binding SelectedStructureItem, Mode=TwoWay}">
