@@ -10,7 +10,6 @@ public sealed class FileStructureNode
     public required int Length { get; init; }
     public string Description { get; init; } = "";
     public ValueKind ValueKind { get; init; }
-    public bool IsExpanded { get; init; } = true;
     public IReadOnlyList<FileStructureNode> Children { get; init; } = [];
 
     public bool HasChildren => Children.Count > 0;
