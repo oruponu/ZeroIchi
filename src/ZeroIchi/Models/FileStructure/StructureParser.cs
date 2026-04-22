@@ -123,6 +123,12 @@ public static class StructureParser
 
         while (offset < end)
         {
+            if (ShouldTerminateRepeat(field.Until, buffer, offset))
+            {
+                if (field.Size is not null) offset = end; // 残りは暗黙のパディングとして消費
+                break;
+            }
+
             var iterationOffset = offset;
             var iterationChildren = ParseFields(
                 repeatFields, buffer, ref offset, bigEndian, persistentValues);
@@ -222,6 +228,20 @@ public static class StructureParser
             Description = value.ToString(),
             ValueKind = ValueKind.Numeric,
         };
+    }
+
+    private static bool ShouldTerminateRepeat(string? until, ByteBuffer buffer, long offset)
+    {
+        if (until is null || offset >= buffer.Length) return false;
+        if (!until.StartsWith("peek:", StringComparison.OrdinalIgnoreCase)) return false;
+
+        var literal = until.AsSpan(5);
+        if (literal.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) literal = literal[2..];
+
+        if (!byte.TryParse(literal, System.Globalization.NumberStyles.HexNumber, null, out var expected))
+            return false;
+
+        return buffer.ReadByte(offset) == expected;
     }
 
     private static FileStructureNode ParseSynchsafeField(
