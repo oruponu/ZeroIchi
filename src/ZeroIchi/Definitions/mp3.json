@@ -1,0 +1,33 @@
+{
+  "name": "MP3",
+  "extensions": ["mp3"],
+  "magic": "49 44 33",
+  "endian": "big",
+  "fields": [
+    { "id": "identifier", "name": "Identifier", "type": "text", "size": 3 },
+    { "id": "versionMajor", "name": "Major Version", "type": "uint8" },
+    { "id": "versionRevision", "name": "Revision", "type": "uint8" },
+    { "id": "flags", "name": "Flags", "type": "uint8" },
+    { "id": "tagSize", "name": "Tag Size", "type": "synchsafe" },
+    {
+      "id": "frames",
+      "name": "ID3v2 Frames",
+      "type": "repeat",
+      "size": "tagSize",
+      "until": "peek:0x00",
+      "nameTemplate": "${frameId}",
+      "fields": [
+        { "id": "frameId", "name": "Frame ID", "type": "text", "size": 4 },
+        { "id": "frameSize", "name": "Frame Size", "type": "uint32" },
+        { "id": "frameFlags", "name": "Frame Flags", "type": "uint16" },
+        { "id": "frameData", "name": "Frame Data", "type": "bytes", "size": "frameSize" }
+      ]
+    },
+    {
+      "id": "audioData",
+      "name": "Audio Data",
+      "type": "bytes",
+      "size": "rest"
+    }
+  ]
+}
