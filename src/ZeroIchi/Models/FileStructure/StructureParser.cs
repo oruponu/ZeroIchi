@@ -66,6 +66,11 @@ public static class StructureParser
                     if (vlqNode.Length > 0)
                         nodes.Add(vlqNode);
                     break;
+                case "synchsafe":
+                    var synchsafeNode = ParseSynchsafeField(field, buffer, ref offset, siblingValues);
+                    if (synchsafeNode.Length > 0)
+                        nodes.Add(synchsafeNode);
+                    break;
                 default:
                     var leaf = ParseLeafField(field, buffer, ref offset, fieldBigEndian, siblingValues);
                     if (leaf.Length > 0)
@@ -214,6 +219,34 @@ public static class StructureParser
             FieldId = field.Id,
             Offset = startOffset,
             Length = (int)(offset - startOffset),
+            Description = value.ToString(),
+            ValueKind = ValueKind.Numeric,
+        };
+    }
+
+    private static FileStructureNode ParseSynchsafeField(
+        FieldDefinition field, ByteBuffer buffer, ref long offset,
+        Dictionary<string, long> siblingValues)
+    {
+        var startOffset = offset;
+        var value = 0L;
+        var bytesRead = 0;
+
+        for (var i = 0; i < 4 && offset < buffer.Length; i++)
+        {
+            var b = buffer.ReadByte(offset++);
+            value = (value << 7) | (b & 0x7FL);
+            bytesRead++;
+        }
+
+        siblingValues[field.Id] = value;
+
+        return new FileStructureNode
+        {
+            Name = field.Name,
+            FieldId = field.Id,
+            Offset = startOffset,
+            Length = bytesRead,
             Description = value.ToString(),
             ValueKind = ValueKind.Numeric,
         };
