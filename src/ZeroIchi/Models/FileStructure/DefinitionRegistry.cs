@@ -2,17 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.FileStructure;
 
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(FormatDefinition))]
+internal sealed partial class FormatDefinitionJsonContext : JsonSerializerContext;
+
 public static class DefinitionRegistry
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
     private static readonly List<FormatDefinition> Definitions = LoadDefinitions();
 
     private static List<FormatDefinition> LoadDefinitions()
@@ -28,7 +28,7 @@ public static class DefinitionRegistry
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream is null) continue;
 
-            var definition = JsonSerializer.Deserialize<FormatDefinition>(stream, JsonOptions);
+            var definition = JsonSerializer.Deserialize(stream, FormatDefinitionJsonContext.Default.FormatDefinition);
             if (definition is not null)
                 definitions.Add(definition);
         }
