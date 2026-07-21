@@ -289,31 +289,10 @@ public partial class HexViewControl
 
     private void HandleDelete(Key key, int dataLength)
     {
-        int deleteIndex;
-        int deleteCount;
+        var range = GetDeleteRange(key, SelectionStart, SelectionLength, CursorPosition, dataLength);
+        if (range is null) return;
 
-        if (SelectionLength > 0)
-        {
-            deleteIndex = SelectionStart;
-            deleteCount = SelectionLength;
-        }
-        else if (key == Key.Delete)
-        {
-            if (CursorPosition >= dataLength) return;
-            deleteIndex = CursorPosition;
-            deleteCount = 1;
-        }
-        else if (key == Key.Back)
-        {
-            if (CursorPosition <= 0) return;
-            deleteIndex = CursorPosition - 1;
-            deleteCount = 1;
-        }
-        else
-        {
-            return;
-        }
-
+        var (deleteIndex, deleteCount) = range.Value;
         var newPos = Math.Clamp(deleteIndex, 0, dataLength - deleteCount);
 
         RaiseEvent(new BytesDeletedEventArgs(BytesDeletedEvent, this, deleteIndex, deleteCount));
@@ -324,6 +303,38 @@ public partial class HexViewControl
         SelectionLength = newPos < dataLength - deleteCount ? 1 : 0;
         _selectionAnchor = newPos;
         EnsureCursorVisible();
+    }
+
+    internal static (int Index, int Count)? GetDeleteRange(
+        Key key, int selectionStart, int selectionLength, int cursorPosition, int dataLength)
+    {
+        int deleteIndex;
+        int deleteCount;
+
+        if (selectionLength > 0)
+        {
+            deleteIndex = selectionStart;
+            // 選択は EOF 直後の仮想セルを含み得るため実データ長にクランプ
+            deleteCount = Math.Min(selectionLength, dataLength - selectionStart);
+        }
+        else if (key == Key.Delete)
+        {
+            if (cursorPosition >= dataLength) return null;
+            deleteIndex = cursorPosition;
+            deleteCount = 1;
+        }
+        else if (key == Key.Back)
+        {
+            if (cursorPosition <= 0) return null;
+            deleteIndex = cursorPosition - 1;
+            deleteCount = 1;
+        }
+        else
+        {
+            return null;
+        }
+
+        return deleteCount <= 0 ? null : (deleteIndex, deleteCount);
     }
 
     private static int? TryParseHexKey(Key key) => key switch
