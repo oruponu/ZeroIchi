@@ -13,6 +13,10 @@ public sealed class MappedByteBuffer : ByteBuffer
     public MappedByteBuffer(string filePath)
     {
         _length = new FileInfo(filePath).Length;
+
+        // 空ファイルはメモリマップできないため、マップを持たない長さ0のバッファとして扱う
+        if (_length == 0) return;
+
         _mmf = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
         _accessor = _mmf.CreateViewAccessor(0, _length, MemoryMappedFileAccess.Read);
     }
