@@ -167,24 +167,20 @@ public partial class MainWindowViewModel
         var chunk = ArrayPool<byte>.Shared.Rent(chunkSize + overlap);
         try
         {
-            for (var offset = 0; offset < dataLength;)
+            for (var offset = 0; offset < dataLength; offset += chunkSize)
             {
-                var readStart = offset == 0 ? 0 : offset - overlap;
-                var readLength = Math.Min(chunkSize + overlap, dataLength - readStart);
-                buffer.ReadBytes(readStart, chunk, 0, readLength);
+                var readLength = Math.Min(chunkSize + overlap, dataLength - offset);
+                buffer.ReadBytes(offset, chunk, 0, readLength);
 
-                var searchStart = offset == 0 ? 0 : overlap;
-                var span = chunk.AsSpan(searchStart, readLength - searchStart);
+                var span = chunk.AsSpan(0, readLength);
                 var pos = 0;
                 while (pos <= span.Length - pattern.Length)
                 {
                     var idx = span[pos..].IndexOf(pattern);
                     if (idx < 0) break;
-                    matches.Add(readStart + searchStart + pos + idx);
+                    matches.Add(offset + pos + idx);
                     pos += idx + 1;
                 }
-
-                offset += chunkSize;
             }
         }
         finally
