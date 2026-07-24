@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.ViewModels;
 
@@ -140,6 +141,24 @@ public partial class MainWindowViewModel
         }
 
         SearchMatchLength = pattern.Length;
+        var matches = FindMatches(buffer, pattern);
+
+        SearchMatchOffsets = [.. matches];
+
+        if (matches.Count == 0)
+        {
+            CurrentSearchMatchIndex = -1;
+            SearchStatusText = "0/0";
+            return;
+        }
+
+        var closestIndex = FindClosestMatch(matches, CursorPosition);
+        CurrentSearchMatchIndex = closestIndex;
+        NavigateToCurrentMatch();
+    }
+
+    internal static List<int> FindMatches(ByteBuffer buffer, byte[] pattern)
+    {
         var dataLength = (int)buffer.Length;
         var matches = new List<int>();
 
@@ -173,18 +192,7 @@ public partial class MainWindowViewModel
             ArrayPool<byte>.Shared.Return(chunk);
         }
 
-        SearchMatchOffsets = [.. matches];
-
-        if (matches.Count == 0)
-        {
-            CurrentSearchMatchIndex = -1;
-            SearchStatusText = "0/0";
-            return;
-        }
-
-        var closestIndex = FindClosestMatch(matches, CursorPosition);
-        CurrentSearchMatchIndex = closestIndex;
-        NavigateToCurrentMatch();
+        return matches;
     }
 
     private void NavigateToCurrentMatch()
