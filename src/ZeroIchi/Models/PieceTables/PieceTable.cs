@@ -15,6 +15,8 @@ public sealed class PieceTable
 
     private int _cachedPieceIndex;
     private long _cachedLogicalOffset;
+    private long _nextStateId = 1;
+    private long _stateId;
 
     public PieceTable(ByteBuffer original)
     {
@@ -121,13 +123,7 @@ public sealed class PieceTable
         }
 
         InvalidateCache();
-        return new PieceTableEdit
-        {
-            PieceIndex = pieceIdx,
-            OldPieces = oldPieces,
-            NewPieces = newPieces,
-            LengthDelta = 0,
-        };
+        return CreateEdit(pieceIdx, oldPieces, newPieces, 0);
     }
 
     public PieceTableEdit InsertBytes(long index, byte[] bytes)
@@ -173,13 +169,7 @@ public sealed class PieceTable
 
         Length += bytes.Length;
         InvalidateCache();
-        return new PieceTableEdit
-        {
-            PieceIndex = pieceIdx,
-            OldPieces = oldPieces,
-            NewPieces = newPieces,
-            LengthDelta = bytes.Length,
-        };
+        return CreateEdit(pieceIdx, oldPieces, newPieces, bytes.Length);
     }
 
     public PieceTableEdit DeleteBytes(long index, long count)
@@ -224,13 +214,7 @@ public sealed class PieceTable
 
         Length -= count;
         InvalidateCache();
-        return new PieceTableEdit
-        {
-            PieceIndex = startPi,
-            OldPieces = oldPieces,
-            NewPieces = newPieces,
-            LengthDelta = -count,
-        };
+        return CreateEdit(startPi, oldPieces, newPieces, -count);
     }
 
     public PieceTableEdit AppendByte(byte value)
@@ -261,21 +245,37 @@ public sealed class PieceTable
 
         Length++;
         InvalidateCache();
+        return CreateEdit(pieceIdx, oldPieces, newPieces, 1);
+    }
+
+    private PieceTableEdit CreateEdit(int pieceIndex, Piece[] oldPieces, Piece[] newPieces, long lengthDelta)
+    {
+        var stateBefore = _stateId;
+        _stateId = _nextStateId++;
         return new PieceTableEdit
         {
-            PieceIndex = pieceIdx,
+            Owner = this,
+            StateBefore = stateBefore,
+            StateAfter = _stateId,
+            PieceIndex = pieceIndex,
             OldPieces = oldPieces,
             NewPieces = newPieces,
-            LengthDelta = 1,
+            LengthDelta = lengthDelta,
         };
     }
 
     public void UndoEdit(PieceTableEdit edit)
     {
+        if (!ReferenceEquals(edit.Owner, this))
+            throw new InvalidOperationException();
+        if (edit.StateAfter != _stateId)
+            throw new InvalidOperationException();
+
         _pieces.RemoveRange(edit.PieceIndex, edit.NewPieces.Length);
         for (var i = 0; i < edit.OldPieces.Length; i++)
             _pieces.Insert(edit.PieceIndex + i, edit.OldPieces[i]);
         Length -= edit.LengthDelta;
+        _stateId = edit.StateBefore;
         InvalidateCache();
     }
 
