@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Threading.Tasks;
 using ZeroIchi.Models.Buffers;
+using ZeroIchi.Models.Commands;
 using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models;
@@ -16,6 +17,7 @@ public sealed class BinaryDocument
     private ByteBuffer _original;
     private PieceTable _pieceTable;
     private PieceTableByteBuffer _buffer;
+    private readonly UndoRedoManager _undoRedoManager = new();
 
     public string FilePath { get; private set; }
     public string FileName { get; private set; }
@@ -23,6 +25,8 @@ public sealed class BinaryDocument
     public long FileSize => _pieceTable.Length;
     public bool IsModified => _pieceTable.Length != _original.Length || _pieceTable.HasAddPieces;
     public bool IsNew => FilePath == "";
+    public bool CanUndo => _undoRedoManager.CanUndo;
+    public bool CanRedo => _undoRedoManager.CanRedo;
 
     private BinaryDocument(string filePath, ByteBuffer original)
     {
@@ -53,6 +57,18 @@ public sealed class BinaryDocument
     public PieceTableEdit DeleteBytes(long index, long count) => _pieceTable.DeleteBytes(index, count);
 
     public void UndoEdit(PieceTableEdit edit) => _pieceTable.UndoEdit(edit);
+
+    public void ExecuteCommand(IEditCommand command)
+    {
+        if (!ReferenceEquals(command.Document, this))
+            throw new InvalidOperationException();
+
+        _undoRedoManager.ExecuteCommand(command);
+    }
+
+    public IEditCommand? Undo() => _undoRedoManager.Undo();
+
+    public IEditCommand? Redo() => _undoRedoManager.Redo();
 
     public bool IsByteModified(long index) => _pieceTable.IsModified(index);
 
@@ -115,6 +131,7 @@ public sealed class BinaryDocument
 
     private void ResetPieceTable(ByteBuffer newOriginal)
     {
+        _undoRedoManager.Clear();
         _original = newOriginal;
         _pieceTable = new PieceTable(newOriginal);
         _buffer = new PieceTableByteBuffer(_pieceTable);

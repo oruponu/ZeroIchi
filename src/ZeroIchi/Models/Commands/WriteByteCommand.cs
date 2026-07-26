@@ -7,6 +7,8 @@ public sealed class WriteByteCommand(BinaryDocument document, int index, byte ne
 {
     private PieceTableEdit? _edit;
 
+    public BinaryDocument Document => document;
+
     public int CursorPositionBefore { get; } = cursorPosition;
     public int CursorPositionAfter { get; set; }
 

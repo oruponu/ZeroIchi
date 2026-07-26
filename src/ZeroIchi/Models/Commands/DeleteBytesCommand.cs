@@ -7,6 +7,8 @@ public sealed class DeleteBytesCommand(BinaryDocument document, int index, int c
 {
     private PieceTableEdit? _edit;
 
+    public BinaryDocument Document => document;
+
     public int CursorPositionBefore { get; } = cursorPosition;
     public int CursorPositionAfter { get; set; }
 

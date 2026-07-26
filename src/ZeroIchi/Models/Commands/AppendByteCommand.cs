@@ -6,6 +6,8 @@ public sealed class AppendByteCommand(BinaryDocument document, byte value, int c
 {
     private PieceTableEdit? _edit;
 
+    public BinaryDocument Document => document;
+
     public int CursorPositionBefore { get; } = cursorPosition;
     public int CursorPositionAfter { get; set; }
 

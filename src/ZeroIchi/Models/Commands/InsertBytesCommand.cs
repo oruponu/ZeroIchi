@@ -7,6 +7,8 @@ public sealed class InsertBytesCommand(BinaryDocument document, int index, byte[
 {
     private PieceTableEdit? _edit;
 
+    public BinaryDocument Document => document;
+
     public int CursorPositionBefore { get; } = cursorPosition;
     public int CursorPositionAfter { get; set; }
 
