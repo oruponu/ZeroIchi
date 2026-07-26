@@ -131,10 +131,13 @@ public sealed class BinaryDocument
 
     private void ResetPieceTable(ByteBuffer newOriginal)
     {
+        var newTable = new PieceTable(newOriginal);
+        var newBuffer = new PieceTableByteBuffer(newTable);
+
         _undoRedoManager.Clear();
         _original = newOriginal;
-        _pieceTable = new PieceTable(newOriginal);
-        _buffer = new PieceTableByteBuffer(_pieceTable);
+        _pieceTable = newTable;
+        _buffer = newBuffer;
     }
 
     private (WritePlanEntry[] Entries, long FinalSize, bool NeedsShift) ComputeWritePlan()
