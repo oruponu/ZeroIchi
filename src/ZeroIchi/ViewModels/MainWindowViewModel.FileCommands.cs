@@ -17,7 +17,6 @@ public partial class MainWindowViewModel
         CursorPosition = 0;
         SelectionStart = 0;
         SelectionLength = 0;
-        _undoRedoManager.Clear();
         UpdateUndoRedoState();
         UpdateTitle();
         ClearSearchResults();
@@ -40,7 +39,6 @@ public partial class MainWindowViewModel
         CursorPosition = 0;
         SelectionStart = 0;
         SelectionLength = 0;
-        _undoRedoManager.Clear();
         UpdateUndoRedoState();
         ClearSearchResults();
     }
@@ -57,6 +55,7 @@ public partial class MainWindowViewModel
         }
 
         Document.Save();
+        UpdateUndoRedoState();
         UpdateTitle();
     }
 
@@ -69,6 +68,7 @@ public partial class MainWindowViewModel
         if (path is null) return;
 
         await Document.SaveAsAsync(path);
+        UpdateUndoRedoState();
         UpdateTitle();
     }
 

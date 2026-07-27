@@ -22,7 +22,7 @@ public partial class MainWindowViewModel
             command = new WriteByteCommand(Document, index, value, CursorPosition);
         }
 
-        _undoRedoManager.ExecuteCommand(command);
+        Document.ExecuteCommand(command);
         _lastExecutedCommand = command;
         DataVersion++;
         UpdateUndoRedoState();
@@ -40,7 +40,7 @@ public partial class MainWindowViewModel
         if (Document is null) return;
 
         var command = new DeleteBytesCommand(Document, index, count, CursorPosition);
-        _undoRedoManager.ExecuteCommand(command);
+        Document.ExecuteCommand(command);
         command.CursorPositionAfter = CursorPosition;
         DataVersion++;
         UpdateUndoRedoState();
@@ -52,7 +52,7 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
-        var command = _undoRedoManager.Undo();
+        var command = Document.Undo();
         if (command is null) return;
 
         DataVersion++;
@@ -67,7 +67,7 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
-        var command = _undoRedoManager.Redo();
+        var command = Document.Redo();
         if (command is null) return;
 
         DataVersion++;
@@ -79,8 +79,8 @@ public partial class MainWindowViewModel
 
     private void UpdateUndoRedoState()
     {
-        CanUndo = _undoRedoManager.CanUndo;
-        CanRedo = _undoRedoManager.CanRedo;
+        CanUndo = Document?.CanUndo ?? false;
+        CanRedo = Document?.CanRedo ?? false;
     }
 
     [RelayCommand]
@@ -110,7 +110,7 @@ public partial class MainWindowViewModel
         if (length <= 0) return;
 
         var command = new DeleteBytesCommand(Document, start, length, CursorPosition);
-        _undoRedoManager.ExecuteCommand(command);
+        Document.ExecuteCommand(command);
 
         CursorPosition = start;
         SelectionStart = start;
@@ -137,7 +137,7 @@ public partial class MainWindowViewModel
 
         var insertIndex = CursorPosition;
         var insertCommand = new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition);
-        _undoRedoManager.ExecuteCommand(insertCommand);
+        Document.ExecuteCommand(insertCommand);
 
         CursorPosition = insertIndex + bytes.Length;
         SelectionStart = CursorPosition;

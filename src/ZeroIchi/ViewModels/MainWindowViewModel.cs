@@ -26,7 +26,6 @@ public partial class MainWindowViewModel(IDialogService dialog, IClipboardServic
         }.Build(),
     }.Build();
 
-    private readonly UndoRedoManager _undoRedoManager = new();
     private IEditCommand? _lastExecutedCommand;
     private byte[]? _copiedBytes;
     private bool _isSyncingSelection;
