@@ -96,6 +96,31 @@ public class StructureParserTests
     }
 
     [Fact]
+    public void Parse_TruncatedNumericField_ReturnsNodeWithoutValue()
+    {
+        const string json = """
+        {
+          "name": "Truncated",
+          "extensions": ["bin"],
+          "magic": "12",
+          "endian": "big",
+          "fields": [
+            { "id": "value", "name": "Value", "type": "uint16" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x12]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        var value = root.Children[0];
+        Assert.Equal("Value", value.Name);
+        Assert.Equal(1, value.Length);
+        Assert.Equal("", value.Description);
+    }
+
+    [Fact]
     public void Parse_RestSize_ReadsRemainingBytes()
     {
         var wav = BuildMinimalWav();

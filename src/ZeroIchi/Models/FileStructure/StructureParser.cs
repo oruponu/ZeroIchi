@@ -387,9 +387,18 @@ public static class StructureParser
 
     private static long? ReadNumericValue(string type, ByteBuffer buffer, long offset, int size, bool bigEndian)
     {
-        if (size is <= 0 or > 8) return null;
+        var required = type switch
+        {
+            "uint8" or "int8" => 1,
+            "uint16" or "int16" => 2,
+            "uint32" or "int32" => 4,
+            "uint64" or "int64" => 8,
+            _ => 0,
+        };
 
-        var bytes = buffer.SliceToArray(offset, size);
+        if (required == 0 || size < required) return null;
+
+        var bytes = buffer.SliceToArray(offset, required);
         return type switch
         {
             "uint8" => bytes[0],
