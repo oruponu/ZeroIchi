@@ -330,13 +330,29 @@ public static class StructureParser
 
         if (sizeElement.ValueKind == JsonValueKind.String)
         {
-            var refId = sizeElement.GetString()!;
-            if (refId == "rest")
+            var expression = sizeElement.GetString()!;
+            if (expression == "rest")
                 return (int)Math.Min(bufferLength - offset, int.MaxValue);
-            return siblingValues.TryGetValue(refId, out var v) ? (int)v : 0;
+
+            var (refId, adjustment) = SplitSizeExpression(expression);
+            if (!siblingValues.TryGetValue(refId, out var v))
+                return 0;
+
+            var baseSize = Math.Clamp(v, 0, int.MaxValue);
+            var adjusted = Math.Clamp(adjustment, int.MinValue, int.MaxValue);
+            return (int)Math.Clamp(baseSize + adjusted, 0, int.MaxValue);
         }
 
         return 0;
+    }
+
+    private static (string RefId, long Adjustment) SplitSizeExpression(string expression)
+    {
+        var signIndex = expression.LastIndexOfAny(['+', '-']);
+        if (signIndex <= 0 || !long.TryParse(expression.AsSpan(signIndex + 1), out var magnitude))
+            return (expression, 0);
+
+        return (expression[..signIndex].TrimEnd(), expression[signIndex] == '-' ? -magnitude : magnitude);
     }
 
     private static readonly Encoding ShiftJis =

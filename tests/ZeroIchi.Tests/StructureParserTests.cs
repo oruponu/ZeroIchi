@@ -233,6 +233,169 @@ public class StructureParserTests
     }
 
     [Fact]
+    public void Parse_SizeExpressionWithSubtraction_ExcludesLengthFieldItself()
+    {
+        const string json = """
+        {
+          "name": "SelfInclusiveLength",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint16" },
+            { "id": "payload", "name": "Payload", "type": "bytes", "size": "length-2" },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x00, 0x05, 0x11, 0x22, 0x33, 0x99]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        var payload = root.Children[1];
+        Assert.Equal("Payload", payload.Name);
+        Assert.Equal(2, payload.Offset);
+        Assert.Equal(3, payload.Length);
+
+        var trailer = root.Children[2];
+        Assert.Equal(5, trailer.Offset);
+        Assert.Equal("153", trailer.Description);
+    }
+
+    [Fact]
+    public void Parse_SizeExpressionWithNegativeResult_ClampsToZero()
+    {
+        const string json = """
+        {
+          "name": "ShortLength",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint16" },
+            { "id": "payload", "name": "Payload", "type": "bytes", "size": "length-2" },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x00, 0x01, 0x99]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        Assert.Equal(2, root.Children.Count);
+        Assert.Equal("Trailer", root.Children[1].Name);
+        Assert.Equal(2, root.Children[1].Offset);
+    }
+
+    [Fact]
+    public void Parse_SizeReferenceWithHyphen_TreatedAsIdentifier()
+    {
+        const string json = """
+        {
+          "name": "HyphenId",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "data-size", "name": "Data Size", "type": "uint8" },
+            { "id": "data", "name": "Data", "type": "bytes", "size": "data-size" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x03, 0x11, 0x22, 0x33]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        var data = root.Children[1];
+        Assert.Equal(1, data.Offset);
+        Assert.Equal(3, data.Length);
+    }
+
+    [Fact]
+    public void Parse_SizeReferenceEndingInSignedInteger_TreatedAsArithmetic()
+    {
+        const string json = """
+        {
+          "name": "AmbiguousId",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "part", "name": "Part", "type": "uint8" },
+            { "id": "data", "name": "Data", "type": "bytes", "size": "part-2" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x05, 0x11, 0x22, 0x33, 0x44]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        var data = root.Children[1];
+        Assert.Equal(1, data.Offset);
+        Assert.Equal(3, data.Length);
+    }
+
+    [Fact]
+    public void Parse_SizeExpressionWithAddition_ExtendsReferencedValue()
+    {
+        const string json = """
+        {
+          "name": "PaddedLength",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "count", "name": "Count", "type": "uint8" },
+            { "id": "payload", "name": "Payload", "type": "bytes", "size": "count+1" },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x02, 0x11, 0x22, 0x33, 0x99]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        var payload = root.Children[1];
+        Assert.Equal(1, payload.Offset);
+        Assert.Equal(3, payload.Length);
+
+        var trailer = root.Children[2];
+        Assert.Equal(4, trailer.Offset);
+        Assert.Equal("153", trailer.Description);
+    }
+
+    [Fact]
+    public void Parse_SizeExpressionWithExtremeValue_DoesNotOverflow()
+    {
+        const string json = """
+        {
+          "name": "HugeLength",
+          "extensions": ["bin"],
+          "magic": "7F",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint64" },
+            { "id": "payload", "name": "Payload", "type": "bytes", "size": "length+1" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer(
+            [0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x11, 0x22]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        var payload = root.Children[1];
+        Assert.Equal(8, payload.Offset);
+        Assert.Equal(2, payload.Length);
+    }
+
+    [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {
         var wav = new List<byte>();
