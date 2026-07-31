@@ -32,10 +32,10 @@ public static class StructureParser
 
         foreach (var field in fields)
         {
-            if (offset >= buffer.Length) break;
+            if (offset >= buffer.Length && field.Type is not "match") break;
 
             // 条件を満たさない場合は前回の値を再利用してフィールドをスキップ
-            if (field.PeekMin is { } peekMin)
+            if (offset < buffer.Length && field.PeekMin is { } peekMin)
             {
                 var peekByte = buffer.ReadByte(offset);
                 if (peekByte < peekMin)
@@ -57,8 +57,7 @@ public static class StructureParser
                     nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian, siblingValues));
                     break;
                 case "match":
-                    var matchNode = ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues);
-                    if (matchNode.Length > 0)
+                    if (ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues) is { } matchNode)
                         nodes.Add(matchNode);
                     break;
                 case "vlq":
@@ -159,20 +158,14 @@ public static class StructureParser
         };
     }
 
-    private static FileStructureNode ParseMatch(
+    private static FileStructureNode? ParseMatch(
         FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
         Dictionary<string, long> siblingValues)
     {
         if (field is not { On: { } on, Cases: { } cases }
             || !siblingValues.TryGetValue(on, out var matchValue))
         {
-            return new FileStructureNode
-            {
-                Name = field.Name,
-                FieldId = field.Id,
-                Offset = offset,
-                Length = 0,
-            };
+            return null;
         }
 
         foreach (var c in cases)
@@ -194,13 +187,7 @@ public static class StructureParser
             };
         }
 
-        return new FileStructureNode
-        {
-            Name = field.Name,
-            FieldId = field.Id,
-            Offset = offset,
-            Length = 0,
-        };
+        return null;
     }
 
     private static FileStructureNode ParseVlqField(
