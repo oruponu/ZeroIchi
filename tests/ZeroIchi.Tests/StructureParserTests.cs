@@ -518,6 +518,108 @@ public class StructureParserTests
         Assert.Equal(0, root.Children[1].Length);
     }
 
+    private static FormatDefinition LoadScanDefinition()
+    {
+        const string json = """
+        {
+          "name": "Scanned",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "header", "name": "Header", "type": "uint8" },
+            { "id": "body", "name": "Body", "type": "scan" },
+            { "id": "marker", "name": "Marker", "type": "uint16" }
+          ]
+        }
+        """;
+        return JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+    }
+
+    [Fact]
+    public void Parse_Scan_CrossesStuffedBytesAndStopsAtMarker()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0xFF, 0x00, 0x22, 0xFF, 0xD9]);
+
+        var root = StructureParser.Parse(LoadScanDefinition(), buffer);
+
+        var body = root.Children[1];
+        Assert.Equal("Body", body.Name);
+        Assert.Equal(1, body.Offset);
+        Assert.Equal(4, body.Length);
+        Assert.Equal(ValueKind.Bytes, body.ValueKind);
+
+        var marker = root.Children[2];
+        Assert.Equal(5, marker.Offset);
+        Assert.Equal("65497", marker.Description);
+    }
+
+    [Fact]
+    public void Parse_Scan_StopsAtRestartMarker()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0x22, 0xFF, 0xD0]);
+
+        var root = StructureParser.Parse(LoadScanDefinition(), buffer);
+
+        Assert.Equal(2, root.Children[1].Length);
+    }
+
+    [Fact]
+    public void Parse_Scan_CrossesReservedMarkerCode()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0xFF, 0x3A, 0x22, 0xFF, 0xD9]);
+
+        var root = StructureParser.Parse(LoadScanDefinition(), buffer);
+
+        Assert.Equal(4, root.Children[1].Length);
+
+        var marker = root.Children[2];
+        Assert.Equal(5, marker.Offset);
+        Assert.Equal("65497", marker.Description);
+    }
+
+    [Fact]
+    public void Parse_Scan_WithOneFillByte_LeavesLastByteForMarker()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0xFF, 0xFF, 0xD9]);
+
+        var root = StructureParser.Parse(LoadScanDefinition(), buffer);
+
+        Assert.Equal(2, root.Children[1].Length);
+
+        var marker = root.Children[2];
+        Assert.Equal(3, marker.Offset);
+        Assert.Equal("65497", marker.Description);
+    }
+
+    [Fact]
+    public void Parse_Scan_WithTwoFillBytes_LeavesLastByteForMarker()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0xFF, 0xFF, 0xFF, 0xD9]);
+
+        var root = StructureParser.Parse(LoadScanDefinition(), buffer);
+
+        Assert.Equal(3, root.Children[1].Length);
+
+        var marker = root.Children[2];
+        Assert.Equal(4, marker.Offset);
+        Assert.Equal("65497", marker.Description);
+    }
+
+    [Fact]
+    public void Parse_Scan_WithoutMarker_ConsumesRemainingBytes()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0x22, 0x33, 0xFF]);
+
+        var root = StructureParser.Parse(LoadScanDefinition(), buffer);
+
+        var body = root.Children[1];
+        Assert.Equal(1, body.Offset);
+        Assert.Equal(4, body.Length);
+
+        Assert.Equal(2, root.Children.Count);
+    }
+
     [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {

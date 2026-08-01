@@ -60,6 +60,11 @@ public static class StructureParser
                     if (ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues) is { } matchNode)
                         nodes.Add(matchNode);
                     break;
+                case "scan":
+                    var scanNode = ParseScanField(field, buffer, ref offset);
+                    if (scanNode.Length > 0)
+                        nodes.Add(scanNode);
+                    break;
                 case "vlq":
                     var vlqNode = ParseVlqField(field, buffer, ref offset, siblingValues);
                     if (vlqNode.Length > 0)
@@ -189,6 +194,54 @@ public static class StructureParser
 
         return null;
     }
+
+    private static FileStructureNode ParseScanField(
+        FieldDefinition field, ByteBuffer buffer, ref long offset)
+    {
+        var startOffset = offset;
+
+        while (offset < buffer.Length)
+        {
+            if (buffer.ReadByte(offset) != 0xFF)
+            {
+                offset++;
+                continue;
+            }
+
+            var runEnd = offset;
+            while (runEnd < buffer.Length && buffer.ReadByte(runEnd) == 0xFF)
+                runEnd++;
+
+            if (runEnd >= buffer.Length)
+            {
+                offset = buffer.Length;
+                break;
+            }
+
+            if (!IsMarkerCode(buffer.ReadByte(runEnd)))
+            {
+                offset = runEnd + 1;
+                continue;
+            }
+
+            offset = runEnd - 1;
+            break;
+        }
+
+        var length = (int)Math.Min(offset - startOffset, int.MaxValue);
+
+        return new FileStructureNode
+        {
+            Name = field.Name,
+            FieldId = field.Id,
+            Offset = startOffset,
+            Length = length,
+            Description = length > 0 ? FormatBytesHex(buffer, startOffset, length) : "",
+            ValueKind = ValueKind.Bytes,
+        };
+    }
+
+    private static bool IsMarkerCode(byte code) => code == 0x01 || code is >= 0xC0 and <= 0xFE;
 
     private static FileStructureNode ParseVlqField(
         FieldDefinition field, ByteBuffer buffer, ref long offset,
