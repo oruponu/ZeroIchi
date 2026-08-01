@@ -621,6 +621,48 @@ public class StructureParserTests
     }
 
     [Fact]
+    public void Parse_UnresolvedNameTemplate_FallsBackToDefaultName()
+    {
+        const string json = """
+        {
+          "name": "Tagged",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            {
+              "id": "items",
+              "name": "Items",
+              "type": "repeat",
+              "until": "eof",
+              "nameTemplate": "${body}",
+              "fields": [
+                { "id": "tag", "name": "Tag", "type": "uint8" },
+                {
+                  "id": "body",
+                  "name": "Body",
+                  "type": "match",
+                  "on": "tag",
+                  "cases": [
+                    { "name": "Known", "range": [1, 1] }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x01, 0x09]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var items = root.Children[0];
+
+        Assert.Equal("Known", items.Children[0].Name);
+        Assert.Equal("Items[1]", items.Children[1].Name);
+    }
+
+    [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {
         var wav = new List<byte>();

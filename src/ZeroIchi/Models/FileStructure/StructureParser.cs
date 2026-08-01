@@ -139,9 +139,7 @@ public static class StructureParser
 
             if (offset == iterationOffset) break; // 無限ループ防止
 
-            var iterationName = field.NameTemplate is not null
-                ? ResolveNameTemplate(field.NameTemplate, iterationChildren)
-                : $"{field.Name}[{children.Count}]";
+            var iterationName = ResolveIterationName(field, iterationChildren, children.Count);
 
             children.Add(new FileStructureNode
             {
@@ -310,6 +308,16 @@ public static class StructureParser
             Description = value.ToString(),
             ValueKind = ValueKind.Numeric,
         };
+    }
+
+    private static string ResolveIterationName(
+        FieldDefinition field, List<FileStructureNode> children, int index)
+    {
+        var fallback = $"{field.Name}[{index}]";
+        if (field.NameTemplate is null) return fallback;
+
+        var resolved = ResolveNameTemplate(field.NameTemplate, children);
+        return resolved.Contains("${") ? fallback : resolved;
     }
 
     private static string ResolveNameTemplate(string template, List<FileStructureNode> children)
