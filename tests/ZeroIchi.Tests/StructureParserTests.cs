@@ -662,6 +662,358 @@ public class StructureParserTests
         Assert.Equal("Items[1]", items.Children[1].Name);
     }
 
+    private static FormatDefinition LoadBoundedGroupDefinition()
+    {
+        const string json = """
+        {
+          "name": "Bounded",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                { "id": "first", "name": "First", "type": "uint16" },
+                { "id": "second", "name": "Second", "type": "uint16" }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        return JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+    }
+
+    [Fact]
+    public void Parse_BoundedGroup_StopsChildrenAtRegionEnd()
+    {
+        var buffer = new ArrayByteBuffer([0x03, 0x11, 0x22, 0x33, 0x99]);
+
+        var root = StructureParser.Parse(LoadBoundedGroupDefinition(), buffer);
+        var body = root.Children[1];
+
+        Assert.Equal(1, body.Offset);
+        Assert.Equal(3, body.Length);
+        Assert.Equal(2, body.Children[0].Length);
+        Assert.Equal(1, body.Children[1].Length);
+
+        var trailer = root.Children[2];
+        Assert.Equal(4, trailer.Offset);
+        Assert.Equal("153", trailer.Description);
+    }
+
+    [Fact]
+    public void Parse_BoundedGroup_ConsumesTrailingPadding()
+    {
+        var buffer = new ArrayByteBuffer([0x06, 0x11, 0x22, 0x33, 0x44, 0x00, 0x00, 0x99]);
+
+        var root = StructureParser.Parse(LoadBoundedGroupDefinition(), buffer);
+        var body = root.Children[1];
+
+        Assert.Equal(6, body.Length);
+        Assert.Equal(2, body.Children.Count);
+
+        var trailer = root.Children[2];
+        Assert.Equal(7, trailer.Offset);
+        Assert.Equal("153", trailer.Description);
+    }
+
+    [Fact]
+    public void Parse_BoundedGroupBeyondBufferEnd_StopsAtBufferEnd()
+    {
+        var buffer = new ArrayByteBuffer([0x08, 0x11, 0x22, 0x33]);
+
+        var root = StructureParser.Parse(LoadBoundedGroupDefinition(), buffer);
+        var body = root.Children[1];
+
+        Assert.Equal(1, body.Offset);
+        Assert.Equal(3, body.Length);
+        Assert.Equal(2, root.Children.Count);
+    }
+
+    [Fact]
+    public void Parse_RestInsideBoundedGroup_ResolvesToRegionRemainder()
+    {
+        const string json = """
+        {
+          "name": "BoundedRest",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                { "id": "head", "name": "Head", "type": "uint8" },
+                { "id": "filler", "name": "Filler", "type": "bytes", "size": "rest" }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x04, 0x11, 0x22, 0x33, 0x44, 0x99]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var filler = root.Children[1].Children[1];
+
+        Assert.Equal(2, filler.Offset);
+        Assert.Equal(3, filler.Length);
+        Assert.Equal(5, root.Children[2].Offset);
+    }
+
+    [Fact]
+    public void Parse_RestWithAdjustmentInsideBoundedGroup_LeavesRoomForLaterFields()
+    {
+        const string json = """
+        {
+          "name": "BoundedRestAdjusted",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                { "id": "head", "name": "Head", "type": "uint8" },
+                { "id": "filler", "name": "Filler", "type": "bytes", "size": "rest-2" },
+                { "id": "tailA", "name": "Tail A", "type": "uint8" },
+                { "id": "tailB", "name": "Tail B", "type": "uint8" }
+              ]
+            }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x05, 0x11, 0x22, 0x33, 0xAA, 0xBB]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var body = root.Children[1];
+
+        Assert.Equal(2, body.Children[1].Length);
+        Assert.Equal("170", body.Children[2].Description);
+        Assert.Equal("187", body.Children[3].Description);
+    }
+
+    [Fact]
+    public void Parse_NestedGroupInsideBoundedGroup_StopsAtRegionEnd()
+    {
+        const string json = """
+        {
+          "name": "NestedGroup",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                {
+                  "id": "inner",
+                  "name": "Inner",
+                  "type": "group",
+                  "fields": [
+                    { "id": "a", "name": "A", "type": "uint16" },
+                    { "id": "b", "name": "B", "type": "uint16" },
+                    { "id": "c", "name": "C", "type": "uint16" }
+                  ]
+                }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x04, 0x11, 0x11, 0x22, 0x22, 0x99]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var inner = root.Children[1].Children[0];
+
+        Assert.Equal(4, inner.Length);
+        Assert.Equal(5, root.Children[2].Offset);
+        Assert.Equal("153", root.Children[2].Description);
+    }
+
+    [Fact]
+    public void Parse_RepeatInsideBoundedGroup_StopsAtRegionEnd()
+    {
+        const string json = """
+        {
+          "name": "NestedRepeat",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                {
+                  "id": "items",
+                  "name": "Items",
+                  "type": "repeat",
+                  "until": "eof",
+                  "fields": [
+                    { "id": "value", "name": "Value", "type": "uint16" }
+                  ]
+                }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x04, 0x11, 0x11, 0x22, 0x22, 0x99, 0x88]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var items = root.Children[1].Children[0];
+
+        Assert.Equal(2, items.Children.Count);
+        Assert.Equal(4, items.Length);
+        Assert.Equal(5, root.Children[2].Offset);
+        Assert.Equal("153", root.Children[2].Description);
+    }
+
+    [Fact]
+    public void Parse_MatchInsideBoundedGroup_StopsAtRegionEnd()
+    {
+        const string json = """
+        {
+          "name": "NestedMatch",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                { "id": "tag", "name": "Tag", "type": "uint8" },
+                {
+                  "id": "content",
+                  "name": "Content",
+                  "type": "match",
+                  "on": "tag",
+                  "cases": [
+                    {
+                      "name": "Big",
+                      "range": [1, 1],
+                      "fields": [
+                        { "id": "data", "name": "Data", "type": "bytes", "size": 4 }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x03, 0x01, 0xAA, 0xBB, 0x99]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var data = root.Children[1].Children[1].Children[0];
+
+        Assert.Equal(2, data.Offset);
+        Assert.Equal(2, data.Length);
+        Assert.Equal(4, root.Children[2].Offset);
+        Assert.Equal("153", root.Children[2].Description);
+    }
+
+    [Fact]
+    public void Parse_ScanInsideBoundedGroup_StopsAtRegionEnd()
+    {
+        const string json = """
+        {
+          "name": "NestedScan",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint8" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": "length",
+              "fields": [
+                { "id": "data", "name": "Data", "type": "scan" }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x03, 0x11, 0x22, 0x33, 0x44, 0xFF, 0xD9]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var data = root.Children[1].Children[0];
+
+        Assert.Equal(1, data.Offset);
+        Assert.Equal(3, data.Length);
+        Assert.Equal(4, root.Children[2].Offset);
+        Assert.Equal("68", root.Children[2].Description);
+    }
+
+    [Fact]
+    public void Parse_GroupWithoutSize_ReadsWithoutLimit()
+    {
+        const string json = """
+        {
+          "name": "Unbounded",
+          "extensions": ["bin"],
+          "magic": "00",
+          "endian": "big",
+          "fields": [
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "fields": [
+                { "id": "first", "name": "First", "type": "uint16" },
+                { "id": "second", "name": "Second", "type": "uint16" }
+              ]
+            }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x00, 0x11, 0x22, 0x33]);
+
+        var root = StructureParser.Parse(definition, buffer);
+
+        Assert.Equal(4, root.Children[0].Length);
+    }
+
     [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {

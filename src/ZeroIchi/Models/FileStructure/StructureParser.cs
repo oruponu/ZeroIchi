@@ -25,17 +25,17 @@ public static class StructureParser
 
     private static List<FileStructureNode> ParseFields(
         FieldDefinition[] fields, ByteBuffer buffer, ref long offset, bool bigEndian,
-        Dictionary<string, long>? persistentValues = null)
+        Dictionary<string, long>? persistentValues = null, long limit = long.MaxValue)
     {
         var nodes = new List<FileStructureNode>();
         var siblingValues = new Dictionary<string, long>();
+        var end = Math.Min(limit, buffer.Length);
 
         foreach (var field in fields)
         {
-            if (offset >= buffer.Length && field.Type is not "match") break;
+            if (offset >= end && field.Type is not "match") break;
 
-            // 条件を満たさない場合は前回の値を再利用してフィールドをスキップ
-            if (offset < buffer.Length && field.PeekMin is { } peekMin)
+            if (offset < end && field.PeekMin is { } peekMin)
             {
                 var peekByte = buffer.ReadByte(offset);
                 if (peekByte < peekMin)
@@ -51,32 +51,32 @@ public static class StructureParser
             switch (field.Type)
             {
                 case "group":
-                    nodes.Add(ParseGroup(field, buffer, ref offset, fieldBigEndian));
+                    nodes.Add(ParseGroup(field, buffer, ref offset, fieldBigEndian, siblingValues, end));
                     break;
                 case "repeat":
-                    nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian, siblingValues));
+                    nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian, siblingValues, end));
                     break;
                 case "match":
-                    if (ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues) is { } matchNode)
+                    if (ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues, end) is { } matchNode)
                         nodes.Add(matchNode);
                     break;
                 case "scan":
-                    var scanNode = ParseScanField(field, buffer, ref offset);
+                    var scanNode = ParseScanField(field, buffer, ref offset, end);
                     if (scanNode.Length > 0)
                         nodes.Add(scanNode);
                     break;
                 case "vlq":
-                    var vlqNode = ParseVlqField(field, buffer, ref offset, siblingValues);
+                    var vlqNode = ParseVlqField(field, buffer, ref offset, siblingValues, end);
                     if (vlqNode.Length > 0)
                         nodes.Add(vlqNode);
                     break;
                 case "synchsafe":
-                    var synchsafeNode = ParseSynchsafeField(field, buffer, ref offset, siblingValues);
+                    var synchsafeNode = ParseSynchsafeField(field, buffer, ref offset, siblingValues, end);
                     if (synchsafeNode.Length > 0)
                         nodes.Add(synchsafeNode);
                     break;
                 default:
-                    var leaf = ParseLeafField(field, buffer, ref offset, fieldBigEndian, siblingValues);
+                    var leaf = ParseLeafField(field, buffer, ref offset, fieldBigEndian, siblingValues, end);
                     if (leaf.Length > 0)
                         nodes.Add(leaf);
                     break;
@@ -93,10 +93,22 @@ public static class StructureParser
     }
 
     private static FileStructureNode ParseGroup(
-        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian)
+        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
+        Dictionary<string, long> siblingValues, long limit)
     {
         var startOffset = offset;
-        var children = ParseFields(field.Fields ?? [], buffer, ref offset, bigEndian);
+
+        var groupLimit = limit;
+        if (field.Size is not null)
+        {
+            var size = Math.Max(ResolveSize(field, siblingValues, limit, offset), 0);
+            groupLimit = Math.Min(offset + size, limit);
+        }
+
+        var children = ParseFields(field.Fields ?? [], buffer, ref offset, bigEndian, null, groupLimit);
+
+        if (field.Size is not null)
+            offset = groupLimit;
 
         return new FileStructureNode
         {
@@ -110,16 +122,16 @@ public static class StructureParser
 
     private static FileStructureNode ParseRepeat(
         FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
-        Dictionary<string, long> siblingValues)
+        Dictionary<string, long> siblingValues, long limit)
     {
         var startOffset = offset;
         var children = new List<FileStructureNode>();
 
-        var end = buffer.Length;
+        var end = Math.Min(limit, buffer.Length);
         if (field.Size is not null)
         {
-            var size = Math.Max(ResolveSize(field, siblingValues, buffer.Length, offset), 0);
-            end = Math.Min(offset + size, buffer.Length);
+            var size = Math.Max(ResolveSize(field, siblingValues, end, offset), 0);
+            end = Math.Min(offset + size, end);
         }
 
         var persistentValues = new Dictionary<string, long>();
@@ -135,7 +147,7 @@ public static class StructureParser
 
             var iterationOffset = offset;
             var iterationChildren = ParseFields(
-                repeatFields, buffer, ref offset, bigEndian, persistentValues);
+                repeatFields, buffer, ref offset, bigEndian, persistentValues, end);
 
             if (offset == iterationOffset) break; // 無限ループ防止
 
@@ -163,7 +175,7 @@ public static class StructureParser
 
     private static FileStructureNode? ParseMatch(
         FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
-        Dictionary<string, long> siblingValues)
+        Dictionary<string, long> siblingValues, long limit)
     {
         if (field is not { On: { } on, Cases: { } cases }
             || !siblingValues.TryGetValue(on, out var matchValue))
@@ -177,7 +189,7 @@ public static class StructureParser
                 continue;
 
             var startOffset = offset;
-            var children = ParseFields(c.Fields ?? [], buffer, ref offset, bigEndian);
+            var children = ParseFields(c.Fields ?? [], buffer, ref offset, bigEndian, null, limit);
 
             return new FileStructureNode
             {
@@ -194,11 +206,11 @@ public static class StructureParser
     }
 
     private static FileStructureNode ParseScanField(
-        FieldDefinition field, ByteBuffer buffer, ref long offset)
+        FieldDefinition field, ByteBuffer buffer, ref long offset, long limit)
     {
         var startOffset = offset;
 
-        while (offset < buffer.Length)
+        while (offset < limit)
         {
             if (buffer.ReadByte(offset) != 0xFF)
             {
@@ -207,12 +219,12 @@ public static class StructureParser
             }
 
             var runEnd = offset;
-            while (runEnd < buffer.Length && buffer.ReadByte(runEnd) == 0xFF)
+            while (runEnd < limit && buffer.ReadByte(runEnd) == 0xFF)
                 runEnd++;
 
-            if (runEnd >= buffer.Length)
+            if (runEnd >= limit)
             {
-                offset = buffer.Length;
+                offset = limit;
                 break;
             }
 
@@ -243,12 +255,12 @@ public static class StructureParser
 
     private static FileStructureNode ParseVlqField(
         FieldDefinition field, ByteBuffer buffer, ref long offset,
-        Dictionary<string, long> siblingValues)
+        Dictionary<string, long> siblingValues, long limit)
     {
         var startOffset = offset;
         var value = 0L;
 
-        for (var i = 0; i < 4 && offset < buffer.Length; i++)
+        for (var i = 0; i < 4 && offset < limit; i++)
         {
             var b = buffer.ReadByte(offset++);
             value = (value << 7) | (b & 0x7FL);
@@ -284,13 +296,13 @@ public static class StructureParser
 
     private static FileStructureNode ParseSynchsafeField(
         FieldDefinition field, ByteBuffer buffer, ref long offset,
-        Dictionary<string, long> siblingValues)
+        Dictionary<string, long> siblingValues, long limit)
     {
         var startOffset = offset;
         var value = 0L;
         var bytesRead = 0;
 
-        for (var i = 0; i < 4 && offset < buffer.Length; i++)
+        for (var i = 0; i < 4 && offset < limit; i++)
         {
             var b = buffer.ReadByte(offset++);
             value = (value << 7) | (b & 0x7FL);
@@ -333,13 +345,12 @@ public static class StructureParser
 
     private static FileStructureNode ParseLeafField(
         FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
-        Dictionary<string, long> siblingValues)
+        Dictionary<string, long> siblingValues, long limit)
     {
-        var size = ResolveSize(field, siblingValues, buffer.Length, offset);
+        var size = ResolveSize(field, siblingValues, limit, offset);
         if (size < 0) size = 0;
 
-        // 残りのバッファサイズを超えないよう制限
-        var available = (int)Math.Min(buffer.Length - offset, int.MaxValue);
+        var available = (int)Math.Min(limit - offset, int.MaxValue);
         var actualSize = Math.Min(size, available);
 
         var numericValue = ReadNumericValue(field.Type, buffer, offset, actualSize, bigEndian);
@@ -365,7 +376,7 @@ public static class StructureParser
     }
 
     private static int ResolveSize(
-        FieldDefinition field, Dictionary<string, long> siblingValues, long bufferLength, long offset)
+        FieldDefinition field, Dictionary<string, long> siblingValues, long limit, long offset)
     {
         if (field.FixedSize >= 0)
             return field.FixedSize;
@@ -379,16 +390,17 @@ public static class StructureParser
         if (sizeElement.ValueKind == JsonValueKind.String)
         {
             var expression = sizeElement.GetString()!;
-            if (expression == "rest")
-                return (int)Math.Min(bufferLength - offset, int.MaxValue);
-
             var (refId, adjustment) = SplitSizeExpression(expression);
-            if (!siblingValues.TryGetValue(refId, out var v))
+
+            long baseValue;
+            if (refId == "rest")
+                baseValue = limit - offset;
+            else if (!siblingValues.TryGetValue(refId, out baseValue))
                 return 0;
 
-            var baseSize = Math.Clamp(v, 0, int.MaxValue);
-            var adjusted = Math.Clamp(adjustment, int.MinValue, int.MaxValue);
-            return (int)Math.Clamp(baseSize + adjusted, 0, int.MaxValue);
+            var clampedBase = Math.Clamp(baseValue, 0, int.MaxValue);
+            var clampedAdjustment = Math.Clamp(adjustment, int.MinValue, int.MaxValue);
+            return (int)Math.Clamp(clampedBase + clampedAdjustment, 0, int.MaxValue);
         }
 
         return 0;
