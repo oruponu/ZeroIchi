@@ -75,6 +75,133 @@ public class StructureParserTests
         return JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
     }
 
+    private static byte[] BuildMinimalJpeg()
+    {
+        var data = new List<byte>();
+
+        // SOI
+        data.AddRange(new byte[] { 0xFF, 0xD8 });
+
+        // APP0 (JFIF)
+        data.AddRange(new byte[] { 0xFF, 0xE0, 0x00, 0x10 });
+        data.AddRange("JFIF\0"u8.ToArray());
+        data.AddRange(new byte[] { 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00 });
+
+        // DQT
+        data.AddRange(new byte[] { 0xFF, 0xDB, 0x00, 0x43, 0x00 });
+        data.AddRange(new byte[64]);
+
+        // SOF0
+        data.AddRange(new byte[] { 0xFF, 0xC0, 0x00, 0x11, 0x08 });
+        data.AddRange(new byte[] { 0x00, 0x40 });
+        data.AddRange(new byte[] { 0x00, 0x60 });
+        data.Add(0x03);
+        data.AddRange(new byte[9]);
+
+        // DHT
+        data.AddRange(new byte[] { 0xFF, 0xC4, 0x00, 0x1F, 0x00 });
+        data.AddRange(new byte[] { 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
+        data.AddRange(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B });
+
+        // SOS
+        data.AddRange(new byte[] { 0xFF, 0xDA, 0x00, 0x0C, 0x03 });
+        data.AddRange(new byte[6]);
+        data.AddRange(new byte[] { 0x00, 0x3F, 0x00 });
+
+        // スキャンデータ
+        data.AddRange(new byte[] { 0x11, 0x22, 0xFF, 0x00, 0x33 });
+
+        // EOI
+        data.AddRange(new byte[] { 0xFF, 0xD9 });
+
+        return [.. data];
+    }
+
+    private static byte[] BuildJpegWithRestartMarker()
+    {
+        var data = new List<byte>();
+
+        data.AddRange(new byte[] { 0xFF, 0xD8 });
+        data.AddRange(new byte[] { 0xFF, 0xDA, 0x00, 0x0C, 0x03 });
+        data.AddRange(new byte[6]);
+        data.AddRange(new byte[] { 0x00, 0x3F, 0x00 });
+        data.AddRange(new byte[] { 0xAA, 0xBB });
+        data.AddRange(new byte[] { 0xFF, 0xD0 });
+        data.Add(0xCC);
+        data.AddRange(new byte[] { 0xFF, 0xD9 });
+
+        return [.. data];
+    }
+
+    private static byte[] BuildJpegWithFillBytes(int fillByteCount)
+    {
+        var data = new List<byte>();
+
+        data.AddRange(new byte[] { 0xFF, 0xD8 });
+
+        data.AddRange(new byte[] { 0xFF, 0xE0, 0x00, 0x10 });
+        data.AddRange("JFIF\0"u8.ToArray());
+        data.AddRange(new byte[] { 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00 });
+
+        for (var i = 0; i < fillByteCount; i++)
+            data.Add(0xFF);
+
+        data.AddRange(new byte[] { 0xFF, 0xD9 });
+
+        return [.. data];
+    }
+
+    private static byte[] BuildJpegWithShortApp0()
+    {
+        var data = new List<byte>();
+
+        data.AddRange(new byte[] { 0xFF, 0xD8 });
+
+        // JFIF の固定フィールドより短い APP0
+        data.AddRange(new byte[] { 0xFF, 0xE0, 0x00, 0x0D });
+        data.AddRange("JFIF\0"u8.ToArray());
+        data.AddRange(new byte[] { 0x01, 0x01, 0x00, 0x00, 0x01, 0x00 });
+
+        data.AddRange(new byte[] { 0xFF, 0xD9 });
+
+        return [.. data];
+    }
+
+    private static byte[] BuildJpegWithReservedMarker()
+    {
+        var data = new List<byte>();
+
+        data.AddRange(new byte[] { 0xFF, 0xD8 });
+
+        data.AddRange(new byte[] { 0xFF, 0xE0, 0x00, 0x10 });
+        data.AddRange("JFIF\0"u8.ToArray());
+        data.AddRange(new byte[] { 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00 });
+
+        data.AddRange(new byte[] { 0xFF, 0x50 });
+
+        data.AddRange(new byte[] { 0xFF, 0xD9 });
+
+        return [.. data];
+    }
+
+    private static byte[] BuildJpegWithTrailingSegment()
+    {
+        var data = new List<byte>(BuildMinimalJpeg());
+
+        data.AddRange(new byte[] { 0xFF, 0xFE, 0x00, 0x04 });
+        data.AddRange("AB"u8.ToArray());
+
+        return [.. data];
+    }
+
+    private static FormatDefinition LoadJpegDefinition()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+        return DefinitionRegistry.TryMatch(buffer)!;
+    }
+
+    private static FileStructureNode SegmentBody(FileStructureNode segment) => segment.Children[^1];
+
     [Fact]
     public void Parse_IncompleteBuffer_ReturnsPartialResult()
     {
@@ -1015,6 +1142,163 @@ public class StructureParserTests
     }
 
     [Fact]
+    public void Parse_MinimalJpeg_ListsSegmentsInOrder()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal("SOI", root.Children[0].Name);
+        Assert.Equal(
+            ["APP0 (JFIF)", "DQT", "SOF0 (Baseline DCT)", "DHT", "SOS", "EOI"],
+            segments.Children.Select(c => c.Name));
+    }
+
+    [Fact]
+    public void Parse_MinimalJpeg_SegmentLengthExcludesNextMarker()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        var app0 = segments.Children[0];
+        Assert.Equal(2, app0.Offset);
+        Assert.Equal(18, app0.Length);
+
+        var dqt = segments.Children[1];
+        Assert.Equal(20, dqt.Offset);
+        Assert.Equal(69, dqt.Length);
+    }
+
+    [Fact]
+    public void Parse_MinimalJpeg_DecodesFrameHeader()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var header = SegmentBody(root.Children[1].Children[2]).Children[1];
+
+        Assert.Equal("Frame Header", header.Name);
+        Assert.Equal("8", header.Children[0].Description);
+        Assert.Equal("64", header.Children[1].Description);
+        Assert.Equal("96", header.Children[2].Description);
+        Assert.Equal("3", header.Children[3].Description);
+        Assert.Equal(9, header.Children[4].Length);
+    }
+
+    [Fact]
+    public void Parse_MinimalJpeg_DecodesJfifIdentifier()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var header = SegmentBody(root.Children[1].Children[0]).Children[1];
+
+        Assert.Equal("JFIF Header", header.Name);
+        Assert.StartsWith("JFIF", header.Children[0].Description);
+    }
+
+    [Fact]
+    public void Parse_MinimalJpeg_ScanDataStopsBeforeEndMarker()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var sos = SegmentBody(root.Children[1].Children[4]);
+        var scanData = sos.Children[^1];
+
+        Assert.Equal("Scan Data", scanData.Name);
+        Assert.Equal(5, scanData.Length);
+    }
+
+    [Fact]
+    public void Parse_JpegWithRestartMarker_SplitsScanAtRestart()
+    {
+        var buffer = new ArrayByteBuffer(BuildJpegWithRestartMarker());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal(["SOS", "RSTn", "EOI"], segments.Children.Select(c => c.Name));
+        Assert.Equal(2, SegmentBody(segments.Children[0]).Children[^1].Length);
+        Assert.Equal(1, SegmentBody(segments.Children[1]).Children[0].Length);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Parse_JpegWithFillBytesBeforeMarker_KeepsMarkerAligned(int fillByteCount)
+    {
+        var buffer = new ArrayByteBuffer(BuildJpegWithFillBytes(fillByteCount));
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal(["APP0 (JFIF)", "EOI"], segments.Children.Select(c => c.Name));
+
+        var fill = segments.Children[1].Children[0];
+        Assert.Equal("Fill Bytes", fill.Name);
+        Assert.Equal(fillByteCount, fill.Length);
+    }
+
+    [Fact]
+    public void Parse_JpegWithShortApp0_StopsAtDeclaredLength()
+    {
+        var buffer = new ArrayByteBuffer(BuildJpegWithShortApp0());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal(["APP0 (JFIF)", "EOI"], segments.Children.Select(c => c.Name));
+        Assert.Equal(2, segments.Children[0].Offset);
+        Assert.Equal(15, segments.Children[0].Length);
+        Assert.Equal(17, segments.Children[1].Offset);
+    }
+
+    [Fact]
+    public void Parse_JpegWithReservedMarkerCode_SkipsToNextRealMarker()
+    {
+        var buffer = new ArrayByteBuffer(BuildJpegWithReservedMarker());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal(["APP0 (JFIF)", "EOI"], segments.Children.Select(c => c.Name));
+
+        var fill = segments.Children[1].Children[0];
+        Assert.Equal("Fill Bytes", fill.Name);
+        Assert.Equal(2, fill.Length);
+    }
+
+    [Fact]
+    public void Parse_JpegWithDataAfterEndMarker_KeepsParsing()
+    {
+        var buffer = new ArrayByteBuffer(BuildJpegWithTrailingSegment());
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal(
+            ["APP0 (JFIF)", "DQT", "SOF0 (Baseline DCT)", "DHT", "SOS", "EOI", "COM"],
+            segments.Children.Select(c => c.Name));
+        Assert.Equal("AB", SegmentBody(segments.Children[^1]).Children[1].Description);
+    }
+
+    [Fact]
+    public void Parse_TruncatedJpeg_ReturnsPartialTree()
+    {
+        var jpeg = BuildMinimalJpeg();
+        var buffer = new ArrayByteBuffer(jpeg[..144]); // 141 (DHT まで) + 2 (SOS マーカー) + 1 (セグメントサイズの途中)
+
+        var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
+        var segments = root.Children[1];
+
+        Assert.Equal("SOS", segments.Children[^1].Name);
+    }
+
+    [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {
         var wav = new List<byte>();
@@ -1069,5 +1353,16 @@ public class StructureParserTests
         var definition = DefinitionRegistry.TryMatch(buffer);
 
         Assert.Null(definition);
+    }
+
+    [Fact]
+    public void DefinitionRegistry_TryMatch_MatchesJpeg()
+    {
+        var buffer = new ArrayByteBuffer(BuildMinimalJpeg());
+
+        var definition = DefinitionRegistry.TryMatch(buffer);
+
+        Assert.NotNull(definition);
+        Assert.Equal("JPEG", definition.Name);
     }
 }
