@@ -251,7 +251,7 @@ public static class StructureParser
         };
     }
 
-    private static bool IsMarkerCode(byte code) => code == 0x01 || code is >= 0xC0 and <= 0xFE;
+    private static bool IsMarkerCode(byte code) => code is 0x01 or >= 0xC0 and <= 0xFE;
 
     private static FileStructureNode ParseVlqField(
         FieldDefinition field, ByteBuffer buffer, ref long offset,
