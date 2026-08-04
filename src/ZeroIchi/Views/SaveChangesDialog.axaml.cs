@@ -7,7 +7,7 @@ using ZeroIchi.Services;
 
 namespace ZeroIchi.Views;
 
-public partial class SaveChangesDialog : Window
+public sealed partial class SaveChangesDialog : Window
 {
     private SaveChangesResult Result { get; set; } = SaveChangesResult.Cancel;
 

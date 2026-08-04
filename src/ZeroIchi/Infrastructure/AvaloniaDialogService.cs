@@ -6,7 +6,7 @@ using ZeroIchi.Views;
 
 namespace ZeroIchi.Infrastructure;
 
-public class AvaloniaDialogService(Window window, IShellWindow shell) : IDialogService
+public sealed class AvaloniaDialogService(Window window, IShellWindow shell) : IDialogService
 {
     public async Task<string?> PickOpenFileAsync(string title)
     {

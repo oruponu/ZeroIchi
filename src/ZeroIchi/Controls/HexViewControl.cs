@@ -12,7 +12,7 @@ using ZeroIchi.Models.FileStructure;
 
 namespace ZeroIchi.Controls;
 
-public partial class HexViewControl : Control, ILogicalScrollable
+public sealed partial class HexViewControl : Control, ILogicalScrollable
 {
     public static readonly StyledProperty<BinaryDocument?> DocumentProperty =
         AvaloniaProperty.Register<HexViewControl, BinaryDocument?>(nameof(Document));

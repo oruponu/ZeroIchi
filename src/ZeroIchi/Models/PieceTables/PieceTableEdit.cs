@@ -1,6 +1,6 @@
 namespace ZeroIchi.Models.PieceTables;
 
-public record PieceTableEdit
+public sealed record PieceTableEdit
 {
     public required PieceTable Owner { get; init; }
     public required long StateBefore { get; init; }

@@ -7,7 +7,7 @@ using ZeroIchi.Views;
 
 namespace ZeroIchi;
 
-public class ViewLocator(IServiceProvider services) : IDataTemplate
+public sealed class ViewLocator(IServiceProvider services) : IDataTemplate
 {
     public Control? Build(object? data) => data switch
     {

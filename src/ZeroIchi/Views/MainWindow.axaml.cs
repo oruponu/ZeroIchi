@@ -11,7 +11,7 @@ using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Views;
 
-public partial class MainWindow : Window, IShellWindow
+public sealed partial class MainWindow : Window, IShellWindow
 {
     private bool _isClosingConfirmed;
     private MainWindowViewModel? _viewModel;

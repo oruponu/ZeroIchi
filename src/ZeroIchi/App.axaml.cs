@@ -13,7 +13,7 @@ using ZeroIchi.Views;
 
 namespace ZeroIchi;
 
-public partial class App : Application
+public sealed partial class App : Application
 {
     private static readonly int[] CjkFallbackCodepoints = ['漢', 'あ', 'ア', 'ㄅ', '한'];
 

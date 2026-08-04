@@ -15,7 +15,7 @@ using ZeroIchi.Services;
 
 namespace ZeroIchi.ViewModels;
 
-public partial class MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
+public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
     : ViewModelBase
 {
     private static readonly IContentInspector Inspector = new ContentInspectorBuilder
