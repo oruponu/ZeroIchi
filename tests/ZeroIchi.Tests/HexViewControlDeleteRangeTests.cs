@@ -3,7 +3,7 @@ using ZeroIchi.Controls;
 
 namespace ZeroIchi.Tests;
 
-public class HexViewControlDeleteRangeTests
+public sealed class HexViewControlDeleteRangeTests
 {
     [Theory]
     // 仮想セルまで届く選択 → 実データ末尾までにクランプ

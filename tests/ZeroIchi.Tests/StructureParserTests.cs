@@ -4,7 +4,7 @@ using ZeroIchi.Models.FileStructure;
 
 namespace ZeroIchi.Tests;
 
-public class StructureParserTests
+public sealed class StructureParserTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

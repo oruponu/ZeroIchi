@@ -3,7 +3,7 @@ using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Tests;
 
-public class BinaryDocumentEmptyFileTests : IDisposable
+public sealed class BinaryDocumentEmptyFileTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "ZeroIchiTests_" + Guid.NewGuid().ToString("N"));
 

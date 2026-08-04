@@ -3,7 +3,7 @@ using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Tests;
 
-public class PieceTableUndoGuardTests
+public sealed class PieceTableUndoGuardTests
 {
     [Fact]
     public void UndoEdit_EditFromAnotherTable_Throws()

@@ -3,7 +3,7 @@ using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Tests;
 
-public class MainWindowViewModelSearchTests
+public sealed class MainWindowViewModelSearchTests
 {
     private const int ChunkSize = 65536;
     private const int BufferSize = ChunkSize * 4;

@@ -4,7 +4,7 @@ using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Tests;
 
-public class MainWindowViewModelUndoTests : IDisposable
+public sealed class MainWindowViewModelUndoTests : IDisposable
 {
     static MainWindowViewModelUndoTests() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
