@@ -261,23 +261,107 @@ public sealed class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
-    public async Task Save_WithShift_CreatesAndDeletesJournal()
+    public async Task Save_TempFileBlocked_KeepsDocumentAndFileIntact()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+        Directory.CreateDirectory(path + ".zitmp");
+
+        var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(50, [0xAA]);
+
+        Assert.Throws<UnauthorizedAccessException>(() => doc.Save());
+
+        var view = new byte[101];
+        doc.Buffer.ReadBytes(0, view, 0, 101);
+        Assert.Equal(0xAA, view[50]);
+
+        doc.ReleaseData();
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task Save_ReplaceBlocked_RestoresMappingAndKeepsFileIntact()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+
+        var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(50, [0xAA]);
+
+        using (var blocker = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            Assert.Throws<IOException>(() => doc.Save());
+        }
+
+        var view = new byte[101];
+        doc.Buffer.ReadBytes(0, view, 0, 101);
+        Assert.Equal(0xAA, view[50]);
+        Assert.False(File.Exists(path + ".zitmp"));
+
+        doc.ReleaseData();
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task Save_InPlaceBlocked_RestoresMappingAndKeepsFileIntact()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+
+        var doc = BinaryDocument.Open(path);
+        doc.WriteByte(50, 0xAA);
+
+        using (var blocker = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            Assert.Throws<IOException>(() => doc.Save());
+        }
+
+        Assert.Equal(original[10], doc.Buffer.ReadByte(10));
+        Assert.Equal(0xAA, doc.Buffer.ReadByte(50));
+
+        doc.ReleaseData();
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task Open_CompletesInterruptedReplace()
+    {
+        var path = Path.Combine(_tempDir, "main.bin");
+        var newContent = MakeSequential(80);
+        File.WriteAllBytes(path + ".zitmp", newContent);
+
+        var doc = BinaryDocument.Open(path);
+        doc.ReleaseData();
+
+        Assert.False(File.Exists(path + ".zitmp"));
+        Assert.Equal(newContent, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public void Open_DeletesStaleTempFile()
+    {
+        var path = CreateTestFile(MakeSequential(10));
+        File.WriteAllBytes(path + ".zitmp", [1, 2, 3]);
+
+        var doc = BinaryDocument.Open(path);
+        doc.ReleaseData();
+
+        Assert.False(File.Exists(path + ".zitmp"));
+    }
+
+    [Fact]
+    public void Save_WithShift_LeavesNoTempOrJournalFile()
     {
         var path = CreateTestFile(MakeSequential(50));
-        var journalPath = path + ".journal";
-
-        var journalCreated = new ManualResetEventSlim(false);
-        using var watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!, Path.GetFileName(journalPath));
-        watcher.Created += (_, _) => journalCreated.Set();
-        watcher.EnableRaisingEvents = true;
 
         var doc = BinaryDocument.Open(path);
         doc.InsertBytes(10, [0xAA]);
         doc.Save();
         doc.ReleaseData();
 
-        Assert.True(journalCreated.Wait(TimeSpan.FromSeconds(5)));
-        Assert.False(File.Exists(journalPath));
+        Assert.False(File.Exists(path + ".zitmp"));
+        Assert.False(File.Exists(path + ".journal"));
     }
 
     [Fact]

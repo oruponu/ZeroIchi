@@ -41,6 +41,16 @@ public sealed class BinaryDocument
 
     public static BinaryDocument Open(string path)
     {
+        var tempPath = path + ".zitmp";
+        if (File.Exists(path))
+        {
+            TryDeleteTempFile(tempPath);
+        }
+        else if (File.Exists(tempPath))
+        {
+            File.Move(tempPath, path);
+        }
+
         var journalPath = path + ".journal";
         if (File.Exists(journalPath))
             RecoverFromJournal(path, journalPath);
@@ -77,35 +87,87 @@ public sealed class BinaryDocument
         if (!IsModified || IsNew) return;
 
         var (entries, finalSize, needsShift) = ComputeWritePlan();
+        if (needsShift)
+            SaveByReplace();
+        else
+            SaveInPlace(entries, finalSize);
+
+        var newOriginal = new MappedByteBuffer(FilePath);
+        _original.Dispose();
+        ResetPieceTable(newOriginal);
+    }
+
+    private void SaveInPlace(WritePlanEntry[] entries, long finalSize)
+    {
         var workBuffer = ArrayPool<byte>.Shared.Rent(81920);
         try
         {
-            // シフトがなければ非破壊な上書きのみなのでジャーナル不要
-            string? journalPath = null;
-            if (needsShift)
-            {
-                journalPath = FilePath + ".journal";
-                WriteJournal(journalPath, entries, finalSize, workBuffer);
-            }
-
             // マッピング中のファイルは上書きできないため先に解放する
             if (_original is MappedByteBuffer mapped)
                 mapped.ReleaseMapping();
 
-            using (var fs = new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            try
             {
+                using var fs = new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
                 WritePiecesInPlace(fs, entries, finalSize, workBuffer, _pieceTable.ReadAddBuffer);
             }
-
-            if (journalPath is not null)
-                File.Delete(journalPath);
-
-            _original.Dispose();
-            ResetPieceTable(new MappedByteBuffer(FilePath));
+            catch
+            {
+                (_original as MappedByteBuffer)?.RestoreMapping();
+                throw;
+            }
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(workBuffer);
+        }
+    }
+
+    private void SaveByReplace()
+    {
+        var tempPath = FilePath + ".zitmp";
+        try
+        {
+            using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            _pieceTable.WriteTo(fs);
+            fs.Flush(flushToDisk: true);
+        }
+        catch
+        {
+            TryDeleteTempFile(tempPath);
+            throw;
+        }
+
+        if (_original is MappedByteBuffer mapped)
+            mapped.ReleaseMapping();
+
+        try
+        {
+            File.Replace(tempPath, FilePath, destinationBackupFileName: null);
+        }
+        catch
+        {
+            if (!File.Exists(FilePath))
+            {
+                File.Move(tempPath, FilePath);
+            }
+            else
+            {
+                (_original as MappedByteBuffer)?.RestoreMapping();
+                TryDeleteTempFile(tempPath);
+                throw;
+            }
+        }
+    }
+
+    private static void TryDeleteTempFile(string tempPath)
+    {
+        try
+        {
+            File.Delete(tempPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
         }
     }
 
