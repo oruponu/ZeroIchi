@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using ZeroIchi.Models;
 
 namespace ZeroIchi.Tests;
@@ -24,35 +23,6 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         for (var i = 0; i < length; i++)
             data[i] = (byte)(i % 256);
         return data;
-    }
-
-    private static void WriteTestJournal(
-        string path, long finalSize, (byte source, long offset, long length)[] pieces, byte[] addBuffer)
-    {
-        using var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-        Span<byte> buf = stackalloc byte[17];
-
-        fs.Write("ZIJF"u8);
-
-        BinaryPrimitives.WriteInt64LittleEndian(buf, finalSize);
-        fs.Write(buf[..8]);
-
-        BinaryPrimitives.WriteInt32LittleEndian(buf, pieces.Length);
-        fs.Write(buf[..4]);
-
-        foreach (var (source, offset, length) in pieces)
-        {
-            buf[0] = source;
-            BinaryPrimitives.WriteInt64LittleEndian(buf[1..], offset);
-            BinaryPrimitives.WriteInt64LittleEndian(buf[9..], length);
-            fs.Write(buf);
-        }
-
-        BinaryPrimitives.WriteInt32LittleEndian(buf, addBuffer.Length);
-        fs.Write(buf[..4]);
-
-        if (addBuffer.Length > 0)
-            fs.Write(addBuffer);
     }
 
     [Fact]
@@ -373,38 +343,6 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.Save();
         doc.ReleaseData();
-
-        Assert.False(File.Exists(journalPath));
-    }
-
-    [Fact]
-    public async Task Open_RecoverFromJournal_RestoresCorrectData()
-    {
-        var original = MakeSequential(100);
-        var path = CreateTestFile(original);
-        var journalPath = path + ".journal";
-
-        // Insert [0xAA, 0xBB] at position 50 を表すジャーナルを作成
-        WriteTestJournal(journalPath, 102, [
-            (0, 0, 50),
-            (1, 0, 2),
-            (0, 50, 50),
-        ], [0xAA, 0xBB]);
-
-        var doc = BinaryDocument.Open(path);
-        doc.ReleaseData();
-
-        var saved = await File.ReadAllBytesAsync(path);
-        Assert.Equal(102, saved.Length);
-
-        for (var i = 0; i < 50; i++)
-            Assert.Equal(original[i], saved[i]);
-
-        Assert.Equal([0xAA, 0xBB], saved[50..52]);
-
-        // 後半は2バイト後ろにずれる
-        for (var i = 50; i < 100; i++)
-            Assert.Equal(original[i], saved[i + 2]);
 
         Assert.False(File.Exists(journalPath));
     }

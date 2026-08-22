@@ -1,6 +1,5 @@
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.IO;
 using System.Threading.Tasks;
 using ZeroIchi.Models.Buffers;
@@ -11,7 +10,6 @@ namespace ZeroIchi.Models;
 
 public sealed class BinaryDocument
 {
-    private static ReadOnlySpan<byte> JournalMagic => "ZIJF"u8;
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);
 
     private ByteBuffer _original;
@@ -50,10 +48,6 @@ public sealed class BinaryDocument
         {
             File.Move(tempPath, path);
         }
-
-        var journalPath = path + ".journal";
-        if (File.Exists(journalPath))
-            RecoverFromJournal(path, journalPath);
 
         return new BinaryDocument(path, new MappedByteBuffer(path));
     }
@@ -221,27 +215,12 @@ public sealed class BinaryDocument
         return (entries, outputOffset, needsShift);
     }
 
-    // 右シフトを後ろから、左シフトを前から処理することで
-    // 移動元のデータが上書きされる前に必ず読み出される
     private static void WritePiecesInPlace(
         FileStream fs, WritePlanEntry[] entries, long finalSize, byte[] workBuffer,
         Action<long, byte[], int, int> readAddBuffer)
     {
         if (finalSize > fs.Length)
             fs.SetLength(finalSize);
-
-        for (var i = entries.Length - 1; i >= 0; i--)
-        {
-            var entry = entries[i];
-            if (entry.Piece.Source == PieceSource.Original && entry.OutputOffset > entry.Piece.Offset)
-                CopyWithinFile(fs, entry.Piece.Offset, entry.OutputOffset, entry.Piece.Length, workBuffer, backward: true);
-        }
-
-        foreach (var entry in entries)
-        {
-            if (entry.Piece.Source == PieceSource.Original && entry.OutputOffset < entry.Piece.Offset)
-                CopyWithinFile(fs, entry.Piece.Offset, entry.OutputOffset, entry.Piece.Length, workBuffer, backward: false);
-        }
 
         foreach (var entry in entries)
         {
@@ -264,144 +243,4 @@ public sealed class BinaryDocument
             fs.SetLength(finalSize);
     }
 
-    private static void CopyWithinFile(FileStream fs, long src, long dst, long length, byte[] buffer, bool backward)
-    {
-        if (backward)
-        {
-            var remaining = length;
-            while (remaining > 0)
-            {
-                var chunk = (int)Math.Min(remaining, buffer.Length);
-                remaining -= chunk;
-                fs.Position = src + remaining;
-                fs.ReadExactly(buffer, 0, chunk);
-                fs.Position = dst + remaining;
-                fs.Write(buffer, 0, chunk);
-            }
-        }
-        else
-        {
-            long offset = 0;
-            while (offset < length)
-            {
-                var chunk = (int)Math.Min(length - offset, buffer.Length);
-                fs.Position = src + offset;
-                fs.ReadExactly(buffer, 0, chunk);
-                fs.Position = dst + offset;
-                fs.Write(buffer, 0, chunk);
-                offset += chunk;
-            }
-        }
-    }
-
-    private void WriteJournal(string journalPath, WritePlanEntry[] entries, long finalSize, byte[] workBuffer)
-    {
-        using var fs = new FileStream(journalPath, FileMode.Create, FileAccess.Write, FileShare.None);
-        Span<byte> buf = stackalloc byte[17];
-
-        fs.Write(JournalMagic);
-
-        BinaryPrimitives.WriteInt64LittleEndian(buf, finalSize);
-        fs.Write(buf[..8]);
-
-        BinaryPrimitives.WriteInt32LittleEndian(buf, entries.Length);
-        fs.Write(buf[..4]);
-
-        foreach (var entry in entries)
-        {
-            buf[0] = (byte)entry.Piece.Source;
-            BinaryPrimitives.WriteInt64LittleEndian(buf[1..], entry.Piece.Offset);
-            BinaryPrimitives.WriteInt64LittleEndian(buf[9..], entry.Piece.Length);
-            fs.Write(buf);
-        }
-
-        var addLen = _pieceTable.AddBufferLength;
-        BinaryPrimitives.WriteInt32LittleEndian(buf, addLen);
-        fs.Write(buf[..4]);
-
-        if (addLen > 0)
-        {
-            var remaining = addLen;
-            var offset = 0;
-            while (remaining > 0)
-            {
-                var chunk = Math.Min(remaining, workBuffer.Length);
-                _pieceTable.ReadAddBuffer(offset, workBuffer, 0, chunk);
-                fs.Write(workBuffer, 0, chunk);
-                offset += chunk;
-                remaining -= chunk;
-            }
-        }
-    }
-
-    private static void RecoverFromJournal(string filePath, string journalPath)
-    {
-        Piece[] pieces;
-        long finalSize;
-        byte[] addBuffer;
-
-        try
-        {
-            using var jfs = new FileStream(journalPath, FileMode.Open, FileAccess.Read, FileShare.None);
-            Span<byte> buf = stackalloc byte[17];
-
-            jfs.ReadExactly(buf[..4]);
-            if (!buf[..4].SequenceEqual(JournalMagic))
-                throw new InvalidDataException();
-
-            jfs.ReadExactly(buf[..8]);
-            finalSize = BinaryPrimitives.ReadInt64LittleEndian(buf);
-
-            jfs.ReadExactly(buf[..4]);
-            var pieceCount = BinaryPrimitives.ReadInt32LittleEndian(buf);
-
-            pieces = new Piece[pieceCount];
-            for (var i = 0; i < pieceCount; i++)
-            {
-                jfs.ReadExactly(buf);
-                pieces[i] = new Piece(
-                    (PieceSource)buf[0],
-                    BinaryPrimitives.ReadInt64LittleEndian(buf[1..]),
-                    BinaryPrimitives.ReadInt64LittleEndian(buf[9..]));
-            }
-
-            jfs.ReadExactly(buf[..4]);
-            var addLen = BinaryPrimitives.ReadInt32LittleEndian(buf);
-
-            addBuffer = new byte[addLen];
-            if (addLen > 0)
-                jfs.ReadExactly(addBuffer);
-        }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or EndOfStreamException)
-        {
-            // ジャーナル自体が壊れている場合はリカバリ不可
-            File.Delete(journalPath);
-            return;
-        }
-
-        var entries = new WritePlanEntry[pieces.Length];
-        long outputOffset = 0;
-        for (var i = 0; i < pieces.Length; i++)
-        {
-            entries[i] = new WritePlanEntry(pieces[i], outputOffset);
-            outputOffset += pieces[i].Length;
-        }
-
-        var buffer = ArrayPool<byte>.Shared.Rent(81920);
-        try
-        {
-            using var fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            WritePiecesInPlace(fs, entries, finalSize, buffer, ReadAdd);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-
-        File.Delete(journalPath);
-        return;
-
-        void ReadAdd(long offset, byte[] buf, int bufOffset, int count)
-            => Array.Copy(addBuffer, (int)offset, buf, bufOffset, count);
-    }
 }
