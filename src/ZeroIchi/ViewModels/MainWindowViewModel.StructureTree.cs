@@ -13,18 +13,18 @@ public partial class MainWindowViewModel
         if (_isSyncingSelection) return;
         if (value is null || Document?.Buffer is null) return;
         _isSyncingSelection = true;
-        CursorPosition = (int)value.Node.Offset;
-        SelectionStart = (int)value.Node.Offset;
+        CursorPosition = value.Node.Offset;
+        SelectionStart = value.Node.Offset;
         SelectionLength = value.Node.Length;
         _isSyncingSelection = false;
     }
 
-    private void SyncStructureTreeSelection(int cursorPosition)
+    private void SyncStructureTreeSelection(long cursorPosition)
     {
         StructureTreeItem? best = null;
         foreach (var item in StructureTreeItems)
         {
-            var offset = (int)item.Node.Offset;
+            var offset = item.Node.Offset;
             if (offset <= cursorPosition && cursorPosition < offset + item.Node.Length)
             {
                 if (best is null || item.Depth >= best.Depth)

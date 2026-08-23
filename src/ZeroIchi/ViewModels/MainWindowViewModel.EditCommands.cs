@@ -48,7 +48,7 @@ public partial class MainWindowViewModel
         if (command is null) return;
 
         DataVersion++;
-        CursorPosition = (int)command.CursorPositionBefore;
+        CursorPosition = command.CursorPositionBefore;
         SelectionLength = 0;
         UpdateUndoRedoState();
         UpdateTitle();
@@ -63,7 +63,7 @@ public partial class MainWindowViewModel
         if (command is null) return;
 
         DataVersion++;
-        CursorPosition = (int)command.CursorPositionAfter;
+        CursorPosition = command.CursorPositionAfter;
         SelectionLength = 0;
         UpdateUndoRedoState();
         UpdateTitle();
@@ -81,11 +81,11 @@ public partial class MainWindowViewModel
         if (Document is null || SelectionLength <= 0) return Task.CompletedTask;
 
         var start = SelectionStart;
-        var length = Math.Min(SelectionLength, (int)Document.Buffer.Length - start);
+        var length = Math.Min(SelectionLength, Document.Buffer.Length - start);
         if (length <= 0) return Task.CompletedTask;
 
         var bytes = new byte[length];
-        Document.Buffer.ReadBytes(start, bytes, 0, length);
+        Document.Buffer.ReadBytes(start, bytes, 0, (int)length);
         _copiedBytes = bytes;
         return Task.CompletedTask;
     }
@@ -98,7 +98,7 @@ public partial class MainWindowViewModel
         await CopyAsync();
 
         var start = SelectionStart;
-        var length = Math.Min(SelectionLength, (int)Document.Buffer.Length - start);
+        var length = Math.Min(SelectionLength, Document.Buffer.Length - start);
         if (length <= 0) return;
 
         var command = new DeleteBytesCommand(Document, start, length, CursorPosition, cursorPositionAfter: start);
@@ -106,7 +106,7 @@ public partial class MainWindowViewModel
 
         CursorPosition = start;
         SelectionStart = start;
-        SelectionLength = start < (int)Document.Buffer.Length ? 1 : 0;
+        SelectionLength = start < Document.Buffer.Length ? 1 : 0;
 
         DataVersion++;
         UpdateUndoRedoState();
@@ -133,7 +133,7 @@ public partial class MainWindowViewModel
 
         CursorPosition = cursorPositionAfter;
         SelectionStart = CursorPosition;
-        SelectionLength = CursorPosition < (int)Document.Buffer.Length ? 1 : 0;
+        SelectionLength = CursorPosition < Document.Buffer.Length ? 1 : 0;
 
         DataVersion++;
         UpdateUndoRedoState();
@@ -146,7 +146,7 @@ public partial class MainWindowViewModel
         if (Document?.Buffer is not { Length: > 0 } buffer) return;
 
         SelectionStart = 0;
-        SelectionLength = (int)buffer.Length;
+        SelectionLength = buffer.Length;
         CursorPosition = 0;
     }
 

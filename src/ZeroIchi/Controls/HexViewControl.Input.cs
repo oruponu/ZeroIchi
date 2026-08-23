@@ -21,37 +21,37 @@ public partial class HexViewControl
         return -1;
     }
 
-    private int HitTestByte(Point point)
+    private long HitTestByte(Point point)
     {
         EnsureMetrics();
 
         var buffer = Buffer;
         if (buffer is null || point.Y < _dataTop) return -1;
 
-        var line = (int)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
+        var line = (long)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         if (line < 0 || line >= TotalLines) return -1;
 
         var byteInLine = HitTestColumn(point.X);
         if (byteInLine < 0) return -1;
 
-        return Math.Min(line * BytesPerLine + byteInLine, (int)buffer.Length);
+        return Math.Min(line * BytesPerLine + byteInLine, buffer.Length);
     }
 
-    private int HitTestByteDrag(Point point)
+    private long HitTestByteDrag(Point point)
     {
         EnsureMetrics();
 
         var buffer = Buffer;
         if (buffer is null || buffer.Length == 0) return -1;
 
-        var line = (int)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
+        var line = (long)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         line = Math.Clamp(line, 0, TotalLines - 1);
 
         var byteInLine = HitTestColumn(point.X);
         if (byteInLine < 0)
             byteInLine = point.X < _hexStartX ? 0 : BytesPerLine - 1;
 
-        return Math.Min(line * BytesPerLine + byteInLine, (int)buffer.Length);
+        return Math.Min(line * BytesPerLine + byteInLine, buffer.Length);
     }
 
     private void StartAutoScroll()
@@ -106,7 +106,7 @@ public partial class HexViewControl
             _selectionAnchor = byteIndex;
             CursorPosition = byteIndex;
             SelectionStart = byteIndex;
-            SelectionLength = Buffer is { } b && byteIndex < (int)b.Length ? 1 : 0;
+            SelectionLength = Buffer is { } b && byteIndex < b.Length ? 1 : 0;
         }
 
         _isDragging = true;
@@ -166,7 +166,7 @@ public partial class HexViewControl
         e.Handled = true;
     }
 
-    private void UpdateSelection(int anchor, int current)
+    private void UpdateSelection(long anchor, long current)
     {
         CursorPosition = current;
         SelectionStart = Math.Min(anchor, current);
@@ -182,7 +182,7 @@ public partial class HexViewControl
         if (buffer is null) return;
 
         var ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control);
-        var dataLength = (int)buffer.Length;
+        var dataLength = buffer.Length;
         var maxIndex = dataLength;
         var newPos = CursorPosition;
         var visibleLines = (int)((Bounds.Height - _dataTop) / _rowHeight);
@@ -247,13 +247,13 @@ public partial class HexViewControl
         e.Handled = true;
     }
 
-    private void HandleHexInput(int nibble, int maxIndex)
+    private void HandleHexInput(int nibble, long maxIndex)
     {
         var buffer = Buffer;
         if (buffer is null) return;
 
         var pos = CursorPosition;
-        var dataLength = (int)buffer.Length;
+        var dataLength = buffer.Length;
 
         if (pos == dataLength)
         {
@@ -287,7 +287,7 @@ public partial class HexViewControl
         }
     }
 
-    private void HandleDelete(Key key, int dataLength)
+    private void HandleDelete(Key key, long dataLength)
     {
         var range = GetDeleteRange(key, SelectionStart, SelectionLength, CursorPosition, dataLength);
         if (range is null) return;
@@ -305,11 +305,11 @@ public partial class HexViewControl
         EnsureCursorVisible();
     }
 
-    internal static (int Index, int Count)? GetDeleteRange(
-        Key key, int selectionStart, int selectionLength, int cursorPosition, int dataLength)
+    internal static (long Index, long Count)? GetDeleteRange(
+        Key key, long selectionStart, long selectionLength, long cursorPosition, long dataLength)
     {
-        int deleteIndex;
-        int deleteCount;
+        long deleteIndex;
+        long deleteCount;
 
         if (selectionLength > 0)
         {

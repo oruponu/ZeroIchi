@@ -20,16 +20,16 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<int> DataVersionProperty =
         AvaloniaProperty.Register<HexViewControl, int>(nameof(DataVersion));
 
-    public static readonly StyledProperty<int> CursorPositionProperty =
-        AvaloniaProperty.Register<HexViewControl, int>(nameof(CursorPosition), defaultValue: 0,
+    public static readonly StyledProperty<long> CursorPositionProperty =
+        AvaloniaProperty.Register<HexViewControl, long>(nameof(CursorPosition), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
-    public static readonly StyledProperty<int> SelectionStartProperty =
-        AvaloniaProperty.Register<HexViewControl, int>(nameof(SelectionStart), defaultValue: 0,
+    public static readonly StyledProperty<long> SelectionStartProperty =
+        AvaloniaProperty.Register<HexViewControl, long>(nameof(SelectionStart), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
-    public static readonly StyledProperty<int> SelectionLengthProperty =
-        AvaloniaProperty.Register<HexViewControl, int>(nameof(SelectionLength), defaultValue: 0,
+    public static readonly StyledProperty<long> SelectionLengthProperty =
+        AvaloniaProperty.Register<HexViewControl, long>(nameof(SelectionLength), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
     public static readonly StyledProperty<int[]> SearchMatchOffsetsProperty =
@@ -100,9 +100,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private Size _scrollExtent;
     private Size _scrollViewport;
     private bool _isDragging;
-    private int _selectionAnchor;
+    private long _selectionAnchor;
     private bool _editingHighNibble;
-    private int _hoveredByteIndex = -1;
+    private long _hoveredByteIndex = -1;
     private Avalonia.Threading.DispatcherTimer? _autoScrollTimer;
     private Point _lastPointerPosition;
 
@@ -126,19 +126,19 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
 
     private ByteBuffer? Buffer => Document?.Buffer;
 
-    public int CursorPosition
+    public long CursorPosition
     {
         get => GetValue(CursorPositionProperty);
         set => SetValue(CursorPositionProperty, value);
     }
 
-    public int SelectionStart
+    public long SelectionStart
     {
         get => GetValue(SelectionStartProperty);
         set => SetValue(SelectionStartProperty, value);
     }
 
-    public int SelectionLength
+    public long SelectionLength
     {
         get => GetValue(SelectionLengthProperty);
         set => SetValue(SelectionLengthProperty, value);
@@ -236,7 +236,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         _metricsValid = true;
     }
 
-    private int TotalLines => Buffer is { } b ? (int)(b.Length / BytesPerLine) + 1 : 0;
+    private long TotalLines => Buffer is { } b ? b.Length / BytesPerLine + 1 : 0;
 
     private double AsciiCellX(int i) => _asciiStartX + i * _asciiCellWidth;
     private double TotalWidth => AsciiCellX(BytesPerLine);
@@ -270,9 +270,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         context.DrawLine(HeaderSeparatorPen, new Point(0, separatorY), new Point(Bounds.Width, separatorY));
 
         var buffer = Buffer;
-        var dataLength = buffer is null ? 0 : (int)buffer.Length;
+        var dataLength = buffer?.Length ?? 0;
         var dataTop = _dataTop;
-        var firstLine = Math.Max(0, (int)(_scrollOffset.Y / _rowHeight));
+        var firstLine = Math.Max(0, (long)(_scrollOffset.Y / _rowHeight));
         var visibleLineCount = (int)((Bounds.Height - dataTop) / _rowHeight) + 2;
         var lastLine = buffer is null ? 0 : Math.Min(dataLength / BytesPerLine + 1, firstLine + visibleLineCount);
 
@@ -287,12 +287,12 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
 
             if (buffer is not null)
             {
-                var visibleBytes = (lastLine - firstLine) * BytesPerLine;
+                var visibleBytes = (int)((lastLine - firstLine) * BytesPerLine);
                 var rentedBuffer = ArrayPool<byte>.Shared.Rent(visibleBytes);
                 try
                 {
                     var startOffset = firstLine * BytesPerLine;
-                    var bytesToRead = Math.Min(visibleBytes, dataLength - startOffset);
+                    var bytesToRead = (int)Math.Min(visibleBytes, dataLength - startOffset);
                     if (bytesToRead > 0)
                         buffer.ReadBytes(startOffset, rentedBuffer, 0, bytesToRead);
 
@@ -303,13 +303,13 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
                         {
                             var y = dataTop + line * _rowHeight - _scrollOffset.Y;
                             var byteOffset = line * BytesPerLine;
-                            var bytesInLine = Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
+                            var bytesInLine = (int)Math.Max(0, Math.Min(BytesPerLine, dataLength - byteOffset));
 
                             DrawContentHighlights(context, byteOffset, bytesInLine, y, selStart, selEnd);
                             var textY = y + CellPaddingY;
                             if (bytesInLine > 0)
                             {
-                                var bufferOffset = byteOffset - startOffset;
+                                var bufferOffset = (int)(byteOffset - startOffset);
                                 DrawHexBytes(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
                                 DrawAscii(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
                             }

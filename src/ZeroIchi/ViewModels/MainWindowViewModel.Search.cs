@@ -47,8 +47,8 @@ public partial class MainWindowViewModel
             return;
         }
 
-        CursorPosition = (int)offset;
-        SelectionStart = (int)offset;
+        CursorPosition = offset;
+        SelectionStart = offset;
         SelectionLength = 1;
         CloseGoToOffset();
     }
@@ -203,7 +203,7 @@ public partial class MainWindowViewModel
         SearchStatusText = $"{CurrentSearchMatchIndex + 1}/{SearchMatchOffsets.Length}";
     }
 
-    private static int FindClosestMatch(List<int> matches, int position)
+    private static int FindClosestMatch(List<int> matches, long position)
     {
         var lo = 0;
         var hi = matches.Count - 1;

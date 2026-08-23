@@ -26,17 +26,17 @@ public partial class HexViewControl
     {
         if (Buffer is not null)
         {
-            var cursorCol = CursorPosition % BytesPerLine;
+            var cursorCol = (int)(CursorPosition % BytesPerLine);
             var hasSelection = SelectionLength > 0;
             var selFirstCol = 0;
             var selLastCol = 0;
-            var selLineSpan = 0;
+            long selLineSpan = 0;
 
             if (hasSelection)
             {
                 var selEnd = SelectionStart + SelectionLength - 1;
-                selFirstCol = SelectionStart % BytesPerLine;
-                selLastCol = selEnd % BytesPerLine;
+                selFirstCol = (int)(SelectionStart % BytesPerLine);
+                selLastCol = (int)(selEnd % BytesPerLine);
                 selLineSpan = selEnd / BytesPerLine - SelectionStart / BytesPerLine;
             }
 
@@ -61,8 +61,8 @@ public partial class HexViewControl
         DrawText(context, HeaderHexText, _hexStartX, CellPaddingY, MonospaceTypeface, OffsetBrush);
     }
 
-    private void DrawAddressHighlight(DrawingContext context, int byteOffset,
-        double y, int selStart, int selEnd, int dataLength)
+    private void DrawAddressHighlight(DrawingContext context, long byteOffset,
+        double y, long selStart, long selEnd, long dataLength)
     {
         var cursor = CursorPosition;
         var hasSelection = SelectionLength > 0;
@@ -81,7 +81,7 @@ public partial class HexViewControl
             addrAbove ? 0 : r, addrAbove ? 0 : r, addrBelow ? 0 : r, addrBelow ? 0 : r);
         return;
 
-        bool IsAddrRowHighlighted(int rowOffset)
+        bool IsAddrRowHighlighted(long rowOffset)
         {
             if (rowOffset < 0 || rowOffset > dataLength) return false;
             if (cursor / BytesPerLine == rowOffset / BytesPerLine) return true;
@@ -90,15 +90,15 @@ public partial class HexViewControl
         }
     }
 
-    private void DrawContentHighlights(DrawingContext context, int byteOffset, int bytesInLine,
-        double y, int selStart, int selEnd)
+    private void DrawContentHighlights(DrawingContext context, long byteOffset, int bytesInLine,
+        double y, long selStart, long selEnd)
     {
         var cursor = CursorPosition;
         var hasSelection = SelectionLength > 0;
         var doc = Document;
         var hovered = _hoveredByteIndex;
         var buffer = Buffer;
-        var dataLength = (int)(buffer?.Length ?? 0);
+        var dataLength = buffer?.Length ?? 0;
 
         var matchOffsets = SearchMatchOffsets;
         var matchLength = SearchMatchLength;
@@ -118,7 +118,7 @@ public partial class HexViewControl
 
                 for (var byteIdx = drawStart; byteIdx < drawEnd; byteIdx++)
                 {
-                    var i = byteIdx - byteOffset;
+                    var i = (int)(byteIdx - byteOffset);
                     var hexRect = HexCellRect(i, y);
                     var asciiRect = new Rect(AsciiCellX(i), y, _asciiCellWidth, _rowHeight);
                     context.DrawRectangle(brush, null, new RoundedRect(hexRect, HighlightCornerRadius));
@@ -149,7 +149,7 @@ public partial class HexViewControl
 
             if (isModified)
             {
-                bool IsModifiedNeighbor(int index) =>
+                bool IsModifiedNeighbor(long index) =>
                     index >= 0 && index < dataLength && doc!.IsByteModified(index);
 
                 DrawMergedCells(context, ModifiedBgBrush, hexRect, asciiRect, i,
@@ -171,7 +171,7 @@ public partial class HexViewControl
 
         if (buffer is not null && cursor == dataLength)
         {
-            var appendInLine = dataLength - byteOffset;
+            var appendInLine = (int)(dataLength - byteOffset);
             if (appendInLine is >= 0 and < BytesPerLine)
             {
                 DrawMergedCells(context, CursorBgBrush,
@@ -187,7 +187,7 @@ public partial class HexViewControl
 
         return;
 
-        bool IsHighlighted(int index) =>
+        bool IsHighlighted(long index) =>
             index == cursor || (hasSelection && index >= selStart && index < selEnd);
     }
 
@@ -254,7 +254,7 @@ public partial class HexViewControl
         context.DrawText(formatted, new Point(x, y));
     }
 
-    private static IBrush GetStructureBrush(StructureColorMap? map, int fileOffset, byte value)
+    private static IBrush GetStructureBrush(StructureColorMap? map, long fileOffset, byte value)
     {
         if (map is not null)
         {
@@ -265,7 +265,7 @@ public partial class HexViewControl
         return value == 0 ? ZeroByteBrush : TextBrush;
     }
 
-    private void DrawHexBytes(DrawingContext context, byte[] data, int bufferOffset, int fileOffset,
+    private void DrawHexBytes(DrawingContext context, byte[] data, int bufferOffset, long fileOffset,
         int bytesInLine, double y, Typeface typeface)
     {
         var map = StructureColors;
@@ -293,7 +293,7 @@ public partial class HexViewControl
         }
     }
 
-    private void DrawAscii(DrawingContext context, byte[] data, int bufferOffset, int fileOffset,
+    private void DrawAscii(DrawingContext context, byte[] data, int bufferOffset, long fileOffset,
         int bytesInLine, double y, Typeface typeface)
     {
         var map = StructureColors;
@@ -312,7 +312,7 @@ public partial class HexViewControl
     private static char ToHexChar(int nibble) =>
         (char)(nibble < 10 ? '0' + nibble : 'A' + nibble - 10);
 
-    private static int FindFirstMatchInRange(int[] offsets, int rangeStart)
+    private static int FindFirstMatchInRange(int[] offsets, long rangeStart)
     {
         var lo = 0;
         var hi = offsets.Length;

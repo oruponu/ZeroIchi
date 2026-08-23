@@ -20,9 +20,13 @@ public sealed class HexViewControlDeleteRangeTests
     [InlineData(Key.Delete, 0, 0, 5, 16, 5, 1)]
     // 選択なしの Backspace → カーソル手前の1バイト
     [InlineData(Key.Back, 0, 0, 5, 16, 4, 1)]
+    // 2GB 超の位置での選択削除
+    [InlineData(Key.Delete, 0x80000000L, 0x40000000L, 0x80000000L, 0xC0000000L, 0x80000000L, 0x40000000L)]
+    // 3GB のファイル末尾 + 仮想セルの選択 → 実データ末尾までにクランプ
+    [InlineData(Key.Delete, 0xBFFFFFFFL, 2L, 0xC0000000L, 0xC0000000L, 0xBFFFFFFFL, 1L)]
     public void GetDeleteRange_ReturnsClampedRange(
-        Key key, int selectionStart, int selectionLength, int cursorPosition, int dataLength,
-        int expectedIndex, int expectedCount)
+        Key key, long selectionStart, long selectionLength, long cursorPosition, long dataLength,
+        long expectedIndex, long expectedCount)
     {
         var range = HexViewControl.GetDeleteRange(key, selectionStart, selectionLength, cursorPosition, dataLength);
 
@@ -40,8 +44,10 @@ public sealed class HexViewControlDeleteRangeTests
     [InlineData(Key.Delete, 0, 0, 16, 16)]
     // 選択なしで先頭の Backspace
     [InlineData(Key.Back, 0, 0, 0, 16)]
+    // 3GB のファイル末尾の仮想セルのみの選択
+    [InlineData(Key.Delete, 0xC0000000L, 1L, 0xC0000000L, 0xC0000000L)]
     public void GetDeleteRange_ReturnsNull_WhenNothingToDelete(
-        Key key, int selectionStart, int selectionLength, int cursorPosition, int dataLength)
+        Key key, long selectionStart, long selectionLength, long cursorPosition, long dataLength)
     {
         Assert.Null(HexViewControl.GetDeleteRange(key, selectionStart, selectionLength, cursorPosition, dataLength));
     }

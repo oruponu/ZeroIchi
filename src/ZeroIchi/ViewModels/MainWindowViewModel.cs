@@ -44,13 +44,13 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     public partial int DataVersion { get; set; }
 
     [ObservableProperty]
-    public partial int CursorPosition { get; set; }
+    public partial long CursorPosition { get; set; }
 
     [ObservableProperty]
-    public partial int SelectionStart { get; set; }
+    public partial long SelectionStart { get; set; }
 
     [ObservableProperty]
-    public partial int SelectionLength { get; set; }
+    public partial long SelectionLength { get; set; }
 
     [ObservableProperty]
     public partial string StatusBarPositionText { get; set; } = "00000000";
@@ -125,7 +125,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
         IsInspectorVisible = !IsInspectorVisible;
     }
 
-    partial void OnCursorPositionChanged(int value)
+    partial void OnCursorPositionChanged(long value)
     {
         UpdateStatusBar();
         UpdateInspector();
@@ -133,8 +133,8 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
             SyncStructureTreeSelection(value);
     }
 
-    partial void OnSelectionStartChanged(int value) => UpdateStatusBar();
-    partial void OnSelectionLengthChanged(int value) => UpdateStatusBar();
+    partial void OnSelectionStartChanged(long value) => UpdateStatusBar();
+    partial void OnSelectionLengthChanged(long value) => UpdateStatusBar();
 
     partial void OnDocumentChanged(BinaryDocument? value)
     {
