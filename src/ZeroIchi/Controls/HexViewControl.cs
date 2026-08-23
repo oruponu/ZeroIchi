@@ -57,7 +57,6 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private const double CellPaddingY = 2;
     private const double HighlightCornerRadius = 4;
 
-    private const int OffsetChars = 8;
     private const int HexChars = 49;
     private const double ColumnGap = 16;
 
@@ -86,6 +85,8 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     }
 
     private double _charWidth;
+    private int _offsetChars = 8;
+    private string _offsetFormat = "X8";
     private double _lineHeight;
     private double _rowHeight;
     private double _dataTop;
@@ -191,10 +192,12 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
             _selectionAnchor = 0;
             _editingHighNibble = false;
             _scrollOffset = default;
+            _metricsValid = false;
             InvalidateScrollable();
         }
         else if (change.Property == DataVersionProperty)
         {
+            _metricsValid = false;
             InvalidateScrollable();
         }
         else if (change.Property == CursorPositionProperty)
@@ -207,6 +210,13 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         }
     }
 
+    internal static int OffsetCharsFor(long length)
+    {
+        var digits = 1;
+        for (var v = length; v >= 16; v >>= 4) digits++;
+        return Math.Clamp((digits + 1) / 2 * 2, 8, 16);
+    }
+
     private void EnsureMetrics()
     {
         if (_metricsValid) return;
@@ -217,7 +227,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         _lineHeight = Math.Ceiling(formatted.Height);
         _rowHeight = _lineHeight + 2 * CellPaddingY;
         _dataTop = _rowHeight + ColumnGap - 2 * CellPaddingX;
-        _hexStartX = CellPaddingX + OffsetChars * _charWidth + ColumnGap;
+        _offsetChars = OffsetCharsFor(Buffer?.Length ?? 0);
+        _offsetFormat = "X" + _offsetChars;
+        _hexStartX = CellPaddingX + _offsetChars * _charWidth + ColumnGap;
         _hexEndX = _hexStartX + HexChars * _charWidth;
         _asciiStartX = _hexEndX + ColumnGap;
         _asciiCellWidth = _charWidth + 2 * CellPaddingX;
@@ -319,7 +331,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
                 var byteOffset = line * BytesPerLine;
 
                 DrawAddressHighlight(context, byteOffset, y, selStart, selEnd, dataLength);
-                DrawText(context, byteOffset.ToString("X8"), CellPaddingX, y + CellPaddingY, MonospaceTypeface, OffsetBrush);
+                DrawText(context, byteOffset.ToString(_offsetFormat), CellPaddingX, y + CellPaddingY, MonospaceTypeface, OffsetBrush);
             }
         }
     }

@@ -76,7 +76,7 @@ public partial class HexViewControl
         var addrBelow = IsAddrRowHighlighted(byteOffset + BytesPerLine);
         var r = HighlightCornerRadius;
 
-        var offsetRect = new Rect(0, y, OffsetChars * _charWidth + 2 * CellPaddingX, _rowHeight);
+        var offsetRect = new Rect(0, y, _offsetChars * _charWidth + 2 * CellPaddingX, _rowHeight);
         FillRoundedRect(context, cursorOnLine ? CursorBgBrush : SelectionBgBrush, offsetRect,
             addrAbove ? 0 : r, addrAbove ? 0 : r, addrBelow ? 0 : r, addrBelow ? 0 : r);
         return;
