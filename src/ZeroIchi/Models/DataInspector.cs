@@ -15,13 +15,13 @@ public static class DataInspector
     private static readonly Encoding Utf16Be = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: true);
     private static readonly Encoding ShiftJis = Encoding.GetEncoding(932, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
-    public static List<DataInspectorEntry> Inspect(ByteBuffer buffer, int offset, bool bigEndian)
+    public static List<DataInspectorEntry> Inspect(ByteBuffer buffer, long offset, bool bigEndian)
     {
         var entries = new List<DataInspectorEntry>(16);
-        var remaining = (int)(buffer.Length - offset);
+        var remaining = buffer.Length - offset;
         if (remaining <= 0) return entries;
 
-        var count = Math.Min(remaining, 8);
+        var count = (int)Math.Min(remaining, 8);
         var bytes = new byte[8];
         buffer.ReadBytes(offset, bytes, 0, count);
         var span = bytes.AsSpan();
