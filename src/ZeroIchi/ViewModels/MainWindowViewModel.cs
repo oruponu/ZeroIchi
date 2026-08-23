@@ -29,6 +29,8 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     private bool _isSyncingSelection;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CutCommand))]
     public partial BinaryDocument? Document { get; set; } = BinaryDocument.CreateNew();
 
     [ObservableProperty]
@@ -41,15 +43,21 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     public partial string Title { get; set; } = "Untitled - ZeroIchi";
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CutCommand))]
     public partial int DataVersion { get; set; }
 
     [ObservableProperty]
     public partial long CursorPosition { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CutCommand))]
     public partial long SelectionStart { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CutCommand))]
     public partial long SelectionLength { get; set; }
 
     [ObservableProperty]

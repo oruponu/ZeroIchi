@@ -75,13 +75,22 @@ public partial class MainWindowViewModel
         CanRedo = Document?.CanRedo ?? false;
     }
 
-    [RelayCommand]
+    internal static long EffectiveCopyLength(long selectionLength, long selectionStart, long bufferLength) =>
+        Math.Clamp(selectionLength, 0, Math.Max(0, bufferLength - selectionStart));
+
+    internal static bool CanCopySelection(long selectionLength, long selectionStart, long bufferLength) =>
+        EffectiveCopyLength(selectionLength, selectionStart, bufferLength) <= Array.MaxLength;
+
+    private bool CanCopy() =>
+        Document is null || CanCopySelection(SelectionLength, SelectionStart, Document.Buffer.Length);
+
+    [RelayCommand(CanExecute = nameof(CanCopy))]
     private Task CopyAsync()
     {
-        if (Document is null || SelectionLength <= 0) return Task.CompletedTask;
+        if (Document is null) return Task.CompletedTask;
 
         var start = SelectionStart;
-        var length = Math.Min(SelectionLength, Document.Buffer.Length - start);
+        var length = EffectiveCopyLength(SelectionLength, start, Document.Buffer.Length);
         if (length <= 0) return Task.CompletedTask;
 
         var bytes = new byte[length];
@@ -90,15 +99,15 @@ public partial class MainWindowViewModel
         return Task.CompletedTask;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanCopy))]
     private async Task CutAsync()
     {
-        if (Document is null || SelectionLength <= 0) return;
+        if (Document is null) return;
 
         await CopyAsync();
 
         var start = SelectionStart;
-        var length = Math.Min(SelectionLength, Document.Buffer.Length - start);
+        var length = EffectiveCopyLength(SelectionLength, start, Document.Buffer.Length);
         if (length <= 0) return;
 
         var command = new DeleteBytesCommand(Document, start, length, CursorPosition, cursorPositionAfter: start);
