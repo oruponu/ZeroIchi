@@ -8,12 +8,12 @@ namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
-    public void OnByteModified(int index, byte value, int cursorPositionAfter)
+    public void OnByteModified(long index, byte value, long cursorPositionAfter)
     {
         if (Document is null) return;
 
         IEditCommand command;
-        if (index == (int)Document.Buffer.Length)
+        if (index == Document.Buffer.Length)
         {
             command = new AppendByteCommand(Document, value, CursorPosition, cursorPositionAfter);
         }
@@ -28,7 +28,7 @@ public partial class MainWindowViewModel
         UpdateTitle();
     }
 
-    public void OnBytesDeleted(int index, int count, int cursorPositionAfter)
+    public void OnBytesDeleted(long index, long count, long cursorPositionAfter)
     {
         if (Document is null) return;
 
@@ -48,7 +48,7 @@ public partial class MainWindowViewModel
         if (command is null) return;
 
         DataVersion++;
-        CursorPosition = command.CursorPositionBefore;
+        CursorPosition = (int)command.CursorPositionBefore;
         SelectionLength = 0;
         UpdateUndoRedoState();
         UpdateTitle();
@@ -63,7 +63,7 @@ public partial class MainWindowViewModel
         if (command is null) return;
 
         DataVersion++;
-        CursorPosition = command.CursorPositionAfter;
+        CursorPosition = (int)command.CursorPositionAfter;
         SelectionLength = 0;
         UpdateUndoRedoState();
         UpdateTitle();

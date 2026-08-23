@@ -3,10 +3,10 @@ using Avalonia.Interactivity;
 namespace ZeroIchi.Controls;
 
 public sealed class BytesDeletedEventArgs(
-    RoutedEvent routedEvent, object source, int index, int count, int cursorPositionAfter)
+    RoutedEvent routedEvent, object source, long index, long count, long cursorPositionAfter)
     : RoutedEventArgs(routedEvent, source)
 {
-    public int Index { get; } = index;
-    public int Count { get; } = count;
-    public int CursorPositionAfter { get; } = cursorPositionAfter;
+    public long Index { get; } = index;
+    public long Count { get; } = count;
+    public long CursorPositionAfter { get; } = cursorPositionAfter;
 }

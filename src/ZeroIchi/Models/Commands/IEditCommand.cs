@@ -7,6 +7,6 @@ public interface IEditCommand
     void Execute();
     void Undo();
 
-    int CursorPositionBefore { get; }
-    int CursorPositionAfter { get; }
+    long CursorPositionBefore { get; }
+    long CursorPositionAfter { get; }
 }
