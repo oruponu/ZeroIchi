@@ -258,7 +258,7 @@ public partial class HexViewControl
         if (pos == dataLength)
         {
             var newValue = (byte)(nibble << 4);
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue));
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue, pos));
             _editingHighNibble = true;
             EnsureCursorVisible();
             return;
@@ -269,16 +269,16 @@ public partial class HexViewControl
         if (!_editingHighNibble)
         {
             var newValue = (byte)((nibble << 4) | (currentByte & 0x0F));
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue));
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue, pos));
             _editingHighNibble = true;
         }
         else
         {
             var newValue = (byte)((currentByte & 0xF0) | nibble);
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue));
+            var newPos = Math.Min(maxIndex, pos + 1);
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue, newPos));
             _editingHighNibble = false;
 
-            var newPos = Math.Min(maxIndex, pos + 1);
             CursorPosition = newPos;
             SelectionStart = newPos;
             SelectionLength = newPos < maxIndex ? 1 : 0;
@@ -295,7 +295,7 @@ public partial class HexViewControl
         var (deleteIndex, deleteCount) = range.Value;
         var newPos = Math.Clamp(deleteIndex, 0, dataLength - deleteCount);
 
-        RaiseEvent(new BytesDeletedEventArgs(BytesDeletedEvent, this, deleteIndex, deleteCount));
+        RaiseEvent(new BytesDeletedEventArgs(BytesDeletedEvent, this, deleteIndex, deleteCount, newPos));
 
         _editingHighNibble = false;
         CursorPosition = newPos;
