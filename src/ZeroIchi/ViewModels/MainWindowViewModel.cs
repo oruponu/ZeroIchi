@@ -9,7 +9,6 @@ using System.Collections.ObjectModel;
 using System.Runtime;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
-using ZeroIchi.Models.Commands;
 using ZeroIchi.Models.FileStructure;
 using ZeroIchi.Services;
 
@@ -26,7 +25,6 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
         }.Build(),
     }.Build();
 
-    private IEditCommand? _lastExecutedCommand;
     private byte[]? _copiedBytes;
     private bool _isSyncingSelection;
 

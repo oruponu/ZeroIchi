@@ -48,7 +48,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         await vm.OpenFileAsync(CreateTestFile());
         try
         {
-            vm.OnByteModified(0, 0xFF);
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
             await vm.SaveFileCommand.ExecuteAsync(null);
 
             Assert.False(vm.CanUndo);
@@ -71,10 +71,10 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         await vm.OpenFileAsync(CreateTestFile());
         try
         {
-            vm.OnByteModified(0, 0xAA);
+            vm.OnByteModified(0, 0xAA, cursorPositionAfter: 1);
             await vm.SaveFileCommand.ExecuteAsync(null);
 
-            vm.OnByteModified(1, 0xBB);
+            vm.OnByteModified(1, 0xBB, cursorPositionAfter: 2);
             Assert.True(vm.CanUndo);
 
             vm.UndoCommand.Execute(null);
@@ -96,7 +96,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         await vm.OpenFileAsync(CreateTestFile());
         try
         {
-            vm.OnByteModified(0, 0xFF);
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
             vm.UndoCommand.Execute(null);
             Assert.Equal(1, vm.Document!.Buffer.ReadByte(0));
 
@@ -105,6 +105,84 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
             Assert.Equal(0xFF, vm.Document.Buffer.ReadByte(0));
             Assert.True(vm.CanUndo);
             Assert.False(vm.CanRedo);
+        }
+        finally
+        {
+            vm.Document?.ReleaseData();
+        }
+    }
+
+    [Fact]
+    public async Task Redo_AfterHexInput_RestoresCursorAfterEdit()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 0;
+
+            vm.OnByteModified(0, 0xA0, cursorPositionAfter: 0);
+            vm.OnByteModified(0, 0xAB, cursorPositionAfter: 1);
+            vm.CursorPosition = 1;
+
+            vm.UndoCommand.Execute(null);
+            vm.UndoCommand.Execute(null);
+            vm.RedoCommand.Execute(null);
+            vm.RedoCommand.Execute(null);
+
+            Assert.Equal(0xAB, vm.Document!.Buffer.ReadByte(0));
+            Assert.Equal(1, vm.CursorPosition);
+        }
+        finally
+        {
+            vm.Document?.ReleaseData();
+        }
+    }
+
+    [Fact]
+    public async Task Undo_AfterHexInput_RestoresCursorBeforeEdit()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 0;
+
+            vm.OnByteModified(0, 0xA0, cursorPositionAfter: 0);
+            vm.OnByteModified(0, 0xAB, cursorPositionAfter: 1);
+            vm.CursorPosition = 1;
+
+            vm.UndoCommand.Execute(null);
+            vm.UndoCommand.Execute(null);
+
+            Assert.Equal(1, vm.Document!.Buffer.ReadByte(0));
+            Assert.Equal(0, vm.CursorPosition);
+        }
+        finally
+        {
+            vm.Document?.ReleaseData();
+        }
+    }
+
+    [Fact]
+    public async Task RedoAndUndo_AfterRangeDelete_RestoreCursorAroundEdit()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 2;
+            vm.CursorPosition = 2;
+
+            vm.OnBytesDeleted(1, 2, cursorPositionAfter: 1);
+            vm.CursorPosition = 1;
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal(2, vm.CursorPosition);
+
+            vm.RedoCommand.Execute(null);
+            Assert.Equal(1, vm.CursorPosition);
         }
         finally
         {

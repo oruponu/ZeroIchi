@@ -117,8 +117,7 @@ public sealed partial class MainWindow : Window, IShellWindow
     {
         if (DataContext is MainWindowViewModel vm)
         {
-            vm.OnByteModified(e.Index, e.Value);
-            vm.CaptureCursorAfterEdit();
+            vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter);
         }
     }
 
@@ -126,7 +125,7 @@ public sealed partial class MainWindow : Window, IShellWindow
     {
         if (DataContext is MainWindowViewModel vm)
         {
-            vm.OnBytesDeleted(e.Index, e.Count);
+            vm.OnBytesDeleted(e.Index, e.Count, e.CursorPositionAfter);
         }
     }
 
