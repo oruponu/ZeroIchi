@@ -8,5 +8,5 @@ public interface IEditCommand
     void Undo();
 
     int CursorPositionBefore { get; }
-    int CursorPositionAfter { get; set; }
+    int CursorPositionAfter { get; }
 }

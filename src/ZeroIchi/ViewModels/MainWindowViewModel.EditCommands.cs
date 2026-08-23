@@ -15,15 +15,14 @@ public partial class MainWindowViewModel
         IEditCommand command;
         if (index == (int)Document.Buffer.Length)
         {
-            command = new AppendByteCommand(Document, value, CursorPosition);
+            command = new AppendByteCommand(Document, value, CursorPosition, cursorPositionAfter);
         }
         else
         {
-            command = new WriteByteCommand(Document, index, value, CursorPosition);
+            command = new WriteByteCommand(Document, index, value, CursorPosition, cursorPositionAfter);
         }
 
         Document.ExecuteCommand(command);
-        command.CursorPositionAfter = cursorPositionAfter;
         DataVersion++;
         UpdateUndoRedoState();
         UpdateTitle();
@@ -33,9 +32,8 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
-        var command = new DeleteBytesCommand(Document, index, count, CursorPosition);
+        var command = new DeleteBytesCommand(Document, index, count, CursorPosition, cursorPositionAfter);
         Document.ExecuteCommand(command);
-        command.CursorPositionAfter = cursorPositionAfter;
         DataVersion++;
         UpdateUndoRedoState();
         UpdateTitle();
@@ -103,13 +101,12 @@ public partial class MainWindowViewModel
         var length = Math.Min(SelectionLength, (int)Document.Buffer.Length - start);
         if (length <= 0) return;
 
-        var command = new DeleteBytesCommand(Document, start, length, CursorPosition);
+        var command = new DeleteBytesCommand(Document, start, length, CursorPosition, cursorPositionAfter: start);
         Document.ExecuteCommand(command);
 
         CursorPosition = start;
         SelectionStart = start;
         SelectionLength = start < (int)Document.Buffer.Length ? 1 : 0;
-        command.CursorPositionAfter = CursorPosition;
 
         DataVersion++;
         UpdateUndoRedoState();
@@ -130,13 +127,13 @@ public partial class MainWindowViewModel
         if (bytes is null || bytes.Length == 0) return;
 
         var insertIndex = CursorPosition;
-        var insertCommand = new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition);
+        var cursorPositionAfter = insertIndex + bytes.Length;
+        var insertCommand = new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition, cursorPositionAfter);
         Document.ExecuteCommand(insertCommand);
 
-        CursorPosition = insertIndex + bytes.Length;
+        CursorPosition = cursorPositionAfter;
         SelectionStart = CursorPosition;
         SelectionLength = CursorPosition < (int)Document.Buffer.Length ? 1 : 0;
-        insertCommand.CursorPositionAfter = CursorPosition;
 
         DataVersion++;
         UpdateUndoRedoState();

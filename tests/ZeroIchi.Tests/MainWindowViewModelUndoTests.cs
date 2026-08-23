@@ -189,4 +189,58 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
             vm.Document?.ReleaseData();
         }
     }
+
+    [Fact]
+    public async Task RedoAndUndo_AfterCut_RestoreCursorAroundEdit()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 2;
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 2;
+
+            await vm.CutCommand.ExecuteAsync(null);
+            Assert.Equal(1, vm.CursorPosition);
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal(2, vm.CursorPosition);
+
+            vm.RedoCommand.Execute(null);
+            Assert.Equal(1, vm.CursorPosition);
+        }
+        finally
+        {
+            vm.Document?.ReleaseData();
+        }
+    }
+
+    [Fact]
+    public async Task RedoAndUndo_AfterPaste_RestoreCursorAroundEdit()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 0;
+            vm.SelectionStart = 0;
+            vm.SelectionLength = 2;
+            await vm.CopyCommand.ExecuteAsync(null);
+
+            vm.CursorPosition = 3;
+            await vm.PasteCommand.ExecuteAsync(null);
+            Assert.Equal(5, vm.CursorPosition);
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal(3, vm.CursorPosition);
+
+            vm.RedoCommand.Execute(null);
+            Assert.Equal(5, vm.CursorPosition);
+        }
+        finally
+        {
+            vm.Document?.ReleaseData();
+        }
+    }
 }

@@ -24,7 +24,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         try
         {
-            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, 0));
+            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
             Assert.True(doc.CanUndo);
             Assert.Equal(0xFF, doc.Buffer.ReadByte(1));
 
@@ -47,8 +47,8 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         try
         {
-            doc.ExecuteCommand(new WriteByteCommand(doc, 0, 0xAA, 0));
-            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xBB, 0));
+            doc.ExecuteCommand(new WriteByteCommand(doc, 0, 0xAA, cursorPositionBefore: 0, cursorPositionAfter: 0));
+            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xBB, cursorPositionBefore: 0, cursorPositionAfter: 0));
             doc.Undo();
 
             doc.Save();
@@ -73,7 +73,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         var savePath = Path.Combine(_tempDir, "saved.bin");
         try
         {
-            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, 0));
+            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
             await doc.SaveAsAsync(savePath);
 
             Assert.False(doc.CanUndo);
@@ -93,7 +93,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         var savePath = Path.Combine(_tempDir, "saved-unmodified.bin");
         try
         {
-            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, 0));
+            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
             doc.Undo();
 
             await doc.SaveAsAsync(savePath);
@@ -115,7 +115,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         try
         {
-            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, 0));
+            doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
             doc.Undo();
 
             doc.Save();
@@ -154,7 +154,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         var docB = BinaryDocument.Open(CreateTestFile([4, 5, 6]));
         try
         {
-            var command = new WriteByteCommand(docA, 0, 0xFF, 0);
+            var command = new WriteByteCommand(docA, 0, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0);
 
             Assert.Throws<InvalidOperationException>(() => docB.ExecuteCommand(command));
             Assert.False(docA.IsModified);
@@ -171,7 +171,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
     public void ReleaseData_ClearsHistory()
     {
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
-        doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, 0));
+        doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
 
         doc.ReleaseData();
 
