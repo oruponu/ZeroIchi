@@ -82,7 +82,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     public partial bool IsHexSearch { get; set; } = true;
 
     [ObservableProperty]
-    public partial int[] SearchMatchOffsets { get; set; } = [];
+    public partial long[] SearchMatchOffsets { get; set; } = [];
 
     [ObservableProperty]
     public partial int SearchMatchLength { get; set; }

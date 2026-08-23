@@ -32,8 +32,8 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         AvaloniaProperty.Register<HexViewControl, long>(nameof(SelectionLength), defaultValue: 0,
             defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
-    public static readonly StyledProperty<int[]> SearchMatchOffsetsProperty =
-        AvaloniaProperty.Register<HexViewControl, int[]>(nameof(SearchMatchOffsets), defaultValue: []);
+    public static readonly StyledProperty<long[]> SearchMatchOffsetsProperty =
+        AvaloniaProperty.Register<HexViewControl, long[]>(nameof(SearchMatchOffsets), defaultValue: []);
 
     public static readonly StyledProperty<int> SearchMatchLengthProperty =
         AvaloniaProperty.Register<HexViewControl, int>(nameof(SearchMatchLength), defaultValue: 0);
@@ -144,7 +144,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         set => SetValue(SelectionLengthProperty, value);
     }
 
-    public int[] SearchMatchOffsets
+    public long[] SearchMatchOffsets
     {
         get => GetValue(SearchMatchOffsetsProperty);
         set => SetValue(SearchMatchOffsetsProperty, value);

@@ -10,6 +10,8 @@ namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
+    private const int MaxSearchMatches = 100_000;
+
     [RelayCommand]
     private void OpenGoToOffset()
     {
@@ -141,7 +143,7 @@ public partial class MainWindowViewModel
         }
 
         SearchMatchLength = pattern.Length;
-        var matches = FindMatches(buffer, pattern);
+        var matches = FindMatches(buffer, pattern, MaxSearchMatches);
 
         SearchMatchOffsets = [.. matches];
 
@@ -157,19 +159,24 @@ public partial class MainWindowViewModel
         NavigateToCurrentMatch();
     }
 
-    internal static List<int> FindMatches(ByteBuffer buffer, byte[] pattern)
+    internal static IEnumerable<(long Offset, int ReadLength)> EnumerateChunks(
+        long dataLength, int chunkSize, int overlap)
     {
-        var dataLength = (int)buffer.Length;
-        var matches = new List<int>();
+        for (long offset = 0; offset < dataLength; offset += chunkSize)
+            yield return (offset, (int)Math.Min(chunkSize + overlap, dataLength - offset));
+    }
+
+    internal static List<long> FindMatches(ByteBuffer buffer, byte[] pattern, int maxMatches)
+    {
+        var matches = new List<long>();
 
         const int chunkSize = 65536;
         var overlap = pattern.Length - 1;
         var chunk = ArrayPool<byte>.Shared.Rent(chunkSize + overlap);
         try
         {
-            for (var offset = 0; offset < dataLength; offset += chunkSize)
+            foreach (var (offset, readLength) in EnumerateChunks(buffer.Length, chunkSize, overlap))
             {
-                var readLength = Math.Min(chunkSize + overlap, dataLength - offset);
                 buffer.ReadBytes(offset, chunk, 0, readLength);
 
                 var span = chunk.AsSpan(0, readLength);
@@ -179,6 +186,7 @@ public partial class MainWindowViewModel
                     var idx = span[pos..].IndexOf(pattern);
                     if (idx < 0) break;
                     matches.Add(offset + pos + idx);
+                    if (matches.Count >= maxMatches) return matches;
                     pos += idx + 1;
                 }
             }
@@ -200,10 +208,11 @@ public partial class MainWindowViewModel
         CursorPosition = matchOffset;
         SelectionStart = matchOffset;
         SelectionLength = SearchMatchLength;
-        SearchStatusText = $"{CurrentSearchMatchIndex + 1}/{SearchMatchOffsets.Length}";
+        var truncated = SearchMatchOffsets.Length >= MaxSearchMatches ? "+" : "";
+        SearchStatusText = $"{CurrentSearchMatchIndex + 1}/{SearchMatchOffsets.Length}{truncated}";
     }
 
-    private static int FindClosestMatch(List<int> matches, long position)
+    internal static int FindClosestMatch(List<long> matches, long position)
     {
         var lo = 0;
         var hi = matches.Count - 1;

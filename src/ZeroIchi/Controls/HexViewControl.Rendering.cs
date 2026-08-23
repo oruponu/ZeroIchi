@@ -312,7 +312,7 @@ public partial class HexViewControl
     private static char ToHexChar(int nibble) =>
         (char)(nibble < 10 ? '0' + nibble : 'A' + nibble - 10);
 
-    private static int FindFirstMatchInRange(int[] offsets, long rangeStart)
+    private static int FindFirstMatchInRange(long[] offsets, long rangeStart)
     {
         var lo = 0;
         var hi = offsets.Length;
