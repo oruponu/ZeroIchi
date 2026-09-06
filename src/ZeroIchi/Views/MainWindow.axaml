@@ -371,8 +371,23 @@
                                          FontFamily="fonts:App#Roboto Mono"
                                          FontSize="12"
                                          Foreground="#D4D4D4"
-                                         PlaceholderText="アドレス (例: 0x1A, 100)"
+                                         PlaceholderText="アドレス"
                                          Text="{Binding GoToOffsetText, Mode=TwoWay}"/>
+                                <Border Background="#2D2D2D"
+                                        BorderBrush="#3F3F3F"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="1">
+                                        <ToggleButton Classes="search-mode"
+                                                      Content="Hex"
+                                                      FontSize="11"
+                                                      IsChecked="{Binding IsHexGoToOffset}"/>
+                                        <ToggleButton Classes="search-mode"
+                                                      Content="Dec"
+                                                      FontSize="11"
+                                                      IsChecked="{Binding !IsHexGoToOffset}"/>
+                                    </StackPanel>
+                                </Border>
                                 <TextBlock MinWidth="36"
                                            Margin="4,0"
                                            VerticalAlignment="Center"
