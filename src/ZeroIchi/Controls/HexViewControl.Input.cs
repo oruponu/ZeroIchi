@@ -80,7 +80,7 @@ public partial class HexViewControl
     {
         var byteIndex = HitTestByteDrag(_lastPointerPosition);
         if (byteIndex < 0) return;
-        UpdateSelection(_selectionAnchor, byteIndex);
+        UpdateSelection(SelectionAnchor, byteIndex);
         EnsureCursorVisible();
     }
 
@@ -99,11 +99,10 @@ public partial class HexViewControl
 
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
-            UpdateSelection(_selectionAnchor, byteIndex);
+            UpdateSelection(SelectionAnchor, byteIndex);
         }
         else
         {
-            _selectionAnchor = byteIndex;
             CursorPosition = byteIndex;
             SelectionStart = byteIndex;
             SelectionLength = Buffer is { } b && byteIndex < b.Length ? 1 : 0;
@@ -164,6 +163,15 @@ public partial class HexViewControl
         _isDragging = false;
         e.Pointer.Capture(null);
         e.Handled = true;
+    }
+
+    private long SelectionAnchor => GetSelectionAnchor(CursorPosition, SelectionStart, SelectionLength);
+
+    internal static long GetSelectionAnchor(long cursorPosition, long selectionStart, long selectionLength)
+    {
+        if (selectionLength <= 0) return cursorPosition;
+        var selectionEnd = selectionStart + selectionLength - 1;
+        return cursorPosition == selectionStart ? selectionEnd : selectionStart;
     }
 
     private void UpdateSelection(long anchor, long current)
@@ -231,16 +239,13 @@ public partial class HexViewControl
 
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
-            if (SelectionLength == 0)
-                _selectionAnchor = CursorPosition;
-            UpdateSelection(_selectionAnchor, newPos);
+            UpdateSelection(SelectionAnchor, newPos);
         }
         else
         {
             CursorPosition = newPos;
             SelectionStart = newPos;
             SelectionLength = newPos < maxIndex ? 1 : 0;
-            _selectionAnchor = newPos;
         }
 
         EnsureCursorVisible();
@@ -282,7 +287,6 @@ public partial class HexViewControl
             CursorPosition = newPos;
             SelectionStart = newPos;
             SelectionLength = newPos < maxIndex ? 1 : 0;
-            _selectionAnchor = newPos;
             EnsureCursorVisible();
         }
     }
@@ -301,7 +305,6 @@ public partial class HexViewControl
         CursorPosition = newPos;
         SelectionStart = newPos;
         SelectionLength = newPos < dataLength - deleteCount ? 1 : 0;
-        _selectionAnchor = newPos;
         EnsureCursorVisible();
     }
 

@@ -100,7 +100,6 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private Size _scrollExtent;
     private Size _scrollViewport;
     private bool _isDragging;
-    private long _selectionAnchor;
     private bool _editingHighNibble;
     private long _hoveredByteIndex = -1;
     private Avalonia.Threading.DispatcherTimer? _autoScrollTimer;
@@ -189,7 +188,6 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
             CursorPosition = 0;
             SelectionStart = 0;
             SelectionLength = 0;
-            _selectionAnchor = 0;
             _editingHighNibble = false;
             _scrollOffset = default;
             _metricsValid = false;
