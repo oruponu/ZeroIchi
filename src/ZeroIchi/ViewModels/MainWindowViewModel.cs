@@ -80,6 +80,9 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     public partial string GoToOffsetError { get; set; } = "";
 
     [ObservableProperty]
+    public partial bool IsHexGoToOffset { get; set; } = true;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CloseOverlayCommand))]
     public partial bool IsSearchVisible { get; set; }
 

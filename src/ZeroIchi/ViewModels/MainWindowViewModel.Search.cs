@@ -37,7 +37,7 @@ public partial class MainWindowViewModel
         if (string.IsNullOrEmpty(text))
             return;
 
-        if (!TryParseOffset(text, out var offset))
+        if (!TryParseOffset(text, IsHexGoToOffset, out var offset))
         {
             GoToOffsetError = "無効な値";
             return;
@@ -55,15 +55,15 @@ public partial class MainWindowViewModel
         CloseGoToOffset();
     }
 
-    private static bool TryParseOffset(ReadOnlySpan<char> text, out long offset)
+    partial void OnIsHexGoToOffsetChanged(bool value) => GoToOffsetError = "";
+
+    internal static bool TryParseOffset(ReadOnlySpan<char> text, bool isHex, out long offset)
     {
         if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
             return long.TryParse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out offset);
 
-        if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out offset))
-            return true;
-
-        return long.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out offset);
+        var style = isHex ? NumberStyles.HexNumber : NumberStyles.Integer;
+        return long.TryParse(text, style, CultureInfo.InvariantCulture, out offset);
     }
 
     [RelayCommand]
