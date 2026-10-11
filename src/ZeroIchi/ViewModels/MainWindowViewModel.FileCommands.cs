@@ -21,7 +21,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task OpenFileAsync()
     {
-        var path = await dialog.PickOpenFileAsync("ファイルを開く");
+        var path = await _dialog.PickOpenFileAsync("ファイルを開く");
         if (path is null)
             return;
 
@@ -67,7 +67,7 @@ public partial class MainWindowViewModel
                 detail = $"{ex.Message}\n\n{UnusableDocumentNotice}";
             }
 
-            await dialog.ShowErrorAsync(failureMessage, detail);
+            await _dialog.ShowErrorAsync(failureMessage, detail);
             return false;
         }
     }
@@ -91,8 +91,6 @@ public partial class MainWindowViewModel
             document.Save();
             return Task.CompletedTask;
         });
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     [RelayCommand]
@@ -100,19 +98,17 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
-        var path = await dialog.PickSaveFileAsync("名前を付けて保存", Document.FileName);
+        var path = await _dialog.PickSaveFileAsync("名前を付けて保存", Document.FileName);
         if (path is null) return;
 
         var document = Document;
         await TryFileOperationAsync("保存できませんでした", () => document.SaveAsAsync(path));
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     [RelayCommand]
     private void Exit()
     {
-        window.Close();
+        _window.Close();
     }
 
     public async Task<bool> ConfirmDiscardChangesAsync()
@@ -120,7 +116,7 @@ public partial class MainWindowViewModel
         if (Document is not { IsModified: true })
             return true;
 
-        var result = await dialog.ShowSaveChangesDialogAsync();
+        var result = await _dialog.ShowSaveChangesDialogAsync();
 
         if (result == SaveChangesResult.Save)
         {

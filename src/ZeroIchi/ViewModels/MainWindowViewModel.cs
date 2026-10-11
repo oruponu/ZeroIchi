@@ -14,8 +14,7 @@ using ZeroIchi.Services;
 
 namespace ZeroIchi.ViewModels;
 
-public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
-    : ViewModelBase
+public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private static readonly IContentInspector Inspector = new ContentInspectorBuilder
     {
@@ -27,12 +26,24 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
 
     private const int ClipboardTextMaxBytes = 16 * 1024 * 1024;
 
+    private readonly IDialogService _dialog;
+    private readonly IClipboardService _clipboard;
+    private readonly IWindowService _window;
+
     private bool _isSyncingSelection;
+
+    public MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
+    {
+        _dialog = dialog;
+        _clipboard = clipboard;
+        _window = window;
+        Document = BinaryDocument.CreateNew();
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
     [NotifyCanExecuteChangedFor(nameof(CutCommand))]
-    public partial BinaryDocument? Document { get; set; } = BinaryDocument.CreateNew();
+    public partial BinaryDocument? Document { get; set; }
 
     [ObservableProperty]
     public partial bool CanUndo { get; set; }
@@ -148,9 +159,14 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     partial void OnSelectionStartChanged(long value) => UpdateStatusBar();
     partial void OnSelectionLengthChanged(long value) => UpdateStatusBar();
 
-    partial void OnDocumentChanged(BinaryDocument? value)
+    partial void OnDocumentChanged(BinaryDocument? oldValue, BinaryDocument? newValue)
     {
-        if (value?.Buffer is { Length: > 0 } buffer)
+        if (oldValue is not null)
+            oldValue.Changed -= OnDocumentContentChanged;
+        if (newValue is not null)
+            newValue.Changed += OnDocumentContentChanged;
+
+        if (newValue?.Buffer is { Length: > 0 } buffer)
         {
             UpdateFileType(buffer);
             UpdateStructureTree(buffer);
@@ -164,6 +180,13 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
         }
         UpdateStatusBar();
         UpdateInspector();
+    }
+
+    private void OnDocumentContentChanged(object? sender, EventArgs e)
+    {
+        DataVersion++;
+        UpdateUndoRedoState();
+        UpdateTitle();
     }
 
     partial void OnDataVersionChanged(int value)

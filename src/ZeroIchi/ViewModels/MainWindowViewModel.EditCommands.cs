@@ -23,9 +23,6 @@ public partial class MainWindowViewModel
         }
 
         Document.ExecuteCommand(command);
-        DataVersion++;
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     public void OnBytesDeleted(long index, long count, long cursorPositionAfter)
@@ -34,9 +31,6 @@ public partial class MainWindowViewModel
 
         var command = new DeleteBytesCommand(Document, index, count, CursorPosition, cursorPositionAfter);
         Document.ExecuteCommand(command);
-        DataVersion++;
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     [RelayCommand]
@@ -47,11 +41,8 @@ public partial class MainWindowViewModel
         var command = Document.Undo();
         if (command is null) return;
 
-        DataVersion++;
         CursorPosition = command.CursorPositionBefore;
         SelectionLength = 0;
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     [RelayCommand]
@@ -62,11 +53,8 @@ public partial class MainWindowViewModel
         var command = Document.Redo();
         if (command is null) return;
 
-        DataVersion++;
         CursorPosition = command.CursorPositionAfter;
         SelectionLength = 0;
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     private void UpdateUndoRedoState()
@@ -100,7 +88,7 @@ public partial class MainWindowViewModel
     }
 
     private Task WriteClipboardAsync(byte[] bytes) =>
-        clipboard.SetBytesAsync(bytes, ToClipboardText(bytes, ClipboardTextMaxBytes));
+        _clipboard.SetBytesAsync(bytes, ToClipboardText(bytes, ClipboardTextMaxBytes));
 
     [RelayCommand(CanExecute = nameof(CanCopy))]
     private async Task CopyAsync()
@@ -127,10 +115,6 @@ public partial class MainWindowViewModel
         CursorPosition = start;
         SelectionStart = start;
         SelectionLength = start < document.Buffer.Length ? 1 : 0;
-
-        DataVersion++;
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     [RelayCommand]
@@ -138,8 +122,8 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
-        var bytes = await clipboard.TryGetBytesAsync();
-        if (bytes is null && await clipboard.GetTextAsync() is { } text)
+        var bytes = await _clipboard.TryGetBytesAsync();
+        if (bytes is null && await _clipboard.GetTextAsync() is { } text)
             bytes = HexText.Parse(text);
 
         if (bytes is null || bytes.Length == 0) return;
@@ -152,10 +136,6 @@ public partial class MainWindowViewModel
         CursorPosition = cursorPositionAfter;
         SelectionStart = CursorPosition;
         SelectionLength = CursorPosition < Document.Buffer.Length ? 1 : 0;
-
-        DataVersion++;
-        UpdateUndoRedoState();
-        UpdateTitle();
     }
 
     [RelayCommand]
