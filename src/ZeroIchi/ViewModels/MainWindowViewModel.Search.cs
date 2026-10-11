@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.ViewModels;
@@ -134,7 +135,7 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var pattern = IsHexSearch ? ParseHexString(SearchText) : Encoding.UTF8.GetBytes(SearchText);
+        var pattern = IsHexSearch ? HexText.Parse(SearchText) : Encoding.UTF8.GetBytes(SearchText);
         if (pattern is null || pattern.Length == 0)
         {
             ClearSearchResults();

@@ -34,8 +34,15 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
 
     private sealed class StubClipboardService : IClipboardService
     {
-        public Task SetBytesAsync(byte[] bytes, string? text) => Task.CompletedTask;
-        public Task<byte[]?> TryGetBytesAsync() => Task.FromResult<byte[]?>(null);
+        private byte[]? _bytes;
+
+        public Task SetBytesAsync(byte[] bytes, string? text)
+        {
+            _bytes = bytes;
+            return Task.CompletedTask;
+        }
+
+        public Task<byte[]?> TryGetBytesAsync() => Task.FromResult(_bytes);
         public Task<string?> GetTextAsync() => Task.FromResult<string?>(null);
     }
 

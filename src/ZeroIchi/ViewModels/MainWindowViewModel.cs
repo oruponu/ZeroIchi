@@ -25,7 +25,8 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
         }.Build(),
     }.Build();
 
-    private byte[]? _copiedBytes;
+    private const int ClipboardTextMaxBytes = 16 * 1024 * 1024;
+
     private bool _isSyncingSelection;
 
     [ObservableProperty]

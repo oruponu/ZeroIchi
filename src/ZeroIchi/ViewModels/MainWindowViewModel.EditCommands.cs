@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using System;
-using System.Globalization;
 using System.Threading.Tasks;
+using ZeroIchi.Models;
 using ZeroIchi.Models.Commands;
 
 namespace ZeroIchi.ViewModels;
@@ -81,41 +81,52 @@ public partial class MainWindowViewModel
     internal static bool CanCopySelection(long selectionLength, long selectionStart, long bufferLength) =>
         EffectiveCopyLength(selectionLength, selectionStart, bufferLength) <= Array.MaxLength;
 
+    internal static string? ToClipboardText(byte[] bytes, int maxBytes) =>
+        bytes.Length <= maxBytes ? HexText.Format(bytes) : null;
+
     private bool CanCopy() =>
         Document is null || CanCopySelection(SelectionLength, SelectionStart, Document.Buffer.Length);
 
-    [RelayCommand(CanExecute = nameof(CanCopy))]
-    private Task CopyAsync()
+    private byte[]? ReadSelectedBytes()
     {
-        if (Document is null) return Task.CompletedTask;
+        if (Document is null) return null;
 
-        var start = SelectionStart;
-        var length = EffectiveCopyLength(SelectionLength, start, Document.Buffer.Length);
-        if (length <= 0) return Task.CompletedTask;
+        var length = EffectiveCopyLength(SelectionLength, SelectionStart, Document.Buffer.Length);
+        if (length <= 0) return null;
 
         var bytes = new byte[length];
-        Document.Buffer.ReadBytes(start, bytes, 0, (int)length);
-        _copiedBytes = bytes;
-        return Task.CompletedTask;
+        Document.Buffer.ReadBytes(SelectionStart, bytes, 0, (int)length);
+        return bytes;
+    }
+
+    private Task WriteClipboardAsync(byte[] bytes) =>
+        clipboard.SetBytesAsync(bytes, ToClipboardText(bytes, ClipboardTextMaxBytes));
+
+    [RelayCommand(CanExecute = nameof(CanCopy))]
+    private async Task CopyAsync()
+    {
+        if (ReadSelectedBytes() is { } bytes)
+            await WriteClipboardAsync(bytes);
     }
 
     [RelayCommand(CanExecute = nameof(CanCopy))]
     private async Task CutAsync()
     {
-        if (Document is null) return;
-
-        await CopyAsync();
+        if (Document is not { } document || ReadSelectedBytes() is not { } bytes) return;
 
         var start = SelectionStart;
-        var length = EffectiveCopyLength(SelectionLength, start, Document.Buffer.Length);
-        if (length <= 0) return;
+        var cursorPositionBefore = CursorPosition;
+        var version = DataVersion;
 
-        var command = new DeleteBytesCommand(Document, start, length, CursorPosition, cursorPositionAfter: start);
-        Document.ExecuteCommand(command);
+        await WriteClipboardAsync(bytes);
+        if (Document != document || DataVersion != version) return;
+
+        var command = new DeleteBytesCommand(document, start, bytes.Length, cursorPositionBefore, cursorPositionAfter: start);
+        document.ExecuteCommand(command);
 
         CursorPosition = start;
         SelectionStart = start;
-        SelectionLength = start < Document.Buffer.Length ? 1 : 0;
+        SelectionLength = start < document.Buffer.Length ? 1 : 0;
 
         DataVersion++;
         UpdateUndoRedoState();
@@ -127,12 +138,10 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
-        byte[]? bytes = null;
-        var text = await clipboard.GetTextAsync();
-        if (!string.IsNullOrWhiteSpace(text))
-            bytes = ParseHexString(text);
+        var bytes = await clipboard.TryGetBytesAsync();
+        if (bytes is null && await clipboard.GetTextAsync() is { } text)
+            bytes = HexText.Parse(text);
 
-        bytes ??= _copiedBytes;
         if (bytes is null || bytes.Length == 0) return;
 
         var insertIndex = CursorPosition;
@@ -157,18 +166,5 @@ public partial class MainWindowViewModel
         SelectionStart = 0;
         SelectionLength = buffer.Length;
         CursorPosition = 0;
-    }
-
-    private static byte[]? ParseHexString(string text)
-    {
-        var tokens = text.Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-        var result = new byte[tokens.Length];
-        for (var i = 0; i < tokens.Length; i++)
-        {
-            if (!byte.TryParse(tokens[i], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var b))
-                return null;
-            result[i] = b;
-        }
-        return result;
     }
 }
