@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.Input;
-using System;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Commands;
@@ -63,23 +62,17 @@ public partial class MainWindowViewModel
         CanRedo = Document?.CanRedo ?? false;
     }
 
-    internal static long EffectiveCopyLength(long selectionLength, long selectionStart, long bufferLength) =>
-        Math.Clamp(selectionLength, 0, Math.Max(0, bufferLength - selectionStart));
-
-    internal static bool CanCopySelection(long selectionLength, long selectionStart, long bufferLength) =>
-        EffectiveCopyLength(selectionLength, selectionStart, bufferLength) <= Array.MaxLength;
-
     internal static string? ToClipboardText(byte[] bytes, int maxBytes) =>
         bytes.Length <= maxBytes ? HexText.Format(bytes) : null;
 
     private bool CanCopy() =>
-        Document is null || CanCopySelection(SelectionLength, SelectionStart, Document.Buffer.Length);
+        Document is null || CopyRange.CanCopy(SelectionLength, SelectionStart, Document.Buffer.Length);
 
     private byte[]? ReadSelectedBytes()
     {
         if (Document is null) return null;
 
-        var length = EffectiveCopyLength(SelectionLength, SelectionStart, Document.Buffer.Length);
+        var length = CopyRange.EffectiveLength(SelectionLength, SelectionStart, Document.Buffer.Length);
         if (length <= 0) return null;
 
         var bytes = new byte[length];

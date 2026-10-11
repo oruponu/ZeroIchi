@@ -1,11 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
-using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
 using ZeroIchi.Models;
-using ZeroIchi.Models.Buffers;
+using ZeroIchi.Models.Search;
 
 namespace ZeroIchi.ViewModels;
 
@@ -38,7 +34,7 @@ public partial class MainWindowViewModel
         if (string.IsNullOrEmpty(text))
             return;
 
-        if (!TryParseOffset(text, IsHexGoToOffset, out var offset))
+        if (!OffsetText.TryParse(text, IsHexGoToOffset, out var offset))
         {
             GoToOffsetError = "無効な値";
             return;
@@ -57,15 +53,6 @@ public partial class MainWindowViewModel
     }
 
     partial void OnIsHexGoToOffsetChanged(bool value) => GoToOffsetError = "";
-
-    internal static bool TryParseOffset(ReadOnlySpan<char> text, bool isHex, out long offset)
-    {
-        if (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            return long.TryParse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out offset);
-
-        var style = isHex ? NumberStyles.HexNumber : NumberStyles.Integer;
-        return long.TryParse(text, style, CultureInfo.InvariantCulture, out offset);
-    }
 
     [RelayCommand]
     private void OpenSearch()
@@ -144,7 +131,7 @@ public partial class MainWindowViewModel
         }
 
         SearchMatchLength = pattern.Length;
-        var matches = FindMatches(buffer, pattern, MaxSearchMatches);
+        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxSearchMatches);
 
         SearchMatchOffsets = [.. matches];
 
@@ -155,49 +142,9 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var closestIndex = FindClosestMatch(matches, CursorPosition);
+        var closestIndex = ByteSearcher.FindClosestMatch(matches, CursorPosition);
         CurrentSearchMatchIndex = closestIndex;
         NavigateToCurrentMatch();
-    }
-
-    internal static IEnumerable<(long Offset, int ReadLength)> EnumerateChunks(
-        long dataLength, int chunkSize, int overlap)
-    {
-        for (long offset = 0; offset < dataLength; offset += chunkSize)
-            yield return (offset, (int)Math.Min(chunkSize + overlap, dataLength - offset));
-    }
-
-    internal static List<long> FindMatches(ByteBuffer buffer, byte[] pattern, int maxMatches)
-    {
-        var matches = new List<long>();
-
-        const int chunkSize = 65536;
-        var overlap = pattern.Length - 1;
-        var chunk = ArrayPool<byte>.Shared.Rent(chunkSize + overlap);
-        try
-        {
-            foreach (var (offset, readLength) in EnumerateChunks(buffer.Length, chunkSize, overlap))
-            {
-                buffer.ReadBytes(offset, chunk, 0, readLength);
-
-                var span = chunk.AsSpan(0, readLength);
-                var pos = 0;
-                while (pos <= span.Length - pattern.Length)
-                {
-                    var idx = span[pos..].IndexOf(pattern);
-                    if (idx < 0) break;
-                    matches.Add(offset + pos + idx);
-                    if (matches.Count >= maxMatches) return matches;
-                    pos += idx + 1;
-                }
-            }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(chunk);
-        }
-
-        return matches;
     }
 
     private void NavigateToCurrentMatch()
@@ -211,25 +158,5 @@ public partial class MainWindowViewModel
         SelectionLength = SearchMatchLength;
         var truncated = SearchMatchOffsets.Length >= MaxSearchMatches ? "+" : "";
         SearchStatusText = $"{CurrentSearchMatchIndex + 1}/{SearchMatchOffsets.Length}{truncated}";
-    }
-
-    internal static int FindClosestMatch(List<long> matches, long position)
-    {
-        var lo = 0;
-        var hi = matches.Count - 1;
-        while (lo < hi)
-        {
-            var mid = lo + (hi - lo) / 2;
-            if (matches[mid] < position)
-                lo = mid + 1;
-            else
-                hi = mid;
-        }
-        if (lo >= matches.Count) return matches.Count - 1;
-        if (lo == 0) return 0;
-
-        var distBefore = position - matches[lo - 1];
-        var distAfter = matches[lo] - position;
-        return distBefore <= distAfter ? lo - 1 : lo;
     }
 }

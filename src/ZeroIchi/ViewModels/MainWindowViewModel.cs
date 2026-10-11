@@ -228,7 +228,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             StatusBarPositionText = $"{CursorPosition:X8}";
         }
 
-        StatusBarSizeText = FormatFileSize(buffer.Length);
+        StatusBarSizeText = FileSizeText.Format(buffer.Length);
     }
 
     private void UpdateFileType(ByteBuffer buffer)
@@ -238,17 +238,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var results = Inspector.Inspect(header);
         var match = results.ByFileExtension();
         StatusBarFileTypeText = match.Length > 0 ? match[0].Extension : "";
-    }
-
-    private static string FormatFileSize(long bytes)
-    {
-        return bytes switch
-        {
-            < 1024 => $"{bytes} B",
-            < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
-            < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024):F1} MB",
-            _ => $"{bytes / (1024.0 * 1024 * 1024):F1} GB",
-        };
     }
 
     // Avalonia のバインディングが旧 Document をキャッシュするため、Data を明示的に解放する
