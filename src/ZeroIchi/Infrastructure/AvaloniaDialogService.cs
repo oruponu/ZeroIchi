@@ -44,4 +44,17 @@ public sealed class AvaloniaDialogService(Window window, IShellWindow shell) : I
             shell.SetModalOverlayVisible(false);
         }
     }
+
+    public async Task ShowErrorAsync(string message, string detail)
+    {
+        shell.SetModalOverlayVisible(true);
+        try
+        {
+            await ErrorDialog.ShowAsync(window, message, detail);
+        }
+        finally
+        {
+            shell.SetModalOverlayVisible(false);
+        }
+    }
 }

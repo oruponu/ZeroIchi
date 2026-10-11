@@ -29,6 +29,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => Task.FromResult<string?>(null);
         public Task<SaveChangesResult> ShowSaveChangesDialogAsync() => Task.FromResult(SaveChangesResult.Discard);
+        public Task ShowErrorAsync(string message, string detail) => Task.CompletedTask;
     }
 
     private sealed class StubClipboardService : IClipboardService
