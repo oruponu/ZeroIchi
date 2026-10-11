@@ -68,7 +68,7 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -87,7 +87,7 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -109,7 +109,7 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 

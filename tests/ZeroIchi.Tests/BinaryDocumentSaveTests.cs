@@ -36,7 +36,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         doc.WriteByte(100, 0xAA);
         doc.WriteByte(255, 0xBB);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(256, saved.Length);
@@ -57,7 +57,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xDE, 0xAD, 0xBE, 0xEF]);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(104, saved.Length);
@@ -81,7 +81,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.InsertBytes(0, [0xAA, 0xBB]);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(52, saved.Length);
@@ -100,7 +100,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.AppendByte(0xFF);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(11, saved.Length);
@@ -118,7 +118,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(20, 10);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(90, saved.Length);
@@ -138,7 +138,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(90, 10);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(90, saved.Length);
@@ -157,7 +157,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
 
         Assert.True(doc.IsModified);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(50, saved.Length);
@@ -175,7 +175,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         doc.InsertBytes(20, [0xAA, 0xBB, 0xCC]);
         doc.DeleteBytes(60, 10);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         // 100 + 3 - 10 = 93
         var expected = new byte[93];
@@ -200,7 +200,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         doc.DeleteBytes(10, 20);
         doc.InsertBytes(50, [0x11, 0x22, 0x33, 0x44, 0x55]);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var expected = new byte[100 - 20 + 5];
         Array.Copy(original, 0, expected, 0, 10);
@@ -225,7 +225,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.False(File.Exists(journalPath));
     }
@@ -246,7 +246,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         doc.Buffer.ReadBytes(0, view, 0, 101);
         Assert.Equal(0xAA, view[50]);
 
-        doc.ReleaseData();
+        doc.Dispose();
         Assert.Equal(original, await File.ReadAllBytesAsync(path));
     }
 
@@ -269,7 +269,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         Assert.Equal(0xAA, view[50]);
         Assert.False(File.Exists(path + ".zitmp"));
 
-        doc.ReleaseData();
+        doc.Dispose();
         Assert.Equal(original, await File.ReadAllBytesAsync(path));
     }
 
@@ -290,7 +290,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         Assert.Equal(original[10], doc.Buffer.ReadByte(10));
         Assert.Equal(0xAA, doc.Buffer.ReadByte(50));
 
-        doc.ReleaseData();
+        doc.Dispose();
         Assert.Equal(original, await File.ReadAllBytesAsync(path));
     }
 
@@ -302,7 +302,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         File.WriteAllBytes(path + ".zitmp", newContent);
 
         var doc = BinaryDocument.Open(path);
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.False(File.Exists(path + ".zitmp"));
         Assert.Equal(newContent, await File.ReadAllBytesAsync(path));
@@ -315,7 +315,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         File.WriteAllBytes(path + ".zitmp", [1, 2, 3]);
 
         var doc = BinaryDocument.Open(path);
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.False(File.Exists(path + ".zitmp"));
     }
@@ -328,7 +328,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.InsertBytes(10, [0xAA]);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.False(File.Exists(path + ".zitmp"));
         Assert.False(File.Exists(path + ".journal"));
@@ -342,7 +342,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
 
         var doc = BinaryDocument.Open(path);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.False(File.Exists(journalPath));
     }
@@ -359,7 +359,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         doc.WriteByte(size / 2, 0xAA);
         doc.WriteByte(size - 1, 0xBB);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(size, saved.Length);
@@ -381,7 +381,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         doc.InsertBytes(100_000, insertData);
         doc.DeleteBytes(300_000, 2000);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var expected = new byte[size + 1000 - 2000];
         Array.Copy(original, 0, expected, 0, 100_000);
@@ -402,17 +402,17 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0x11);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         doc = BinaryDocument.Open(path);
         doc.WriteByte(1, 0x22);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xAA, 0xBB]);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(102, saved.Length);

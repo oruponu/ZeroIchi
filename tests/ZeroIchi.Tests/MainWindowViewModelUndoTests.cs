@@ -60,7 +60,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -85,7 +85,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -108,7 +108,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -135,7 +135,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -160,7 +160,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -186,7 +186,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -212,7 +212,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 
@@ -240,7 +240,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.ReleaseData();
+            vm.Document?.Dispose();
         }
     }
 }

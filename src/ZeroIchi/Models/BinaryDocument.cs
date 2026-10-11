@@ -8,7 +8,7 @@ using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models;
 
-public sealed class BinaryDocument
+public sealed class BinaryDocument : IDisposable
 {
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);
 
@@ -179,7 +179,7 @@ public sealed class BinaryDocument
         FileName = Path.GetFileName(path);
     }
 
-    internal void ReleaseData()
+    public void Dispose()
     {
         _original.Dispose();
         ResetPieceTable(new ArrayByteBuffer([]));

@@ -232,7 +232,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
     {
         var oldDocument = Document;
         Document = newDocument;
-        oldDocument?.ReleaseData();
+        oldDocument?.Dispose();
 
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);

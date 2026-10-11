@@ -37,7 +37,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            doc.ReleaseData();
+            doc.Dispose();
         }
     }
 
@@ -62,7 +62,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            doc.ReleaseData();
+            doc.Dispose();
         }
     }
 
@@ -82,7 +82,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            doc.ReleaseData();
+            doc.Dispose();
         }
     }
 
@@ -105,7 +105,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            doc.ReleaseData();
+            doc.Dispose();
         }
     }
 
@@ -126,7 +126,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            doc.ReleaseData();
+            doc.Dispose();
         }
     }
 
@@ -143,7 +143,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            doc.ReleaseData();
+            doc.Dispose();
         }
     }
 
@@ -162,18 +162,18 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         }
         finally
         {
-            docA.ReleaseData();
-            docB.ReleaseData();
+            docA.Dispose();
+            docB.Dispose();
         }
     }
 
     [Fact]
-    public void ReleaseData_ClearsHistory()
+    public void Dispose_ClearsHistory()
     {
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
 
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.False(doc.CanUndo);
         Assert.Null(doc.Undo());

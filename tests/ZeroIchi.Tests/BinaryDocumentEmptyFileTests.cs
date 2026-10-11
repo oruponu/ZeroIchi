@@ -43,7 +43,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
 
         Assert.Equal(0, doc.FileSize);
         Assert.False(doc.IsModified);
-        doc.ReleaseData();
+        doc.Dispose();
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
         var doc = BinaryDocument.Open(path);
         doc.AppendByte(0xAB);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.Equal([0xAB], await File.ReadAllBytesAsync(path));
     }
@@ -72,7 +72,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
 
         doc.AppendByte(0xCD);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.Equal([0xCD], await File.ReadAllBytesAsync(path));
     }
@@ -90,7 +90,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
 
         doc.AppendByte(0x99);
         doc.Save();
-        doc.ReleaseData();
+        doc.Dispose();
 
         Assert.Equal([0x99], await File.ReadAllBytesAsync(path));
     }
