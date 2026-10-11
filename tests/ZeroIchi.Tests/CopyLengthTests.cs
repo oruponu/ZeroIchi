@@ -1,4 +1,4 @@
-using ZeroIchi.ViewModels;
+using ZeroIchi.Models;
 
 namespace ZeroIchi.Tests;
 
@@ -15,7 +15,7 @@ public sealed class CopyLengthTests
     public void EffectiveCopyLength_ClampsToRemainingData(
         long selectionLength, long selectionStart, long bufferLength, long expected)
     {
-        Assert.Equal(expected, MainWindowViewModel.EffectiveCopyLength(selectionLength, selectionStart, bufferLength));
+        Assert.Equal(expected, CopyRange.EffectiveLength(selectionLength, selectionStart, bufferLength));
     }
 
     [Theory]
@@ -26,13 +26,13 @@ public sealed class CopyLengthTests
     public void CanCopySelection_IsFalse_WhenEffectiveLengthExceedsArrayLimit(
         long selectionLength, long selectionStart, long bufferLength, bool expected)
     {
-        Assert.Equal(expected, MainWindowViewModel.CanCopySelection(selectionLength, selectionStart, bufferLength));
+        Assert.Equal(expected, CopyRange.CanCopy(selectionLength, selectionStart, bufferLength));
     }
 
     [Fact]
     public void CanCopySelection_AllowsExactlyMaxArrayLength()
     {
-        Assert.True(MainWindowViewModel.CanCopySelection(Array.MaxLength, 0, Huge));
-        Assert.False(MainWindowViewModel.CanCopySelection(Array.MaxLength + 1L, 0, Huge));
+        Assert.True(CopyRange.CanCopy(Array.MaxLength, 0, Huge));
+        Assert.False(CopyRange.CanCopy(Array.MaxLength + 1L, 0, Huge));
     }
 }
