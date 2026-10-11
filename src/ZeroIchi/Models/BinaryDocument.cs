@@ -17,6 +17,8 @@ public sealed class BinaryDocument : IDisposable
     private PieceTableByteBuffer _buffer;
     private readonly UndoRedoManager _undoRedoManager = new();
 
+    public event EventHandler? Changed;
+
     public string FilePath { get; private set; }
     public string FileName { get; private set; }
     public ByteBuffer Buffer => _buffer;
@@ -70,11 +72,21 @@ public sealed class BinaryDocument : IDisposable
             throw new InvalidOperationException();
 
         _undoRedoManager.ExecuteCommand(command);
+        OnChanged();
     }
 
-    public IEditCommand? Undo() => _undoRedoManager.Undo();
+    public IEditCommand? Undo() => RaiseChangedIfApplied(_undoRedoManager.Undo());
 
-    public IEditCommand? Redo() => _undoRedoManager.Redo();
+    public IEditCommand? Redo() => RaiseChangedIfApplied(_undoRedoManager.Redo());
+
+    private IEditCommand? RaiseChangedIfApplied(IEditCommand? command)
+    {
+        if (command is not null)
+            OnChanged();
+        return command;
+    }
+
+    private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
     public bool IsByteModified(long index) => _pieceTable.IsModified(index);
 
@@ -91,6 +103,7 @@ public sealed class BinaryDocument : IDisposable
         var newOriginal = new MappedByteBuffer(FilePath);
         _original.Dispose();
         ResetPieceTable(newOriginal);
+        OnChanged();
     }
 
     private void SaveInPlace(WritePlanEntry[] entries, long finalSize)
@@ -207,6 +220,7 @@ public sealed class BinaryDocument : IDisposable
 
         FilePath = path;
         FileName = Path.GetFileName(path);
+        OnChanged();
     }
 
     public void Dispose()
