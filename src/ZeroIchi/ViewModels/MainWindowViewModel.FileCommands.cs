@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Services;
@@ -8,10 +9,13 @@ namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
+    private const string UnusableDocumentNotice =
+        "表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。";
+
     [RelayCommand]
     private async Task NewFileAsync()
     {
-        await TryReplaceDocumentAsync(BinaryDocument.CreateNew);
+        await TryReplaceDocumentAsync(BinaryDocument.CreateNew, "新しいファイルを作成できませんでした");
     }
 
     [RelayCommand]
@@ -26,17 +30,49 @@ public partial class MainWindowViewModel
 
     public async Task OpenFileAsync(string path)
     {
-        await TryReplaceDocumentAsync(() => BinaryDocument.Open(path));
+        await TryReplaceDocumentAsync(() => BinaryDocument.Open(path), "ファイルを開けませんでした");
     }
 
-    private async Task<bool> TryReplaceDocumentAsync(Func<BinaryDocument> factory)
+    private async Task<bool> TryReplaceDocumentAsync(Func<BinaryDocument> factory, string failureMessage)
     {
         if (!await ConfirmDiscardChangesAsync())
             return false;
 
-        ReplaceDocument(factory());
+        BinaryDocument? newDocument = null;
+        await TryFileOperationAsync(failureMessage, () =>
+        {
+            newDocument = factory();
+            return Task.CompletedTask;
+        });
+        if (newDocument is null)
+            return false;
+
+        ReplaceDocument(newDocument);
         return true;
     }
+
+    internal async Task<bool> TryFileOperationAsync(string failureMessage, Func<Task> operation)
+    {
+        try
+        {
+            await operation();
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            var detail = ex.Message;
+            if (Document is { IsUsable: false })
+            {
+                DetachUnusableDocument();
+                detail = $"{ex.Message}\n\n{UnusableDocumentNotice}";
+            }
+
+            await dialog.ShowErrorAsync(failureMessage, detail);
+            return false;
+        }
+    }
+
+    private void DetachUnusableDocument() => ReplaceDocument(BinaryDocument.CreateNew());
 
     [RelayCommand]
     private async Task SaveFileAsync()
@@ -49,7 +85,12 @@ public partial class MainWindowViewModel
             return;
         }
 
-        Document.Save();
+        var document = Document;
+        await TryFileOperationAsync("保存できませんでした", () =>
+        {
+            document.Save();
+            return Task.CompletedTask;
+        });
         UpdateUndoRedoState();
         UpdateTitle();
     }
@@ -62,7 +103,8 @@ public partial class MainWindowViewModel
         var path = await dialog.PickSaveFileAsync("名前を付けて保存", Document.FileName);
         if (path is null) return;
 
-        await Document.SaveAsAsync(path);
+        var document = Document;
+        await TryFileOperationAsync("保存できませんでした", () => document.SaveAsAsync(path));
         UpdateUndoRedoState();
         UpdateTitle();
     }

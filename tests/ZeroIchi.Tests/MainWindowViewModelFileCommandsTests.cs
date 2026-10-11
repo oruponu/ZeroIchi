@@ -1,4 +1,5 @@
 using System.Text;
+using ZeroIchi.Models.Buffers;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 
@@ -144,5 +145,185 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
             vm.Document?.Dispose();
         }
         Assert.Equal([0xFF, 2, 3], await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task OpenFile_MissingPath_ShowsErrorAndKeepsDocument()
+    {
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile([1, 2, 3]));
+        var document = vm.Document;
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            await vm.OpenFileAsync(Path.Combine(_tempDir, "missing.bin"));
+
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.Same(document, vm.Document);
+            Assert.Equal(0xFF, vm.Document!.Buffer.ReadByte(0));
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SaveFile_InPlaceBlocked_ShowsErrorAndKeepsModified()
+    {
+        var path = CreateTestFile([1, 2, 3]);
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(path);
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                await vm.SaveFileCommand.ExecuteAsync(null);
+            }
+
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.True(vm.Document!.IsModified);
+            Assert.Equal(0xFF, vm.Document.Buffer.ReadByte(0));
+            Assert.True(vm.CanUndo);
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SaveFile_AfterFailure_SucceedsOnceUnblocked()
+    {
+        var path = CreateTestFile([1, 2, 3]);
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(path);
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                await vm.SaveFileCommand.ExecuteAsync(null);
+            }
+            await vm.SaveFileCommand.ExecuteAsync(null);
+
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.False(vm.Document!.IsModified);
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+        Assert.Equal([0xFF, 2, 3], await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task ConfirmDiscardChanges_SaveFails_ReturnsFalse()
+    {
+        var path = CreateTestFile([1, 2, 3]);
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(path);
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+            dialog.SaveChangesAnswer = SaveChangesResult.Save;
+
+            bool result;
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                result = await vm.ConfirmDiscardChangesAsync();
+            }
+
+            Assert.False(result);
+            Assert.Equal(1, dialog.ErrorCount);
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SaveAsFile_TempFileBlocked_ShowsErrorAndKeepsPath()
+    {
+        var path = CreateTestFile([1, 2, 3]);
+        var targetPath = Path.Combine(_tempDir, "target.bin");
+        Directory.CreateDirectory(targetPath + ".zitmp");
+        var (vm, dialog) = CreateViewModel();
+        dialog.SaveFilePath = targetPath;
+        await vm.OpenFileAsync(path);
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            await vm.SaveAsFileCommand.ExecuteAsync(null);
+
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.Equal(path, vm.Document!.FilePath);
+            Assert.False(File.Exists(targetPath));
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task FileOperation_DocumentBecomesUnusable_DetachesToNewDocument()
+    {
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile([1, 2, 3]));
+        var oldDocument = vm.Document!;
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            var result = await vm.TryFileOperationAsync("保存できませんでした", () =>
+            {
+                ((MappedByteBuffer)oldDocument.Original).ReleaseMapping();
+                throw new IOException();
+            });
+
+            Assert.False(result);
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.NotSame(oldDocument, vm.Document);
+            Assert.True(vm.Document!.IsNew);
+            Assert.False(vm.Document.IsModified);
+            Assert.Equal(0, oldDocument.Buffer.Length);
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task ConfirmDiscardChanges_AfterDetach_ReturnsTrueWithoutAsking()
+    {
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile([1, 2, 3]));
+        var oldDocument = vm.Document!;
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+            await vm.TryFileOperationAsync("保存できませんでした", () =>
+            {
+                ((MappedByteBuffer)oldDocument.Original).ReleaseMapping();
+                throw new IOException();
+            });
+
+            var result = await vm.ConfirmDiscardChangesAsync();
+
+            Assert.True(result);
+            Assert.Equal(0, dialog.SaveChangesDialogCount);
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
     }
 }
