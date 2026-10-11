@@ -23,8 +23,10 @@ public sealed class BinaryDocument : IDisposable
     public long FileSize => _pieceTable.Length;
     public bool IsModified => _pieceTable.Length != _original.Length || _pieceTable.HasAddPieces;
     public bool IsNew => FilePath == "";
+    public bool IsUsable => _original is not MappedByteBuffer { IsMapped: false };
     public bool CanUndo => _undoRedoManager.CanUndo;
     public bool CanRedo => _undoRedoManager.CanRedo;
+    internal ByteBuffer Original => _original;
 
     private BinaryDocument(string filePath, ByteBuffer original)
     {

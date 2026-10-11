@@ -94,4 +94,27 @@ public sealed class MappedByteBufferTests : IDisposable
 
         Assert.Throws<ObjectDisposedException>(() => buffer.ReadByte(0));
     }
+
+    [Fact]
+    public void IsMapped_TracksReleaseAndRestore()
+    {
+        using var buffer = new MappedByteBuffer(CreateTestFile([1, 2, 3]));
+        Assert.True(buffer.IsMapped);
+
+        buffer.ReleaseMapping();
+        Assert.False(buffer.IsMapped);
+
+        buffer.RestoreMapping();
+        Assert.True(buffer.IsMapped);
+    }
+
+    [Fact]
+    public void IsMapped_EmptyFile_AlwaysTrue()
+    {
+        using var buffer = new MappedByteBuffer(CreateTestFile([]));
+
+        buffer.ReleaseMapping();
+
+        Assert.True(buffer.IsMapped);
+    }
 }

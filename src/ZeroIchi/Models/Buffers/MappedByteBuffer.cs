@@ -24,6 +24,8 @@ public sealed class MappedByteBuffer : ByteBuffer
 
     public override long Length => _length;
 
+    public bool IsMapped => _length == 0 || _accessor is not null;
+
     public override byte ReadByte(long index)
     {
         ThrowIfUnmapped();

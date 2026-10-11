@@ -1,12 +1,13 @@
 using ZeroIchi.Models;
+using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Tests;
 
-public sealed class BinaryDocumentDisposeTests : IDisposable
+public sealed class BinaryDocumentLifetimeTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "ZeroIchiTests_" + Guid.NewGuid().ToString("N"));
 
-    public BinaryDocumentDisposeTests() => Directory.CreateDirectory(_tempDir);
+    public BinaryDocumentLifetimeTests() => Directory.CreateDirectory(_tempDir);
 
     public void Dispose() => Directory.Delete(_tempDir, recursive: true);
 
@@ -46,5 +47,29 @@ public sealed class BinaryDocumentDisposeTests : IDisposable
         File.Delete(path);
 
         Assert.False(File.Exists(path));
+    }
+
+    [Fact]
+    public void IsUsable_OpenedNewAndDisposed_True()
+    {
+        var opened = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        var created = BinaryDocument.CreateNew();
+
+        Assert.True(opened.IsUsable);
+        Assert.True(created.IsUsable);
+
+        opened.Dispose();
+        Assert.True(opened.IsUsable);
+    }
+
+    [Fact]
+    public void IsUsable_OriginalMappingReleased_False()
+    {
+        var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+
+        ((MappedByteBuffer)doc.Original).ReleaseMapping();
+
+        Assert.False(doc.IsUsable);
+        doc.Dispose();
     }
 }
