@@ -123,6 +123,8 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
 
     private sealed class StubClipboardService : IClipboardService
     {
+        public Task SetBytesAsync(byte[] bytes, string? text) => Task.CompletedTask;
+        public Task<byte[]?> TryGetBytesAsync() => Task.FromResult<byte[]?>(null);
         public Task<string?> GetTextAsync() => Task.FromResult<string?>(null);
     }
 
