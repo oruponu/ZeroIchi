@@ -421,4 +421,116 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         Assert.Equal(0xAA, saved[50]);
         Assert.Equal(0xBB, saved[51]);
     }
+
+    [Fact]
+    public async Task SaveAs_OverwriteExistingFile_ReplacesContentAndLeavesNoTemp()
+    {
+        var original = MakeSequential(100);
+        var sourcePath = CreateTestFile(original);
+        var targetPath = CreateTestFile([9, 9, 9]);
+
+        var doc = BinaryDocument.Open(sourcePath);
+        doc.InsertBytes(50, [0xAA]);
+        await doc.SaveAsAsync(targetPath);
+
+        Assert.Equal(targetPath, doc.FilePath);
+        Assert.False(File.Exists(targetPath + ".zitmp"));
+        doc.Dispose();
+
+        byte[] expected = [.. original[..50], 0xAA, .. original[50..]];
+        Assert.Equal(expected, await File.ReadAllBytesAsync(targetPath));
+        Assert.Equal(original, await File.ReadAllBytesAsync(sourcePath));
+    }
+
+    [Fact]
+    public async Task SaveAs_SameFileWithDifferentCase_SavesInPlace()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+
+        var doc = BinaryDocument.Open(path);
+        doc.WriteByte(10, 0xAA);
+        await doc.SaveAsAsync(path.ToUpperInvariant());
+
+        Assert.False(doc.IsModified);
+        doc.Dispose();
+
+        var expected = (byte[])original.Clone();
+        expected[10] = 0xAA;
+        Assert.Equal(expected, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task SaveAs_SameFileUnmodified_DoesNothing()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+
+        var doc = BinaryDocument.Open(path);
+        await doc.SaveAsAsync(path);
+
+        Assert.Equal(path, doc.FilePath);
+        doc.Dispose();
+        Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task SaveAs_TempFileBlocked_KeepsDocumentAndTargetIntact()
+    {
+        var original = MakeSequential(100);
+        var sourcePath = CreateTestFile(original);
+        byte[] targetContent = [9, 9, 9];
+        var targetPath = CreateTestFile(targetContent);
+        Directory.CreateDirectory(targetPath + ".zitmp");
+
+        var doc = BinaryDocument.Open(sourcePath);
+        doc.InsertBytes(50, [0xAA]);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => doc.SaveAsAsync(targetPath));
+
+        Assert.Equal(sourcePath, doc.FilePath);
+        Assert.Equal(0xAA, doc.Buffer.ReadByte(50));
+        Assert.Equal(original[99], doc.Buffer.ReadByte(100));
+        doc.Dispose();
+        Assert.Equal(targetContent, await File.ReadAllBytesAsync(targetPath));
+    }
+
+    [Fact]
+    public async Task SaveAs_ReplaceBlocked_KeepsDocumentAndTargetIntact()
+    {
+        var original = MakeSequential(100);
+        var sourcePath = CreateTestFile(original);
+        byte[] targetContent = [9, 9, 9];
+        var targetPath = CreateTestFile(targetContent);
+
+        var doc = BinaryDocument.Open(sourcePath);
+        doc.InsertBytes(50, [0xAA]);
+
+        using (new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            await Assert.ThrowsAsync<IOException>(() => doc.SaveAsAsync(targetPath));
+        }
+
+        Assert.Equal(sourcePath, doc.FilePath);
+        Assert.Equal(0xAA, doc.Buffer.ReadByte(50));
+        Assert.False(File.Exists(targetPath + ".zitmp"));
+        doc.Dispose();
+        Assert.Equal(targetContent, await File.ReadAllBytesAsync(targetPath));
+    }
+
+    [Fact]
+    public async Task SaveAs_TargetDirectoryMissing_ThrowsAndKeepsDocument()
+    {
+        var path = CreateTestFile(MakeSequential(10));
+        var targetPath = Path.Combine(_tempDir, "missing", "target.bin");
+
+        var doc = BinaryDocument.Open(path);
+        doc.WriteByte(0, 0xAA);
+
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() => doc.SaveAsAsync(targetPath));
+
+        Assert.Equal(path, doc.FilePath);
+        Assert.Equal(0xAA, doc.Buffer.ReadByte(0));
+        doc.Dispose();
+    }
 }

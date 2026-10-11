@@ -169,13 +169,41 @@ public sealed class BinaryDocument : IDisposable
 
     public async Task SaveAsAsync(string path)
     {
-        await using (var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+        if (!IsNew && string.Equals(Path.GetFullPath(path), Path.GetFullPath(FilePath), StringComparison.OrdinalIgnoreCase))
         {
-            _pieceTable.WriteTo(fs);
+            Save();
+            return;
         }
 
+        var tempPath = path + ".zitmp";
+        try
+        {
+            await using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            _pieceTable.WriteTo(fs);
+            fs.Flush(flushToDisk: true);
+        }
+        catch
+        {
+            TryDeleteTempFile(tempPath);
+            throw;
+        }
+
+        try
+        {
+            if (File.Exists(path))
+                File.Replace(tempPath, path, destinationBackupFileName: null);
+            else
+                File.Move(tempPath, path);
+        }
+        catch
+        {
+            TryDeleteTempFile(tempPath);
+            throw;
+        }
+
+        var newOriginal = new MappedByteBuffer(path);
         _original.Dispose();
-        ResetPieceTable(new MappedByteBuffer(path));
+        ResetPieceTable(newOriginal);
 
         FilePath = path;
         FileName = Path.GetFileName(path);
