@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Media;
 using System;
 using System.Threading.Tasks;
 using ZeroIchi.Services;
@@ -19,23 +18,7 @@ public sealed partial class SaveChangesDialog : Window
         DiscardButton.Click += (_, _) => { Result = SaveChangesResult.Discard; Close(); };
         CancelButton.Click += (_, _) => Close();
 
-        Opened += (_, _) => UpdateAccentButtonForeground();
-    }
-
-    private void UpdateAccentButtonForeground()
-    {
-        var foreground = Brushes.White;
-
-        if (this.TryFindResource("SystemAccentColor", ActualThemeVariant, out var obj)
-            && obj is Color accent)
-        {
-            var luminance = 0.2126 * (accent.R / 255.0)
-                          + 0.7152 * (accent.G / 255.0)
-                          + 0.0722 * (accent.B / 255.0);
-            foreground = luminance > 0.5 ? Brushes.Black : Brushes.White;
-        }
-
-        Resources["AccentButtonForeground"] = foreground;
+        Opened += (_, _) => DialogAccent.ApplyButtonForeground(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
