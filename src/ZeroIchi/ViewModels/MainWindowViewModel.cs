@@ -236,5 +236,12 @@ public sealed partial class MainWindowViewModel(IDialogService dialog, IClipboar
 
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+
+        CursorPosition = 0;
+        SelectionStart = 0;
+        SelectionLength = 0;
+        UpdateUndoRedoState();
+        UpdateTitle();
+        ClearSearchResults();
     }
 }

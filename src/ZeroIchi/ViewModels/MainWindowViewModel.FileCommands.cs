@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Services;
@@ -10,16 +11,7 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private async Task NewFileAsync()
     {
-        if (!await ConfirmDiscardChangesAsync())
-            return;
-
-        ReplaceDocument(BinaryDocument.CreateNew());
-        CursorPosition = 0;
-        SelectionStart = 0;
-        SelectionLength = 0;
-        UpdateUndoRedoState();
-        UpdateTitle();
-        ClearSearchResults();
+        await TryReplaceDocumentAsync(BinaryDocument.CreateNew);
     }
 
     [RelayCommand]
@@ -34,13 +26,16 @@ public partial class MainWindowViewModel
 
     public async Task OpenFileAsync(string path)
     {
-        ReplaceDocument(BinaryDocument.Open(path));
-        UpdateTitle();
-        CursorPosition = 0;
-        SelectionStart = 0;
-        SelectionLength = 0;
-        UpdateUndoRedoState();
-        ClearSearchResults();
+        await TryReplaceDocumentAsync(() => BinaryDocument.Open(path));
+    }
+
+    private async Task<bool> TryReplaceDocumentAsync(Func<BinaryDocument> factory)
+    {
+        if (!await ConfirmDiscardChangesAsync())
+            return false;
+
+        ReplaceDocument(factory());
+        return true;
     }
 
     [RelayCommand]
