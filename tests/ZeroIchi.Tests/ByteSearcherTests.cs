@@ -1,9 +1,9 @@
 using ZeroIchi.Models.Buffers;
-using ZeroIchi.ViewModels;
+using ZeroIchi.Models.Search;
 
 namespace ZeroIchi.Tests;
 
-public sealed class MainWindowViewModelSearchTests
+public sealed class ByteSearcherTests
 {
     private const int ChunkSize = 65536;
     private const int BufferSize = ChunkSize * 4;
@@ -29,7 +29,7 @@ public sealed class MainWindowViewModelSearchTests
         byte[] pattern = [0x58, 0x59];
         var buffer = CreateBuffer(pattern, offsets);
 
-        var matches = MainWindowViewModel.FindMatches(buffer, pattern, MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
 
         Assert.Equal(offsets, matches);
     }
@@ -40,7 +40,7 @@ public sealed class MainWindowViewModelSearchTests
         byte[] pattern = [0x58];
         var buffer = CreateBuffer(pattern, ChunkSize - 1, ChunkSize, ChunkSize * 2 - 1, ChunkSize * 2);
 
-        var matches = MainWindowViewModel.FindMatches(buffer, pattern, MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
 
         long[] expected = [ChunkSize - 1, ChunkSize, ChunkSize * 2 - 1, ChunkSize * 2];
         Assert.Equal(expected, matches);
@@ -51,7 +51,7 @@ public sealed class MainWindowViewModelSearchTests
     {
         var buffer = CreateBuffer([0x58, 0x58, 0x58, 0x58], ChunkSize * 2 - 2);
 
-        var matches = MainWindowViewModel.FindMatches(buffer, [0x58, 0x58], MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, [0x58, 0x58], MaxMatches);
 
         long[] expected = [ChunkSize * 2 - 2, ChunkSize * 2 - 1, ChunkSize * 2];
         Assert.Equal(expected, matches);
@@ -63,7 +63,7 @@ public sealed class MainWindowViewModelSearchTests
         byte[] pattern = [0x57, 0x58, 0x59, 0x5A];
         var buffer = CreateBuffer(pattern, ChunkSize * 2 - 1);
 
-        var matches = MainWindowViewModel.FindMatches(buffer, pattern, MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
 
         long[] expected = [ChunkSize * 2 - 1];
         Assert.Equal(expected, matches);
@@ -74,7 +74,7 @@ public sealed class MainWindowViewModelSearchTests
     {
         var buffer = new ArrayByteBuffer([0x58]);
 
-        var matches = MainWindowViewModel.FindMatches(buffer, [0x58, 0x59], MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, [0x58, 0x59], MaxMatches);
 
         Assert.Empty(matches);
     }
@@ -84,7 +84,7 @@ public sealed class MainWindowViewModelSearchTests
     {
         var buffer = new ArrayByteBuffer([]);
 
-        var matches = MainWindowViewModel.FindMatches(buffer, [0x58, 0x59], MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, [0x58, 0x59], MaxMatches);
 
         Assert.Empty(matches);
     }
@@ -94,7 +94,7 @@ public sealed class MainWindowViewModelSearchTests
     {
         const long dataLength = 3L * 1024 * 1024 * 1024;
 
-        var chunks = MainWindowViewModel.EnumerateChunks(dataLength, ChunkSize, overlap: 1).ToList();
+        var chunks = ByteSearcher.EnumerateChunks(dataLength, ChunkSize, overlap: 1).ToList();
 
         Assert.Equal(dataLength / ChunkSize, (long)chunks.Count);
         Assert.Equal(0L, chunks[0].Offset);
@@ -112,7 +112,7 @@ public sealed class MainWindowViewModelSearchTests
     {
         List<long> matches = [0x1000L, 0x80000000L, 0xF0000000L];
 
-        Assert.Equal(expected, MainWindowViewModel.FindClosestMatch(matches, position));
+        Assert.Equal(expected, ByteSearcher.FindClosestMatch(matches, position));
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class MainWindowViewModelSearchTests
         byte[] pattern = [0x58, 0x59];
         var buffer = new SparseByteBuffer(plantedOffset + pattern.Length, (plantedOffset, pattern));
 
-        var matches = MainWindowViewModel.FindMatches(buffer, pattern, MaxMatches);
+        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
 
         long[] expected = [plantedOffset];
         Assert.Equal(expected, matches);
@@ -134,7 +134,7 @@ public sealed class MainWindowViewModelSearchTests
         var data = new byte[1000];
         Array.Fill(data, (byte)0x58);
 
-        var matches = MainWindowViewModel.FindMatches(new ArrayByteBuffer(data), [0x58], maxMatches: 10);
+        var matches = ByteSearcher.FindMatches(new ArrayByteBuffer(data), [0x58], maxMatches: 10);
 
         Assert.Equal(10, matches.Count);
     }
