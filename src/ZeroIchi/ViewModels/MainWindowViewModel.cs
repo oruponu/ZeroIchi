@@ -241,7 +241,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         StatusBarFileTypeText = match.Length > 0 ? match[0].Extension : "";
     }
 
-    // Avalonia のバインディングが旧 Document をキャッシュするため、Data を明示的に解放する
+    // Avalonia bindings cache the old Document, so release Data explicitly
     private void ReplaceDocument(BinaryDocument newDocument)
     {
         var oldDocument = Document;

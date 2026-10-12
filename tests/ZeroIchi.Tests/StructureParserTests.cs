@@ -15,12 +15,12 @@ public sealed class StructureParserTests
     {
         var data = new List<byte>();
 
-        // RIFF ヘッダー
+        // RIFF header
         data.AddRange("RIFF"u8.ToArray());
         data.AddRange(BitConverter.GetBytes(40u));
         data.AddRange("WAVE"u8.ToArray());
 
-        // fmt チャンク
+        // fmt chunk
         data.AddRange("fmt "u8.ToArray());
         data.AddRange(BitConverter.GetBytes(16u));
         data.AddRange(BitConverter.GetBytes((ushort)1));
@@ -30,7 +30,7 @@ public sealed class StructureParserTests
         data.AddRange(BitConverter.GetBytes((ushort)2));
         data.AddRange(BitConverter.GetBytes((ushort)16));
 
-        // data チャンク
+        // data chunk
         data.AddRange("data"u8.ToArray());
         data.AddRange(BitConverter.GetBytes(4u));
         data.AddRange(new byte[4]);
@@ -108,7 +108,7 @@ public sealed class StructureParserTests
         data.AddRange(new byte[6]);
         data.AddRange([0x00, 0x3F, 0x00]);
 
-        // スキャンデータ
+        // Scan data
         data.AddRange([0x11, 0x22, 0xFF, 0x00, 0x33]);
 
         // EOI
@@ -157,7 +157,7 @@ public sealed class StructureParserTests
 
         data.AddRange([0xFF, 0xD8]);
 
-        // JFIF の固定フィールドより短い APP0
+        // APP0 shorter than the fixed JFIF fields
         data.AddRange([0xFF, 0xE0, 0x00, 0x0D]);
         data.AddRange("JFIF\0"u8.ToArray());
         data.AddRange([0x01, 0x01, 0x00, 0x00, 0x01, 0x00]);
@@ -206,7 +206,7 @@ public sealed class StructureParserTests
     public void Parse_IncompleteBuffer_ReturnsPartialResult()
     {
         var wav = BuildMinimalWav();
-        var truncated = wav[..14]; // 12 (RIFF ヘッダー) + 2 (サブチャンク ID の途中)
+        var truncated = wav[..14]; // 12 (RIFF header) + 2 (partway into the subchunk ID)
         var buffer = new ArrayByteBuffer(truncated);
         var definition = LoadWavDefinition();
 
@@ -285,9 +285,9 @@ public sealed class StructureParserTests
         var data = root.Children[1];
 
         Assert.Equal("Data", data.Name);
-        // RIFF ヘッダー (12 バイト) の直後から開始
+        // Starts right after the RIFF header (12 bytes)
         Assert.Equal(12, data.Offset);
-        // 残りの全バイト
+        // All remaining bytes
         Assert.Equal(wav.Length - 12, data.Length);
     }
 
@@ -303,7 +303,7 @@ public sealed class StructureParserTests
         Assert.Equal("WAV", root.Name);
         Assert.Equal(0, root.Offset);
         Assert.Equal(wav.Length, root.Length);
-        Assert.Equal(2, root.Children.Count); // RIFF ヘッダー + サブチャンク
+        Assert.Equal(2, root.Children.Count); // RIFF header + subchunk
     }
 
     [Fact]
@@ -1290,7 +1290,7 @@ public sealed class StructureParserTests
     public void Parse_TruncatedJpeg_ReturnsPartialTree()
     {
         var jpeg = BuildMinimalJpeg();
-        var buffer = new ArrayByteBuffer(jpeg[..144]); // 141 (DHT まで) + 2 (SOS マーカー) + 1 (セグメントサイズの途中)
+        var buffer = new ArrayByteBuffer(jpeg[..144]); // 141 (through DHT) + 2 (SOS marker) + 1 (partway into the segment size)
 
         var root = StructureParser.Parse(LoadJpegDefinition(), buffer);
         var segments = root.Children[1];

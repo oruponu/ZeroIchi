@@ -261,7 +261,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     {
         EnsureMetrics();
 
-        // ポインターイベントのために透明背景を描画
+        // Draw a transparent background so the control receives pointer events
         context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
 
         var separatorY = Math.Floor((_rowHeight + _dataTop) / 2) - 0.5;

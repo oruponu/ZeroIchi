@@ -141,7 +141,7 @@ public static class StructureParser
         {
             if (ShouldTerminateRepeat(field.Until, buffer, offset))
             {
-                if (field.Size is not null) offset = end; // 残りは暗黙のパディングとして消費
+                if (field.Size is not null) offset = end; // Consume the rest as implicit padding
                 break;
             }
 
@@ -149,7 +149,7 @@ public static class StructureParser
             var iterationChildren = ParseFields(
                 repeatFields, buffer, ref offset, bigEndian, persistentValues, end);
 
-            if (offset == iterationOffset) break; // 無限ループ防止
+            if (offset == iterationOffset) break; // Prevent an infinite loop
 
             var iterationName = ResolveIterationName(field, iterationChildren, children.Count);
 

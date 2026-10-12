@@ -67,7 +67,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
 
         Assert.Equal([0xDE, 0xAD, 0xBE, 0xEF], saved[50..54]);
 
-        // 後半は4バイト後ろにずれる
+        // The second half is shifted 4 bytes toward the end
         for (var i = 50; i < 100; i++)
             Assert.Equal(original[i], saved[i + 4]);
     }

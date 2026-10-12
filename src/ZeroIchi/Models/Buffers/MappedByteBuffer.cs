@@ -16,7 +16,7 @@ public sealed class MappedByteBuffer : ByteBuffer
         _filePath = filePath;
         _length = new FileInfo(filePath).Length;
 
-        // 空ファイルはメモリマップできないため、マップを持たない長さ0のバッファとして扱う
+        // Empty files cannot be memory-mapped, so treat them as zero-length buffers without a mapping
         if (_length == 0) return;
 
         CreateMapping();
@@ -49,7 +49,7 @@ public sealed class MappedByteBuffer : ByteBuffer
         _mmf = null;
     }
 
-    // 失敗経路の catch から呼ばれるため、復元できない場合も例外を出さず解放済みのまま戻る
+    // Called from catch blocks on failure paths, so if the mapping cannot be restored, return without throwing and leave it released
     public void RestoreMapping()
     {
         if (_length == 0 || _accessor is not null) return;

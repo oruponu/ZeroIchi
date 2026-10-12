@@ -191,7 +191,7 @@ public partial class HexViewControl
             index == cursor || (hasSelection && index >= selStart && index < selEnd);
     }
 
-    // バイト 7-8 の間は結合しない
+    // Cells are not merged across the boundary between bytes 7 and 8
     private static void DrawMergedCells(DrawingContext context, IBrush brush,
         Rect hexRect, Rect asciiRect, int col,
         bool above, bool below, bool left, bool right)

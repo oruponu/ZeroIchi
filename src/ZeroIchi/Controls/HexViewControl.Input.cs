@@ -317,7 +317,7 @@ public partial class HexViewControl
         if (selectionLength > 0)
         {
             deleteIndex = selectionStart;
-            // 選択は EOF 直後の仮想セルを含み得るため実データ長にクランプ
+            // The selection may include the virtual cell just past EOF, so clamp it to the data length
             deleteCount = Math.Min(selectionLength, dataLength - selectionStart);
         }
         else if (key == Key.Delete)

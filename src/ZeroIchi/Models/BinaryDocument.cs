@@ -111,7 +111,7 @@ public sealed class BinaryDocument : IDisposable
         var workBuffer = ArrayPool<byte>.Shared.Rent(81920);
         try
         {
-            // マッピング中のファイルは上書きできないため先に解放する
+            // A mapped file cannot be overwritten, so release the mapping first
             if (_original is MappedByteBuffer mapped)
                 mapped.ReleaseMapping();
 
