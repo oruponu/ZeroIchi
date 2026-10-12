@@ -195,11 +195,13 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         }
         else if (change.Property == DataVersionProperty)
         {
+            _editingHighNibble = false;
             _metricsValid = false;
             InvalidateScrollable();
         }
         else if (change.Property == CursorPositionProperty)
         {
+            _editingHighNibble = false;
             EnsureCursorVisible();
         }
         else if (change.Property == CurrentSearchMatchIndexProperty)
