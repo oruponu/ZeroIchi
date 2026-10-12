@@ -43,6 +43,9 @@ public sealed class BinaryDocument : IDisposable
 
     public static BinaryDocument Open(string path)
     {
+        if (File.Exists(path))
+            path = File.ResolveLinkTarget(path, returnFinalTarget: true)?.FullName ?? path;
+
         var tempPath = path + ".zitmp";
         if (File.Exists(path))
         {
