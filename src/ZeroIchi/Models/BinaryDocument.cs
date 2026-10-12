@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using ZeroIchi.Models.Buffers;
@@ -11,6 +12,7 @@ namespace ZeroIchi.Models;
 public sealed class BinaryDocument : IDisposable
 {
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);
+    private readonly record struct OverwrittenRange(long Offset, byte[] Bytes);
 
     private ByteBuffer _original;
     private PieceTable _pieceTable;
@@ -29,6 +31,7 @@ public sealed class BinaryDocument : IDisposable
     public bool CanUndo => _undoRedoManager.CanUndo;
     public bool CanRedo => _undoRedoManager.CanRedo;
     internal ByteBuffer Original => _original;
+    internal Func<Stream, Stream>? InPlaceStreamWrapper { get; set; }
 
     private BinaryDocument(string filePath, ByteBuffer original)
     {
@@ -111,6 +114,8 @@ public sealed class BinaryDocument : IDisposable
 
     private void SaveInPlace(WritePlanEntry[] entries, long finalSize)
     {
+        var originalLength = _original.Length;
+        var overwrittenRanges = ReadOverwrittenRanges(entries);
         var workBuffer = ArrayPool<byte>.Shared.Rent(81920);
         try
         {
@@ -118,20 +123,73 @@ public sealed class BinaryDocument : IDisposable
             if (_original is MappedByteBuffer mapped)
                 mapped.ReleaseMapping();
 
+            var historyInvalidated = false;
             try
             {
-                using var fs = new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-                WritePiecesInPlace(fs, entries, finalSize, workBuffer, _pieceTable.ReadAddBuffer);
+                using var fs = new FileStream(FilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None, bufferSize: 0);
+                var stream = InPlaceStreamWrapper?.Invoke(fs) ?? fs;
+                try
+                {
+                    WritePiecesInPlace(stream, entries, finalSize, workBuffer, _pieceTable.ReadAddBuffer);
+                    fs.Flush(flushToDisk: true);
+                }
+                catch
+                {
+                    historyInvalidated = !TryRestoreOverwrittenRanges(stream, fs, overwrittenRanges, originalLength);
+                    throw;
+                }
             }
             catch
             {
                 (_original as MappedByteBuffer)?.RestoreMapping();
+                if (historyInvalidated)
+                {
+                    _undoRedoManager.Clear();
+                    if (IsUsable)
+                        OnChanged();
+                }
                 throw;
             }
         }
         finally
         {
             ArrayPool<byte>.Shared.Return(workBuffer);
+        }
+    }
+
+    private List<OverwrittenRange> ReadOverwrittenRanges(WritePlanEntry[] entries)
+    {
+        var ranges = new List<OverwrittenRange>();
+        foreach (var entry in entries)
+        {
+            if (entry.Piece.Source != PieceSource.Add || entry.OutputOffset >= _original.Length) continue;
+
+            var length = (int)Math.Min(entry.Piece.Length, _original.Length - entry.OutputOffset);
+            ranges.Add(new OverwrittenRange(entry.OutputOffset, _original.SliceToArray(entry.OutputOffset, length)));
+        }
+        return ranges;
+    }
+
+    private static bool TryRestoreOverwrittenRanges(
+        Stream stream, FileStream file, List<OverwrittenRange> ranges, long originalLength)
+    {
+        try
+        {
+            // Bytes cut off by truncation are not backed up, so they cannot be restored
+            if (stream.Length < originalLength) return false;
+
+            foreach (var range in ranges)
+            {
+                stream.Position = range.Offset;
+                stream.Write(range.Bytes);
+            }
+            stream.SetLength(originalLength);
+            file.Flush(flushToDisk: true);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -263,31 +321,31 @@ public sealed class BinaryDocument : IDisposable
     }
 
     private static void WritePiecesInPlace(
-        FileStream fs, WritePlanEntry[] entries, long finalSize, byte[] workBuffer,
+        Stream stream, WritePlanEntry[] entries, long finalSize, byte[] workBuffer,
         Action<long, byte[], int, int> readAddBuffer)
     {
-        if (finalSize > fs.Length)
-            fs.SetLength(finalSize);
+        if (finalSize > stream.Length)
+            stream.SetLength(finalSize);
 
         foreach (var entry in entries)
         {
             if (entry.Piece.Source != PieceSource.Add) continue;
 
-            fs.Position = entry.OutputOffset;
+            stream.Position = entry.OutputOffset;
             var remaining = entry.Piece.Length;
             var srcOffset = entry.Piece.Offset;
             while (remaining > 0)
             {
                 var chunk = (int)Math.Min(remaining, workBuffer.Length);
                 readAddBuffer(srcOffset, workBuffer, 0, chunk);
-                fs.Write(workBuffer, 0, chunk);
+                stream.Write(workBuffer, 0, chunk);
                 srcOffset += chunk;
                 remaining -= chunk;
             }
         }
 
-        if (finalSize < fs.Length)
-            fs.SetLength(finalSize);
+        if (finalSize < stream.Length)
+            stream.SetLength(finalSize);
     }
 
 }
