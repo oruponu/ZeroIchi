@@ -117,6 +117,7 @@
         <KeyBinding Command="{Binding SaveAsFileCommand}" Gesture="Ctrl+Shift+S"/>
         <KeyBinding Command="{Binding OpenSearchCommand}" Gesture="Ctrl+F"/>
         <KeyBinding Command="{Binding OpenGoToOffsetCommand}" Gesture="Ctrl+G"/>
+        <KeyBinding Command="{Binding ToggleStructureTreeCommand}" Gesture="Ctrl+T"/>
         <KeyBinding Command="{Binding ToggleInspectorCommand}" Gesture="Ctrl+I"/>
         <KeyBinding Command="{Binding FindNextCommand}" Gesture="F3"/>
         <KeyBinding Command="{Binding FindPreviousCommand}" Gesture="Shift+F3"/>
