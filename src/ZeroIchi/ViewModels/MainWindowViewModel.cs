@@ -184,6 +184,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private void OnDocumentContentChanged(object? sender, EventArgs e)
     {
+        ClearSearchResults();
         DataVersion++;
         UpdateUndoRedoState();
         UpdateTitle();
