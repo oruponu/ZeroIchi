@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows.Input;
 using ZeroIchi.Controls;
 using ZeroIchi.ViewModels;
 
@@ -25,6 +26,26 @@ public sealed partial class MainWindow : Window, IShellWindow
         SearchTextBox.KeyDown += OnSearchTextBoxKeyDown;
         GoToOffsetTextBox.KeyDown += OnGoToOffsetTextBoxKeyDown;
         Opened += (_, _) => HexView.Focus();
+
+        // Registered here instead of XAML because window KeyBindings are evaluated before TextBox handles KeyDown.
+        AddEditKeyBinding(Key.Z, KeyModifiers.Control, vm => vm.UndoCommand);
+        AddEditKeyBinding(Key.Z, KeyModifiers.Control | KeyModifiers.Shift, vm => vm.RedoCommand);
+        AddEditKeyBinding(Key.Y, KeyModifiers.Control, vm => vm.RedoCommand);
+        AddEditKeyBinding(Key.C, KeyModifiers.Control, vm => vm.CopyCommand);
+        AddEditKeyBinding(Key.X, KeyModifiers.Control, vm => vm.CutCommand);
+        AddEditKeyBinding(Key.V, KeyModifiers.Control, vm => vm.PasteCommand);
+        AddEditKeyBinding(Key.A, KeyModifiers.Control, vm => vm.SelectAllCommand);
+    }
+
+    private void AddEditKeyBinding(Key key, KeyModifiers modifiers, Func<MainWindowViewModel, ICommand> selectCommand)
+    {
+        KeyBindings.Add(new KeyBinding
+        {
+            Gesture = new KeyGesture(key, modifiers),
+            Command = new TextInputAwareCommand(
+                () => DataContext is MainWindowViewModel vm ? selectCommand(vm) : null,
+                () => FocusManager?.GetFocusedElement()),
+        });
     }
 
     protected override void OnDataContextChanged(EventArgs e)

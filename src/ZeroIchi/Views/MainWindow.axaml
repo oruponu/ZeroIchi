@@ -115,13 +115,6 @@
         <KeyBinding Command="{Binding OpenFileCommand}" Gesture="Ctrl+O"/>
         <KeyBinding Command="{Binding SaveFileCommand}" Gesture="Ctrl+S"/>
         <KeyBinding Command="{Binding SaveAsFileCommand}" Gesture="Ctrl+Shift+S"/>
-        <KeyBinding Command="{Binding UndoCommand}" Gesture="Ctrl+Z"/>
-        <KeyBinding Command="{Binding RedoCommand}" Gesture="Ctrl+Shift+Z"/>
-        <KeyBinding Command="{Binding RedoCommand}" Gesture="Ctrl+Y"/>
-        <KeyBinding Command="{Binding CopyCommand}" Gesture="Ctrl+C"/>
-        <KeyBinding Command="{Binding CutCommand}" Gesture="Ctrl+X"/>
-        <KeyBinding Command="{Binding PasteCommand}" Gesture="Ctrl+V"/>
-        <KeyBinding Command="{Binding SelectAllCommand}" Gesture="Ctrl+A"/>
         <KeyBinding Command="{Binding OpenSearchCommand}" Gesture="Ctrl+F"/>
         <KeyBinding Command="{Binding OpenGoToOffsetCommand}" Gesture="Ctrl+G"/>
         <KeyBinding Command="{Binding ToggleInspectorCommand}" Gesture="Ctrl+I"/>
