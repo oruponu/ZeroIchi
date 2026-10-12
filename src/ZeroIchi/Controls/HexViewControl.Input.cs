@@ -227,11 +227,6 @@ public partial class HexViewControl
                 e.Handled = true;
                 return;
             default:
-                if (!ctrl && TryParseHexKey(e.Key) is { } nibble)
-                {
-                    HandleHexInput(nibble, maxIndex);
-                    e.Handled = true;
-                }
                 return;
         }
 
@@ -250,6 +245,23 @@ public partial class HexViewControl
 
         EnsureCursorVisible();
         e.Handled = true;
+    }
+
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        base.OnTextInput(e);
+
+        var buffer = Buffer;
+        if (buffer is null || e.Text is not { } text) return;
+
+        foreach (var c in text)
+        {
+            if (ParseHexDigit(c) is { } nibble)
+            {
+                HandleHexInput(nibble, buffer.Length);
+                e.Handled = true;
+            }
+        }
     }
 
     private void HandleHexInput(int nibble, long maxIndex)
@@ -340,24 +352,11 @@ public partial class HexViewControl
         return deleteCount <= 0 ? null : (deleteIndex, deleteCount);
     }
 
-    private static int? TryParseHexKey(Key key) => key switch
+    internal static int? ParseHexDigit(char c) => c switch
     {
-        Key.D0 or Key.NumPad0 => 0,
-        Key.D1 or Key.NumPad1 => 1,
-        Key.D2 or Key.NumPad2 => 2,
-        Key.D3 or Key.NumPad3 => 3,
-        Key.D4 or Key.NumPad4 => 4,
-        Key.D5 or Key.NumPad5 => 5,
-        Key.D6 or Key.NumPad6 => 6,
-        Key.D7 or Key.NumPad7 => 7,
-        Key.D8 or Key.NumPad8 => 8,
-        Key.D9 or Key.NumPad9 => 9,
-        Key.A => 0xA,
-        Key.B => 0xB,
-        Key.C => 0xC,
-        Key.D => 0xD,
-        Key.E => 0xE,
-        Key.F => 0xF,
+        >= '0' and <= '9' => c - '0',
+        >= 'a' and <= 'f' => c - 'a' + 0xA,
+        >= 'A' and <= 'F' => c - 'A' + 0xA,
         _ => null,
     };
 }
