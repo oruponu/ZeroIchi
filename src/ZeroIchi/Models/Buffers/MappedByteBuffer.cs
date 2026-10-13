@@ -6,6 +6,7 @@ namespace ZeroIchi.Models.Buffers;
 
 public sealed class MappedByteBuffer : ByteBuffer
 {
+    private FileStream? _file;
     private MemoryMappedFile? _mmf;
     private MemoryMappedViewAccessor? _accessor;
     private readonly string _filePath;
@@ -14,12 +15,18 @@ public sealed class MappedByteBuffer : ByteBuffer
     public MappedByteBuffer(string filePath)
     {
         _filePath = filePath;
-        _length = new FileInfo(filePath).Length;
+        _file = OpenFile(filePath);
 
-        // Empty files cannot be memory-mapped, so treat them as zero-length buffers without a mapping
-        if (_length == 0) return;
-
-        CreateMapping();
+        try
+        {
+            _length = _file.Length;
+            CreateMapping();
+        }
+        catch
+        {
+            ReleaseMapping();
+            throw;
+        }
     }
 
     public override long Length => _length;
@@ -45,25 +52,31 @@ public sealed class MappedByteBuffer : ByteBuffer
     {
         _accessor?.Dispose();
         _mmf?.Dispose();
+        _file?.Dispose();
         _accessor = null;
         _mmf = null;
+        _file = null;
     }
 
     // Called from catch blocks on failure paths, so if the mapping cannot be restored, return without throwing and leave it released
     public void RestoreMapping()
     {
-        if (_length == 0 || _accessor is not null) return;
-
-        var file = new FileInfo(_filePath);
-        if (!file.Exists || file.Length < _length) return;
+        if (_file is not null) return;
 
         try
         {
-            CreateMapping();
+            _file = OpenFile(_filePath);
+            if (_file.Length >= _length)
+            {
+                CreateMapping();
+                return;
+            }
         }
         catch
         {
         }
+
+        ReleaseMapping();
     }
 
     public override void Dispose()
@@ -72,9 +85,16 @@ public sealed class MappedByteBuffer : ByteBuffer
         GC.SuppressFinalize(this);
     }
 
+    private static FileStream OpenFile(string path) =>
+        new(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0);
+
     private void CreateMapping()
     {
-        var mmf = MemoryMappedFile.CreateFromFile(_filePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+        // Empty files cannot be memory-mapped, so only the file handle is kept to lock the file
+        if (_length == 0) return;
+
+        var mmf = MemoryMappedFile.CreateFromFile(
+            _file!, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, leaveOpen: true);
         try
         {
             _accessor = mmf.CreateViewAccessor(0, _length, MemoryMappedFileAccess.Read);

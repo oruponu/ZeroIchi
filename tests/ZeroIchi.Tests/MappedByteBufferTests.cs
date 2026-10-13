@@ -17,6 +17,9 @@ public sealed class MappedByteBufferTests : IDisposable
         return path;
     }
 
+    private static FileStream OpenForWrite(string path) =>
+        new(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+
     [Fact]
     public void ReadByte_AfterReleaseMapping_ThrowsObjectDisposed()
     {
@@ -106,6 +109,32 @@ public sealed class MappedByteBufferTests : IDisposable
 
         buffer.RestoreMapping();
         Assert.True(buffer.IsMapped);
+    }
+
+    [Theory]
+    [InlineData(new byte[0])]
+    [InlineData(new byte[] { 1, 2, 3 })]
+    public void NewBuffer_RejectsWriteAccessFromOthers(byte[] content)
+    {
+        var path = CreateTestFile(content);
+        using var buffer = new MappedByteBuffer(path);
+
+        Assert.Throws<IOException>(() => OpenForWrite(path).Dispose());
+    }
+
+    [Theory]
+    [InlineData(new byte[0])]
+    [InlineData(new byte[] { 1, 2, 3 })]
+    public void RestoreMapping_RejectsWriteAccessFromOthersAgain(byte[] content)
+    {
+        var path = CreateTestFile(content);
+        using var buffer = new MappedByteBuffer(path);
+        buffer.ReleaseMapping();
+        OpenForWrite(path).Dispose();
+
+        buffer.RestoreMapping();
+
+        Assert.Throws<IOException>(() => OpenForWrite(path).Dispose());
     }
 
     [Fact]
