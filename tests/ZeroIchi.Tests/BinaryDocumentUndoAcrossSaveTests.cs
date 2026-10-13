@@ -165,6 +165,42 @@ public sealed class BinaryDocumentUndoAcrossSaveTests : IDisposable
     }
 
     [Fact]
+    public void Save_ThenUndoRedoRepeatedly_DoesNotGrowAddBuffer()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile(Sequence(16)));
+        Delete(doc, 4, 8);
+        doc.Save();
+        doc.Undo();
+        var addBufferLength = doc.CurrentPieceTable.AddBufferLength;
+
+        for (var i = 0; i < 3; i++)
+        {
+            doc.Redo();
+            doc.Undo();
+        }
+
+        Assert.Equal(addBufferLength, doc.CurrentPieceTable.AddBufferLength);
+        Assert.Equal(Sequence(16), ReadAll(doc));
+    }
+
+    [Fact]
+    public void UndoRedoRepeatedly_AfterInsert_DoesNotGrowAddBuffer()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        doc.ExecuteCommand(new InsertBytesCommand(doc, 1, [0xAA, 0xBB], cursorPositionBefore: 1, cursorPositionAfter: 3));
+        var addBufferLength = doc.CurrentPieceTable.AddBufferLength;
+
+        for (var i = 0; i < 3; i++)
+        {
+            doc.Undo();
+            doc.Redo();
+        }
+
+        Assert.Equal(addBufferLength, doc.CurrentPieceTable.AddBufferLength);
+        Assert.Equal([1, 0xAA, 0xBB, 2, 3], ReadAll(doc));
+    }
+
+    [Fact]
     public void Save_Twice_UndoesAcrossBothSaves()
     {
         using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));

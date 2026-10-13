@@ -75,6 +75,8 @@ public sealed class BinaryDocument : IDisposable
 
     public void UndoEdit(PieceTableEdit edit) => _pieceTable.UndoEdit(edit);
 
+    public void RedoEdit(PieceTableEdit edit) => _pieceTable.RedoEdit(edit);
+
     internal byte[] ReadPieces(IReadOnlyList<Piece> pieces) => _pieceTable.ReadPieces(pieces);
 
     public void ExecuteCommand(IEditCommand command)

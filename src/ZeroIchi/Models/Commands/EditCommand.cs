@@ -7,6 +7,7 @@ public abstract class EditCommand(BinaryDocument document, long cursorPositionBe
 {
     private PieceTableEdit? _edit;
     private bool _editIsInverse;
+    private bool _editIsApplied;
 
     public BinaryDocument Document => document;
 
@@ -17,30 +18,32 @@ public abstract class EditCommand(BinaryDocument document, long cursorPositionBe
 
     protected PieceTableEdit? ForwardEdit => _editIsInverse ? null : _edit;
 
-    public void Execute()
+    public void Execute() => MoveTo(inverse: false);
+
+    public void Undo() => MoveTo(inverse: true);
+
+    private void MoveTo(bool inverse)
     {
-        if (_edit is not null && _editIsInverse)
+        if (_edit is not null)
         {
-            document.UndoEdit(_edit);
-            _edit = null;
-            return;
+            if (_editIsInverse != inverse && _editIsApplied)
+            {
+                document.UndoEdit(_edit);
+                _editIsApplied = false;
+                return;
+            }
+
+            if (_editIsInverse == inverse && !_editIsApplied)
+            {
+                document.RedoEdit(_edit);
+                _editIsApplied = true;
+                return;
+            }
         }
 
-        _edit = ApplyForward();
-        _editIsInverse = false;
-    }
-
-    public void Undo()
-    {
-        if (_edit is not null && !_editIsInverse)
-        {
-            document.UndoEdit(_edit);
-            _edit = null;
-            return;
-        }
-
-        _edit = ApplyInverse();
-        _editIsInverse = true;
+        _edit = inverse ? ApplyInverse() : ApplyForward();
+        _editIsInverse = inverse;
+        _editIsApplied = true;
     }
 
     public virtual byte[]? CaptureRetainedBytes() => null;
