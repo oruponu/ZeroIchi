@@ -60,4 +60,39 @@ public sealed class PieceTableUndoGuardTests
         Assert.Equal(1, table.ReadByte(0));
         Assert.Equal(2, table.ReadByte(1));
     }
+
+    [Fact]
+    public void RedoEdit_AfterUndo_ReappliesEditWithoutGrowingAddBuffer()
+    {
+        var table = new PieceTable(new ArrayByteBuffer([1, 2, 3]));
+        var edit = table.InsertBytes(1, [0xAA, 0xBB]);
+        table.UndoEdit(edit);
+
+        table.RedoEdit(edit);
+
+        Assert.Equal(5, table.Length);
+        Assert.Equal(0xAA, table.ReadByte(1));
+        Assert.Equal(0xBB, table.ReadByte(2));
+        Assert.Equal(2, table.AddBufferLength);
+    }
+
+    [Fact]
+    public void RedoEdit_WithoutUndo_Throws()
+    {
+        var table = new PieceTable(new ArrayByteBuffer([1, 2, 3]));
+        var edit = table.WriteByte(1, 0xFF);
+
+        Assert.Throws<InvalidOperationException>(() => table.RedoEdit(edit));
+    }
+
+    [Fact]
+    public void RedoEdit_EditFromAnotherTable_Throws()
+    {
+        var tableA = new PieceTable(new ArrayByteBuffer([1, 2, 3]));
+        var tableB = new PieceTable(new ArrayByteBuffer([1, 2, 3]));
+        var edit = tableA.WriteByte(1, 0xFF);
+        tableA.UndoEdit(edit);
+
+        Assert.Throws<InvalidOperationException>(() => tableB.RedoEdit(edit));
+    }
 }

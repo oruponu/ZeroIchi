@@ -316,6 +316,21 @@ public sealed class PieceTable
         InvalidateCache();
     }
 
+    public void RedoEdit(PieceTableEdit edit)
+    {
+        if (!ReferenceEquals(edit.Owner, this))
+            throw new InvalidOperationException();
+        if (edit.StateBefore != _stateId)
+            throw new InvalidOperationException();
+
+        _pieces.RemoveRange(edit.PieceIndex, edit.OldPieces.Length);
+        for (var i = 0; i < edit.NewPieces.Length; i++)
+            _pieces.Insert(edit.PieceIndex + i, edit.NewPieces[i]);
+        Length += edit.LengthDelta;
+        _stateId = edit.StateAfter;
+        InvalidateCache();
+    }
+
     public bool IsModified(long index)
     {
         if (index < 0 || index >= Length) return false;
