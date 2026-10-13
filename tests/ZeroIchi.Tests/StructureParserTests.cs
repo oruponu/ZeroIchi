@@ -1489,6 +1489,111 @@ public sealed class StructureParserTests
     }
 
     [Fact]
+    public void Parse_WavDataChunkOver2GB_ParsesFollowingChunkAtItsOffset()
+    {
+        const long dataSize = 3_000_000_000;
+        const long listOffset = 44 + dataSize;
+        var header = new List<byte>();
+        header.AddRange("RIFF"u8.ToArray());
+        header.AddRange(BitConverter.GetBytes(0u));
+        header.AddRange("WAVE"u8.ToArray());
+        header.AddRange("fmt "u8.ToArray());
+        header.AddRange(BitConverter.GetBytes(16u));
+        header.AddRange(new byte[16]);
+        header.AddRange("data"u8.ToArray());
+        header.AddRange(BitConverter.GetBytes((uint)dataSize));
+        var list = new List<byte>();
+        list.AddRange("LIST"u8.ToArray());
+        list.AddRange(BitConverter.GetBytes(4u));
+        list.AddRange([0x01, 0x02, 0x03, 0x04]);
+        var buffer = new SparseByteBuffer(listOffset + list.Count, (0, [.. header]), (listOffset, [.. list]));
+
+        var root = StructureParser.Parse(LoadWavDefinition(), buffer);
+        var subChunks = root.Children[1];
+        var data = subChunks.Children[1];
+
+        Assert.Equal(dataSize, data.Children[2].Length);
+        Assert.Equal(buffer.Length - 12, subChunks.Length);
+        Assert.Equal(3, subChunks.Children.Count);
+        Assert.Equal("LIST", subChunks.Children[2].Name);
+        Assert.Equal(listOffset, subChunks.Children[2].Offset);
+    }
+
+    private static FormatDefinition LoadRestPayloadDefinition()
+    {
+        const string json = """
+        {
+          "name": "Payload",
+          "extensions": ["bin"],
+          "magic": "00",
+          "fields": [
+            { "id": "header", "name": "Header", "type": "uint8" },
+            { "id": "payload", "name": "Payload", "type": "bytes", "size": "rest" }
+          ]
+        }
+        """;
+        return JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+    }
+
+    [Theory]
+    [InlineData("group")]
+    [InlineData("repeat")]
+    public void Parse_ContainerWithMaximumSizeAfterOffset_StopsAtBufferEnd(string type)
+    {
+        var json = $$"""
+        {
+          "name": "HugeContainer",
+          "extensions": ["bin"],
+          "magic": "7F",
+          "endian": "big",
+          "fields": [
+            { "id": "length", "name": "Length", "type": "uint64" },
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "{{type}}",
+              "size": "length",
+              "fields": [
+                { "id": "value", "name": "Value", "type": "uint8" }
+              ]
+            }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer(
+            [0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x11, 0x22]);
+
+        var root = StructureParser.Parse(definition, buffer);
+        var body = root.Children[1];
+
+        Assert.Equal(8, body.Offset);
+        Assert.Equal(2, body.Length);
+    }
+
+    [Fact]
+    public void Parse_RestSizeOver2GB_CoversRemainingBytes()
+    {
+        var buffer = new SparseByteBuffer(3_000_000_000);
+
+        var root = StructureParser.Parse(LoadRestPayloadDefinition(), buffer);
+
+        Assert.Equal(buffer.Length, root.Length);
+        Assert.Equal(buffer.Length - 1, root.Children[1].Length);
+    }
+
+    [Fact]
+    public void StructureColorMap_LeafOver2GB_ReturnsKindBeyond2GB()
+    {
+        var buffer = new SparseByteBuffer(3_000_000_000);
+        var root = StructureParser.Parse(LoadRestPayloadDefinition(), buffer);
+
+        var map = StructureColorMap.Build(root);
+
+        Assert.Equal(ValueKind.Bytes, map.GetValueKind(2_999_999_999));
+    }
+
+    [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {
         var wav = new List<byte>();

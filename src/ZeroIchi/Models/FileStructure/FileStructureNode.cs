@@ -7,7 +7,7 @@ public sealed class FileStructureNode
     public required string Name { get; init; }
     public string? FieldId { get; init; }
     public required long Offset { get; init; }
-    public required int Length { get; init; }
+    public required long Length { get; init; }
     public string Description { get; init; } = "";
     public ValueKind ValueKind { get; init; }
     public IReadOnlyList<FileStructureNode> Children { get; init; } = [];

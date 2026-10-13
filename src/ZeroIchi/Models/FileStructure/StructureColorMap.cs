@@ -6,13 +6,13 @@ namespace ZeroIchi.Models.FileStructure;
 public sealed class StructureColorMap
 {
     private readonly long[] _offsets;
-    private readonly int[] _lengths;
+    private readonly long[] _lengths;
     private readonly ValueKind[] _kinds;
 
-    private StructureColorMap(List<(long Offset, int Length, ValueKind Kind)> ranges)
+    private StructureColorMap(List<(long Offset, long Length, ValueKind Kind)> ranges)
     {
         _offsets = new long[ranges.Count];
-        _lengths = new int[ranges.Count];
+        _lengths = new long[ranges.Count];
         _kinds = new ValueKind[ranges.Count];
 
         for (var i = 0; i < ranges.Count; i++)
@@ -38,13 +38,13 @@ public sealed class StructureColorMap
 
     public static StructureColorMap Build(FileStructureNode root)
     {
-        var ranges = new List<(long Offset, int Length, ValueKind Kind)>();
+        var ranges = new List<(long Offset, long Length, ValueKind Kind)>();
         CollectLeafRanges(root, ranges);
         return new StructureColorMap(ranges);
     }
 
     private static void CollectLeafRanges(FileStructureNode node,
-        List<(long Offset, int Length, ValueKind Kind)> ranges)
+        List<(long Offset, long Length, ValueKind Kind)> ranges)
     {
         if (node.Children.Count == 0)
         {

@@ -28,7 +28,7 @@ public static class StructureParser
         {
             Name = definition.Name,
             Offset = 0,
-            Length = (int)Math.Min(buffer.Length, int.MaxValue),
+            Length = buffer.Length,
             Children = children,
         };
     }
@@ -58,7 +58,7 @@ public static class StructureParser
     {
         Name = "未解析",
         Offset = offset,
-        Length = (int)Math.Min(bufferLength - offset, int.MaxValue),
+        Length = bufferLength - offset,
         Description = string.Create(CultureInfo.InvariantCulture, $"ノード数の上限 ({nodeBudget:N0}) に到達"),
     };
 
@@ -143,7 +143,7 @@ public static class StructureParser
         if (field.Size is not null)
         {
             var size = Math.Max(ResolveSize(field, siblingValues, limit, offset), 0);
-            groupLimit = Math.Min(offset + size, limit);
+            groupLimit = offset + Math.Min(size, limit - offset);
         }
 
         var children = ParseFields(field.Fields ?? [], context, ref offset, bigEndian, null, groupLimit);
@@ -156,7 +156,7 @@ public static class StructureParser
             Name = field.Name,
             FieldId = field.Id,
             Offset = startOffset,
-            Length = (int)(offset - startOffset),
+            Length = offset - startOffset,
             Children = children,
         };
     }
@@ -173,7 +173,7 @@ public static class StructureParser
         if (field.Size is not null)
         {
             var size = Math.Max(ResolveSize(field, siblingValues, end, offset), 0);
-            end = Math.Min(offset + size, end);
+            end = offset + Math.Min(size, end - offset);
         }
 
         var persistentValues = new Dictionary<string, long>();
@@ -202,7 +202,7 @@ public static class StructureParser
                 Name = iterationName,
                 FieldId = field.Id,
                 Offset = iterationOffset,
-                Length = (int)(offset - iterationOffset),
+                Length = offset - iterationOffset,
                 Children = iterationChildren,
             });
         }
@@ -212,7 +212,7 @@ public static class StructureParser
             Name = field.Name,
             FieldId = field.Id,
             Offset = startOffset,
-            Length = (int)(offset - startOffset),
+            Length = offset - startOffset,
             Children = children,
         };
     }
@@ -240,7 +240,7 @@ public static class StructureParser
                 Name = c.Name,
                 FieldId = field.Id,
                 Offset = startOffset,
-                Length = (int)(offset - startOffset),
+                Length = offset - startOffset,
                 Description = c.Name,
                 Children = children,
             };
@@ -282,7 +282,7 @@ public static class StructureParser
             break;
         }
 
-        var length = (int)Math.Min(offset - startOffset, int.MaxValue);
+        var length = offset - startOffset;
 
         return new FileStructureNode
         {
@@ -318,7 +318,7 @@ public static class StructureParser
             Name = field.Name,
             FieldId = field.Id,
             Offset = startOffset,
-            Length = (int)(offset - startOffset),
+            Length = offset - startOffset,
             Description = value.ToString(),
             ValueKind = ValueKind.Numeric,
         };
@@ -394,7 +394,7 @@ public static class StructureParser
         var size = ResolveSize(field, siblingValues, limit, offset);
         if (size < 0) size = 0;
 
-        var available = (int)Math.Min(limit - offset, int.MaxValue);
+        var available = limit - offset;
         var actualSize = Math.Min(size, available);
 
         var numericValue = ReadNumericValue(field.Type, buffer, offset, actualSize, bigEndian);
@@ -419,7 +419,7 @@ public static class StructureParser
         return node;
     }
 
-    private static int ResolveSize(
+    private static long ResolveSize(
         FieldDefinition field, Dictionary<string, long> siblingValues, long limit, long offset)
     {
         if (field.FixedSize >= 0)
@@ -429,7 +429,7 @@ public static class StructureParser
             return 0;
 
         if (sizeElement.ValueKind == JsonValueKind.Number)
-            return sizeElement.GetInt32();
+            return sizeElement.GetInt64();
 
         if (sizeElement.ValueKind == JsonValueKind.String)
         {
@@ -442,9 +442,9 @@ public static class StructureParser
             else if (!siblingValues.TryGetValue(refId, out baseValue))
                 return 0;
 
-            var clampedBase = Math.Clamp(baseValue, 0, int.MaxValue);
-            var clampedAdjustment = Math.Clamp(adjustment, int.MinValue, int.MaxValue);
-            return (int)Math.Clamp(clampedBase + clampedAdjustment, 0, int.MaxValue);
+            var clampedBase = Math.Max(baseValue, 0);
+            if (adjustment > long.MaxValue - clampedBase) return long.MaxValue;
+            return Math.Max(clampedBase + adjustment, 0);
         }
 
         return 0;
@@ -462,13 +462,13 @@ public static class StructureParser
     private static readonly Encoding ShiftJis =
         Encoding.GetEncoding(932);
 
-    private static string ReadNonNumericDescription(string type, ByteBuffer buffer, long offset, int size)
+    private static string ReadNonNumericDescription(string type, ByteBuffer buffer, long offset, long size)
     {
         if (size <= 0) return "";
 
         return type switch
         {
-            "text" => DecodeText(buffer.SliceToArray(offset, size)),
+            "text" => DecodeText(buffer.SliceToArray(offset, (int)Math.Min(size, int.MaxValue))),
             "bytes" => FormatBytesHex(buffer, offset, size),
             _ => "",
         };
@@ -482,9 +482,9 @@ public static class StructureParser
         return ShiftJis.GetString(bytes);
     }
 
-    private static string FormatBytesHex(ByteBuffer buffer, long offset, int size)
+    private static string FormatBytesHex(ByteBuffer buffer, long offset, long size)
     {
-        var displaySize = Math.Min(size, 16);
+        var displaySize = (int)Math.Min(size, 16);
         var hex = Convert.ToHexString(buffer.SliceToArray(offset, displaySize));
         var spaced = string.Create(displaySize * 3 - 1, hex, (span, h) =>
         {
@@ -505,7 +505,7 @@ public static class StructureParser
         };
     }
 
-    private static long? ReadNumericValue(string type, ByteBuffer buffer, long offset, int size, bool bigEndian)
+    private static long? ReadNumericValue(string type, ByteBuffer buffer, long offset, long size, bool bigEndian)
     {
         var required = type switch
         {
