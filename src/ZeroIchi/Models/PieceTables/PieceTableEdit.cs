@@ -9,4 +9,5 @@ public sealed record PieceTableEdit
     public required Piece[] OldPieces { get; init; }
     public required Piece[] NewPieces { get; init; }
     public required long LengthDelta { get; init; }
+    public Piece[] RemovedPieces { get; init; } = [];
 }

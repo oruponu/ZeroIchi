@@ -41,6 +41,32 @@ public sealed class PieceTable
             .CopyTo(buffer.AsSpan(bufferOffset, count));
     }
 
+    public byte[] ReadPieces(IReadOnlyList<Piece> pieces)
+    {
+        long total = 0;
+        foreach (var piece in pieces)
+            total += piece.Length;
+
+        var result = new byte[total];
+        var destOffset = 0;
+        foreach (var piece in pieces)
+        {
+            var length = (int)piece.Length;
+            if (piece.Source == PieceSource.Original)
+            {
+                _original.ReadBytes(piece.Offset, result, destOffset, length);
+            }
+            else
+            {
+                CollectionsMarshal.AsSpan(_addBuffer)
+                    .Slice((int)piece.Offset, length)
+                    .CopyTo(result.AsSpan(destOffset, length));
+            }
+            destOffset += length;
+        }
+        return result;
+    }
+
     public byte ReadByte(long index)
     {
         var (pieceIdx, offsetInPiece) = FindPiece(index);
@@ -191,6 +217,15 @@ public sealed class PieceTable
         for (var i = 0; i < oldPieceCount; i++)
             oldPieces[i] = _pieces[startPi + i];
 
+        var removedPieces = new Piece[oldPieceCount];
+        for (var i = 0; i < oldPieceCount; i++)
+        {
+            var piece = oldPieces[i];
+            var start = i == 0 ? startOffset : 0;
+            var end = i == oldPieceCount - 1 ? endOffsetInPiece : piece.Length;
+            removedPieces[i] = piece with { Offset = piece.Offset + start, Length = end - start };
+        }
+
         var hasLeft = startOffset > 0;
         var hasRight = endPi < _pieces.Count && endOffsetInPiece < _pieces[endPi].Length;
         var newPieces = new Piece[(hasLeft ? 1 : 0) + (hasRight ? 1 : 0)];
@@ -214,7 +249,7 @@ public sealed class PieceTable
 
         Length -= count;
         InvalidateCache();
-        return CreateEdit(startPi, oldPieces, newPieces, -count);
+        return CreateEdit(startPi, oldPieces, newPieces, -count, removedPieces);
     }
 
     public PieceTableEdit AppendByte(byte value)
@@ -248,7 +283,8 @@ public sealed class PieceTable
         return CreateEdit(pieceIdx, oldPieces, newPieces, 1);
     }
 
-    private PieceTableEdit CreateEdit(int pieceIndex, Piece[] oldPieces, Piece[] newPieces, long lengthDelta)
+    private PieceTableEdit CreateEdit(
+        int pieceIndex, Piece[] oldPieces, Piece[] newPieces, long lengthDelta, Piece[]? removedPieces = null)
     {
         var stateBefore = _stateId;
         _stateId = _nextStateId++;
@@ -261,6 +297,7 @@ public sealed class PieceTable
             OldPieces = oldPieces,
             NewPieces = newPieces,
             LengthDelta = lengthDelta,
+            RemovedPieces = removedPieces ?? [],
         };
     }
 
