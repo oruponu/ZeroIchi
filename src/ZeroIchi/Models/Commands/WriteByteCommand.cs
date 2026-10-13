@@ -4,16 +4,15 @@ namespace ZeroIchi.Models.Commands;
 
 public sealed class WriteByteCommand(
     BinaryDocument document, long index, byte newValue, long cursorPositionBefore, long cursorPositionAfter)
-    : IEditCommand
+    : EditCommand(document, cursorPositionBefore, cursorPositionAfter)
 {
-    private PieceTableEdit? _edit;
+    private byte? _oldValue;
 
-    public BinaryDocument Document => document;
+    protected override PieceTableEdit ApplyForward()
+    {
+        _oldValue ??= Document.Buffer.ReadByte(index);
+        return Document.WriteByte(index, newValue);
+    }
 
-    public long CursorPositionBefore { get; } = cursorPositionBefore;
-    public long CursorPositionAfter { get; } = cursorPositionAfter;
-
-    public void Execute() => _edit = document.WriteByte(index, newValue);
-
-    public void Undo() => document.UndoEdit(_edit!);
+    protected override PieceTableEdit ApplyInverse() => Document.WriteByte(index, _oldValue!.Value);
 }

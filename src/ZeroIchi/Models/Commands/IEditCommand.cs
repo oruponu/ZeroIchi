@@ -9,4 +9,8 @@ public interface IEditCommand
 
     long CursorPositionBefore { get; }
     long CursorPositionAfter { get; }
+
+    long RetainedLength { get; }
+    byte[]? CaptureRetainedBytes();
+    void CommitSave(byte[]? retainedBytes);
 }

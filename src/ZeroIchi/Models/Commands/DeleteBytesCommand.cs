@@ -1,19 +1,29 @@
+using System;
 using ZeroIchi.Models.PieceTables;
 
 namespace ZeroIchi.Models.Commands;
 
 public sealed class DeleteBytesCommand(
     BinaryDocument document, long index, long count, long cursorPositionBefore, long cursorPositionAfter)
-    : IEditCommand
+    : EditCommand(document, cursorPositionBefore, cursorPositionAfter)
 {
-    private PieceTableEdit? _edit;
+    private byte[]? _retainedBytes;
 
-    public BinaryDocument Document => document;
+    public override long RetainedLength => count;
 
-    public long CursorPositionBefore { get; } = cursorPositionBefore;
-    public long CursorPositionAfter { get; } = cursorPositionAfter;
+    internal bool HasRetainedBytes => _retainedBytes is not null;
 
-    public void Execute() => _edit = document.DeleteBytes(index, count);
+    public override byte[]? CaptureRetainedBytes()
+    {
+        if (_retainedBytes is not null) return null;
 
-    public void Undo() => document.UndoEdit(_edit!);
+        var edit = ForwardEdit ?? throw new InvalidOperationException();
+        return Document.ReadPieces(edit.RemovedPieces);
+    }
+
+    protected override void StoreRetainedBytes(byte[] bytes) => _retainedBytes = bytes;
+
+    protected override PieceTableEdit ApplyForward() => Document.DeleteBytes(index, count);
+
+    protected override PieceTableEdit ApplyInverse() => Document.InsertBytes(index, _retainedBytes!);
 }

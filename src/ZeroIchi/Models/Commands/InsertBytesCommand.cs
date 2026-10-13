@@ -4,16 +4,9 @@ namespace ZeroIchi.Models.Commands;
 
 public sealed class InsertBytesCommand(
     BinaryDocument document, long index, byte[] bytes, long cursorPositionBefore, long cursorPositionAfter)
-    : IEditCommand
+    : EditCommand(document, cursorPositionBefore, cursorPositionAfter)
 {
-    private PieceTableEdit? _edit;
+    protected override PieceTableEdit ApplyForward() => Document.InsertBytes(index, bytes);
 
-    public BinaryDocument Document => document;
-
-    public long CursorPositionBefore { get; } = cursorPositionBefore;
-    public long CursorPositionAfter { get; } = cursorPositionAfter;
-
-    public void Execute() => _edit = document.InsertBytes(index, bytes);
-
-    public void Undo() => document.UndoEdit(_edit!);
+    protected override PieceTableEdit ApplyInverse() => Document.DeleteBytes(index, bytes.Length);
 }

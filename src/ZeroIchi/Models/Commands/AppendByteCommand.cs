@@ -3,16 +3,16 @@ using ZeroIchi.Models.PieceTables;
 namespace ZeroIchi.Models.Commands;
 
 public sealed class AppendByteCommand(
-    BinaryDocument document, byte value, long cursorPositionBefore, long cursorPositionAfter) : IEditCommand
+    BinaryDocument document, byte value, long cursorPositionBefore, long cursorPositionAfter)
+    : EditCommand(document, cursorPositionBefore, cursorPositionAfter)
 {
-    private PieceTableEdit? _edit;
+    private long? _index;
 
-    public BinaryDocument Document => document;
+    protected override PieceTableEdit ApplyForward()
+    {
+        _index ??= Document.FileSize;
+        return Document.AppendByte(value);
+    }
 
-    public long CursorPositionBefore { get; } = cursorPositionBefore;
-    public long CursorPositionAfter { get; } = cursorPositionAfter;
-
-    public void Execute() => _edit = document.AppendByte(value);
-
-    public void Undo() => document.UndoEdit(_edit!);
+    protected override PieceTableEdit ApplyInverse() => Document.DeleteBytes(_index!.Value, 1);
 }
