@@ -52,21 +52,31 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
     }
 
     [Fact]
-    public async Task Undo_AfterSave_DoesNothing()
+    public async Task Undo_AfterSave_RestoresByteAndCursor()
     {
         var vm = CreateViewModel();
         await vm.OpenFileAsync(CreateTestFile());
         try
         {
+            vm.CursorPosition = 0;
             vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+            vm.CursorPosition = 1;
             await vm.SaveFileCommand.ExecuteAsync(null);
 
-            Assert.False(vm.CanUndo);
+            Assert.True(vm.CanUndo);
             Assert.False(vm.CanRedo);
+            Assert.DoesNotContain("*", vm.Title);
 
             vm.UndoCommand.Execute(null);
 
-            Assert.Equal(0xFF, vm.Document!.Buffer.ReadByte(0));
+            Assert.Equal(1, vm.Document!.Buffer.ReadByte(0));
+            Assert.Equal(0, vm.CursorPosition);
+            Assert.StartsWith("*", vm.Title);
+
+            vm.RedoCommand.Execute(null);
+
+            Assert.Equal(0xFF, vm.Document.Buffer.ReadByte(0));
+            Assert.DoesNotContain("*", vm.Title);
         }
         finally
         {
@@ -75,7 +85,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
     }
 
     [Fact]
-    public async Task Undo_AfterSaveThenEdit_UndoesOnlyNewEdit()
+    public async Task Undo_AfterSaveThenEdit_UndoesNewEditFirst()
     {
         var vm = CreateViewModel();
         await vm.OpenFileAsync(CreateTestFile());
@@ -85,12 +95,16 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
             await vm.SaveFileCommand.ExecuteAsync(null);
 
             vm.OnByteModified(1, 0xBB, cursorPositionAfter: 2);
-            Assert.True(vm.CanUndo);
 
             vm.UndoCommand.Execute(null);
 
             Assert.Equal(0xAA, vm.Document!.Buffer.ReadByte(0));
             Assert.Equal(2, vm.Document.Buffer.ReadByte(1));
+            Assert.True(vm.CanUndo);
+
+            vm.UndoCommand.Execute(null);
+
+            Assert.Equal(1, vm.Document.Buffer.ReadByte(0));
             Assert.False(vm.CanUndo);
         }
         finally

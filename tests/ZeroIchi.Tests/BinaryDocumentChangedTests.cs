@@ -62,12 +62,12 @@ public sealed class BinaryDocumentChangedTests : IDisposable
     }
 
     [Fact]
-    public void Save_RaisesChangedAfterHistoryIsCleared()
+    public void Save_RaisesChangedAfterStateIsUpdated()
     {
         using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         WriteByte(doc, 1, 0xFF);
         var count = 0;
-        var stateSeen = (CanUndo: true, IsModified: true);
+        var stateSeen = (CanUndo: false, IsModified: true);
         doc.Changed += (_, _) =>
         {
             count++;
@@ -77,7 +77,7 @@ public sealed class BinaryDocumentChangedTests : IDisposable
         doc.Save();
 
         Assert.Equal(1, count);
-        Assert.Equal((false, false), stateSeen);
+        Assert.Equal((true, false), stateSeen);
     }
 
     [Fact]

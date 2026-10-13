@@ -104,6 +104,39 @@ public sealed class BinaryDocumentInPlaceSaveFailureTests : IDisposable
         Assert.Equal([1, 2, 3], ReadAll(doc));
     }
 
+    [Fact]
+    public void Save_WhenFailedRepeatedly_RetainsDeletedBytesOnlyAfterSuccess()
+    {
+        var path = CreateTestFile(Enumerable.Range(0, 32).Select(i => (byte)i).ToArray());
+        using var doc = BinaryDocument.Open(path);
+        doc.UndoRetentionLimit = 10;
+        var older = new DeleteBytesCommand(doc, 26, 6, cursorPositionBefore: 26, cursorPositionAfter: 26);
+        doc.ExecuteCommand(older);
+        doc.Save();
+        Assert.True(older.HasRetainedBytes);
+
+        var newer = new DeleteBytesCommand(doc, 20, 6, cursorPositionBefore: 20, cursorPositionAfter: 20);
+        doc.ExecuteCommand(newer);
+        WriteByte(doc, 0, 0xAA);
+        doc.InPlaceStreamWrapper = s => new FailingStream(s, failingWrite: 1, keepFailing: false);
+
+        Assert.Throws<IOException>(() => doc.Save());
+        Assert.Throws<IOException>(() => doc.Save());
+
+        Assert.False(newer.HasRetainedBytes);
+        Assert.True(older.HasRetainedBytes);
+        Assert.Equal(26, new FileInfo(path).Length);
+
+        doc.InPlaceStreamWrapper = null;
+        doc.Save();
+
+        Assert.True(newer.HasRetainedBytes);
+        doc.Undo();
+        doc.Undo();
+        Assert.Equal(Enumerable.Range(0, 26).Select(i => (byte)i).ToArray(), ReadAll(doc));
+        Assert.False(doc.CanUndo);
+    }
+
     private sealed class FailingStream(Stream inner, int failingWrite, bool keepFailing) : Stream
     {
         private int _writeCount;

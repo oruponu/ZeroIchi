@@ -13,6 +13,7 @@ public sealed class BinaryDocument : IDisposable
 {
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);
     private readonly record struct OverwrittenRange(long Offset, byte[] Bytes);
+    private readonly record struct HistorySavePlan(IEditCommand? DiscardThrough, Dictionary<IEditCommand, byte[]> RetainedBytes);
 
     private ByteBuffer _original;
     private PieceTable _pieceTable;
@@ -32,6 +33,8 @@ public sealed class BinaryDocument : IDisposable
     public bool CanRedo => _undoRedoManager.CanRedo;
     internal ByteBuffer Original => _original;
     internal Func<Stream, Stream>? InPlaceStreamWrapper { get; set; }
+    internal long UndoRetentionLimit { get; set; } = 64L * 1024 * 1024;
+    internal PieceTable CurrentPieceTable => _pieceTable;
 
     private BinaryDocument(string filePath, ByteBuffer original)
     {
@@ -102,6 +105,7 @@ public sealed class BinaryDocument : IDisposable
     {
         if (!IsModified || IsNew) return;
 
+        var historyPlan = PlanHistoryForSave();
         var (entries, finalSize, needsShift) = ComputeWritePlan();
         if (needsShift)
             SaveByReplace();
@@ -111,6 +115,7 @@ public sealed class BinaryDocument : IDisposable
         var newOriginal = new MappedByteBuffer(FilePath);
         _original.Dispose();
         ResetPieceTable(newOriginal);
+        CommitHistoryAfterSave(historyPlan);
         OnChanged();
     }
 
@@ -251,6 +256,7 @@ public sealed class BinaryDocument : IDisposable
             return;
         }
 
+        var historyPlan = PlanHistoryForSave();
         var tempPath = path + ".zitmp";
         try
         {
@@ -280,15 +286,42 @@ public sealed class BinaryDocument : IDisposable
         var newOriginal = new MappedByteBuffer(path);
         _original.Dispose();
         ResetPieceTable(newOriginal);
+        CommitHistoryAfterSave(historyPlan);
 
         FilePath = path;
         FileName = Path.GetFileName(path);
         OnChanged();
     }
 
+    private HistorySavePlan PlanHistoryForSave()
+    {
+        var retainedBytes = new Dictionary<IEditCommand, byte[]>();
+        long total = 0;
+        foreach (var command in _undoRedoManager.UndoCommandsNewestFirst)
+        {
+            total += command.RetainedLength;
+            if (total > UndoRetentionLimit)
+                return new HistorySavePlan(command, retainedBytes);
+
+            if (command.CaptureRetainedBytes() is { } bytes)
+                retainedBytes.Add(command, bytes);
+        }
+        return new HistorySavePlan(null, retainedBytes);
+    }
+
+    private void CommitHistoryAfterSave(HistorySavePlan plan)
+    {
+        if (plan.DiscardThrough is not null)
+            _undoRedoManager.DiscardUndoThrough(plan.DiscardThrough);
+
+        foreach (var command in _undoRedoManager.AllCommands)
+            command.CommitSave(plan.RetainedBytes.GetValueOrDefault(command));
+    }
+
     public void Dispose()
     {
         _original.Dispose();
+        _undoRedoManager.Clear();
         ResetPieceTable(new ArrayByteBuffer([]));
     }
 
@@ -297,7 +330,6 @@ public sealed class BinaryDocument : IDisposable
         var newTable = new PieceTable(newOriginal);
         var newBuffer = new PieceTableByteBuffer(newTable);
 
-        _undoRedoManager.Clear();
         _original = newOriginal;
         _pieceTable = newTable;
         _buffer = newBuffer;

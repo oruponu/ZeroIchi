@@ -42,7 +42,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
     }
 
     [Fact]
-    public void Save_ClearsUndoAndRedoHistory()
+    public void Save_KeepsUndoAndRedoHistory()
     {
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         try
@@ -53,11 +53,15 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
 
             doc.Save();
 
-            Assert.False(doc.CanUndo);
-            Assert.False(doc.CanRedo);
-            Assert.Null(doc.Undo());
-            Assert.Null(doc.Redo());
-            Assert.Equal(0xAA, doc.Buffer.ReadByte(0));
+            Assert.True(doc.CanUndo);
+            Assert.True(doc.CanRedo);
+
+            Assert.NotNull(doc.Redo());
+            Assert.Equal(0xBB, doc.Buffer.ReadByte(1));
+
+            doc.Undo();
+            doc.Undo();
+            Assert.Equal(1, doc.Buffer.ReadByte(0));
             Assert.Equal(2, doc.Buffer.ReadByte(1));
         }
         finally
@@ -67,7 +71,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAs_ClearsUndoHistory()
+    public async Task SaveAs_KeepsUndoHistory()
     {
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         var savePath = Path.Combine(_tempDir, "saved.bin");
@@ -76,9 +80,10 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
             doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
             await doc.SaveAsAsync(savePath);
 
-            Assert.False(doc.CanUndo);
-            Assert.Null(doc.Undo());
-            Assert.Equal(0xFF, doc.Buffer.ReadByte(1));
+            Assert.True(doc.CanUndo);
+            Assert.NotNull(doc.Undo());
+            Assert.Equal(2, doc.Buffer.ReadByte(1));
+            Assert.Equal([1, 0xFF, 3], await File.ReadAllBytesAsync(savePath));
         }
         finally
         {
@@ -87,7 +92,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveAs_WhenAllEditsUndone_ClearsHistory()
+    public async Task SaveAs_WhenAllEditsUndone_KeepsRedoHistory()
     {
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         var savePath = Path.Combine(_tempDir, "saved-unmodified.bin");
@@ -99,9 +104,10 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
             await doc.SaveAsAsync(savePath);
 
             Assert.False(doc.CanUndo);
-            Assert.False(doc.CanRedo);
-            Assert.Null(doc.Undo());
-            Assert.Null(doc.Redo());
+            Assert.True(doc.CanRedo);
+            Assert.NotNull(doc.Redo());
+            Assert.Equal(0xFF, doc.Buffer.ReadByte(1));
+            Assert.True(doc.IsModified);
         }
         finally
         {
