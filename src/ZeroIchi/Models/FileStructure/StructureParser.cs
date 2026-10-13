@@ -1,6 +1,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using ZeroIchi.Models.Buffers;
@@ -9,10 +10,19 @@ namespace ZeroIchi.Models.FileStructure;
 
 public static class StructureParser
 {
-    public static FileStructureNode Parse(FormatDefinition definition, ByteBuffer buffer)
+    private const int DefaultNodeBudget = 100_000;
+
+    public static FileStructureNode Parse(FormatDefinition definition, ByteBuffer buffer) =>
+        Parse(definition, buffer, DefaultNodeBudget);
+
+    internal static FileStructureNode Parse(FormatDefinition definition, ByteBuffer buffer, int nodeBudget)
     {
+        var context = new ParseContext(buffer, nodeBudget);
         var offset = 0L;
-        var children = ParseFields(definition.Fields, buffer, ref offset, definition.IsBigEndian);
+        var children = ParseFields(definition.Fields, context, ref offset, definition.IsBigEndian);
+
+        if (context.IsTruncated)
+            children.Add(CreateTruncationNode(offset, buffer.Length, nodeBudget));
 
         return new FileStructureNode
         {
@@ -23,10 +33,40 @@ public static class StructureParser
         };
     }
 
+    private sealed class ParseContext(ByteBuffer buffer, int nodeBudget)
+    {
+        private int _remainingNodes = nodeBudget;
+
+        public ByteBuffer Buffer { get; } = buffer;
+        public bool IsTruncated { get; private set; }
+
+        public void Add(List<FileStructureNode> nodes, FileStructureNode node)
+        {
+            nodes.Add(node);
+            _remainingNodes--;
+        }
+
+        public bool StopIfExhausted()
+        {
+            if (_remainingNodes > 0) return false;
+            IsTruncated = true;
+            return true;
+        }
+    }
+
+    private static FileStructureNode CreateTruncationNode(long offset, long bufferLength, int nodeBudget) => new()
+    {
+        Name = "未解析",
+        Offset = offset,
+        Length = (int)Math.Min(bufferLength - offset, int.MaxValue),
+        Description = string.Create(CultureInfo.InvariantCulture, $"ノード数の上限 ({nodeBudget:N0}) に到達"),
+    };
+
     private static List<FileStructureNode> ParseFields(
-        FieldDefinition[] fields, ByteBuffer buffer, ref long offset, bool bigEndian,
+        FieldDefinition[] fields, ParseContext context, ref long offset, bool bigEndian,
         Dictionary<string, long>? persistentValues = null, long limit = long.MaxValue)
     {
+        var buffer = context.Buffer;
         var nodes = new List<FileStructureNode>();
         var siblingValues = new Dictionary<string, long>();
         var end = Math.Min(limit, buffer.Length);
@@ -34,6 +74,7 @@ public static class StructureParser
         foreach (var field in fields)
         {
             if (offset >= end && field.Type is not "match") break;
+            if (context.StopIfExhausted()) break;
 
             if (offset < end && field.PeekMin is { } peekMin)
             {
@@ -51,34 +92,34 @@ public static class StructureParser
             switch (field.Type)
             {
                 case "group":
-                    nodes.Add(ParseGroup(field, buffer, ref offset, fieldBigEndian, siblingValues, end));
+                    context.Add(nodes, ParseGroup(field, context, ref offset, fieldBigEndian, siblingValues, end));
                     break;
                 case "repeat":
-                    nodes.Add(ParseRepeat(field, buffer, ref offset, fieldBigEndian, siblingValues, end));
+                    context.Add(nodes, ParseRepeat(field, context, ref offset, fieldBigEndian, siblingValues, end));
                     break;
                 case "match":
-                    if (ParseMatch(field, buffer, ref offset, fieldBigEndian, siblingValues, end) is { } matchNode)
-                        nodes.Add(matchNode);
+                    if (ParseMatch(field, context, ref offset, fieldBigEndian, siblingValues, end) is { } matchNode)
+                        context.Add(nodes, matchNode);
                     break;
                 case "scan":
                     var scanNode = ParseScanField(field, buffer, ref offset, end);
                     if (scanNode.Length > 0)
-                        nodes.Add(scanNode);
+                        context.Add(nodes, scanNode);
                     break;
                 case "vlq":
                     var vlqNode = ParseVlqField(field, buffer, ref offset, siblingValues, end);
                     if (vlqNode.Length > 0)
-                        nodes.Add(vlqNode);
+                        context.Add(nodes, vlqNode);
                     break;
                 case "synchsafe":
                     var synchsafeNode = ParseSynchsafeField(field, buffer, ref offset, siblingValues, end);
                     if (synchsafeNode.Length > 0)
-                        nodes.Add(synchsafeNode);
+                        context.Add(nodes, synchsafeNode);
                     break;
                 default:
                     var leaf = ParseLeafField(field, buffer, ref offset, fieldBigEndian, siblingValues, end);
                     if (leaf.Length > 0)
-                        nodes.Add(leaf);
+                        context.Add(nodes, leaf);
                     break;
             }
 
@@ -93,7 +134,7 @@ public static class StructureParser
     }
 
     private static FileStructureNode ParseGroup(
-        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
+        FieldDefinition field, ParseContext context, ref long offset, bool bigEndian,
         Dictionary<string, long> siblingValues, long limit)
     {
         var startOffset = offset;
@@ -105,9 +146,9 @@ public static class StructureParser
             groupLimit = Math.Min(offset + size, limit);
         }
 
-        var children = ParseFields(field.Fields ?? [], buffer, ref offset, bigEndian, null, groupLimit);
+        var children = ParseFields(field.Fields ?? [], context, ref offset, bigEndian, null, groupLimit);
 
-        if (field.Size is not null)
+        if (field.Size is not null && !context.IsTruncated)
             offset = groupLimit;
 
         return new FileStructureNode
@@ -121,9 +162,10 @@ public static class StructureParser
     }
 
     private static FileStructureNode ParseRepeat(
-        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
+        FieldDefinition field, ParseContext context, ref long offset, bool bigEndian,
         Dictionary<string, long> siblingValues, long limit)
     {
+        var buffer = context.Buffer;
         var startOffset = offset;
         var children = new List<FileStructureNode>();
 
@@ -139,6 +181,8 @@ public static class StructureParser
 
         while (offset < end)
         {
+            if (context.StopIfExhausted()) break;
+
             if (ShouldTerminateRepeat(field.Until, buffer, offset))
             {
                 if (field.Size is not null) offset = end; // Consume the rest as implicit padding
@@ -147,13 +191,13 @@ public static class StructureParser
 
             var iterationOffset = offset;
             var iterationChildren = ParseFields(
-                repeatFields, buffer, ref offset, bigEndian, persistentValues, end);
+                repeatFields, context, ref offset, bigEndian, persistentValues, end);
 
             if (offset == iterationOffset) break; // Prevent an infinite loop
 
             var iterationName = ResolveIterationName(field, iterationChildren, children.Count);
 
-            children.Add(new FileStructureNode
+            context.Add(children, new FileStructureNode
             {
                 Name = iterationName,
                 FieldId = field.Id,
@@ -174,7 +218,7 @@ public static class StructureParser
     }
 
     private static FileStructureNode? ParseMatch(
-        FieldDefinition field, ByteBuffer buffer, ref long offset, bool bigEndian,
+        FieldDefinition field, ParseContext context, ref long offset, bool bigEndian,
         Dictionary<string, long> siblingValues, long limit)
     {
         if (field is not { On: { } on, Cases: { } cases }
@@ -189,7 +233,7 @@ public static class StructureParser
                 continue;
 
             var startOffset = offset;
-            var children = ParseFields(c.Fields ?? [], buffer, ref offset, bigEndian, null, limit);
+            var children = ParseFields(c.Fields ?? [], context, ref offset, bigEndian, null, limit);
 
             return new FileStructureNode
             {

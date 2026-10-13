@@ -1298,6 +1298,196 @@ public sealed class StructureParserTests
         Assert.Equal("SOS", segments.Children[^1].Name);
     }
 
+    private const string TruncationNodeName = "未解析";
+
+    private static FormatDefinition LoadByteRepeatDefinition()
+    {
+        const string json = """
+        {
+          "name": "Bytes",
+          "extensions": ["bin"],
+          "magic": "00",
+          "fields": [
+            {
+              "id": "items",
+              "name": "Items",
+              "type": "repeat",
+              "until": "eof",
+              "fields": [
+                { "id": "value", "name": "Value", "type": "uint8" }
+              ]
+            }
+          ]
+        }
+        """;
+        return JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+    }
+
+    private static int CountNodes(FileStructureNode node)
+    {
+        var count = 1;
+        foreach (var child in node.Children)
+            count += CountNodes(child);
+        return count;
+    }
+
+    [Fact]
+    public void Parse_ExceedingNodeBudget_AppendsTruncationNodeCoveringRest()
+    {
+        var buffer = new ArrayByteBuffer(new byte[100]);
+
+        var root = StructureParser.Parse(LoadByteRepeatDefinition(), buffer, nodeBudget: 10);
+        var items = root.Children[0];
+        var truncation = root.Children[^1];
+
+        Assert.Equal(2, root.Children.Count);
+        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.Equal(items.Offset + items.Length, truncation.Offset);
+        Assert.Equal(100, truncation.Offset + truncation.Length);
+        Assert.True(CountNodes(root) - 2 <= 10 + 2);
+    }
+
+    [Fact]
+    public void Parse_WithinNodeBudget_DoesNotAppendTruncationNode()
+    {
+        var buffer = new ArrayByteBuffer([0x00, 0x01, 0x02]);
+
+        var root = StructureParser.Parse(LoadByteRepeatDefinition(), buffer, nodeBudget: 100);
+
+        Assert.Single(root.Children);
+        Assert.Equal(3, root.Children[0].Children.Count);
+    }
+
+    [Fact]
+    public void Parse_ExceedingNodeBudgetInNestedRepeat_StopsOuterRepeat()
+    {
+        const string json = """
+        {
+          "name": "Nested",
+          "extensions": ["bin"],
+          "magic": "00",
+          "fields": [
+            {
+              "id": "outer",
+              "name": "Outer",
+              "type": "repeat",
+              "until": "eof",
+              "fields": [
+                {
+                  "id": "inner",
+                  "name": "Inner",
+                  "type": "repeat",
+                  "size": 4,
+                  "fields": [
+                    { "id": "value", "name": "Value", "type": "uint8" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer(new byte[400]);
+
+        var root = StructureParser.Parse(definition, buffer, nodeBudget: 10);
+        var outer = root.Children[0];
+        var truncation = root.Children[^1];
+
+        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.Equal(outer.Offset + outer.Length, truncation.Offset);
+        Assert.True(CountNodes(root) - 2 <= 10 + 3);
+    }
+
+    [Fact]
+    public void Parse_ExceedingNodeBudgetInSizedGroup_DoesNotSkipToGroupEnd()
+    {
+        const string json = """
+        {
+          "name": "Sized",
+          "extensions": ["bin"],
+          "magic": "00",
+          "fields": [
+            {
+              "id": "body",
+              "name": "Body",
+              "type": "group",
+              "size": 8,
+              "fields": [
+                {
+                  "id": "items",
+                  "name": "Items",
+                  "type": "repeat",
+                  "fields": [
+                    { "id": "value", "name": "Value", "type": "uint8" }
+                  ]
+                }
+              ]
+            },
+            { "id": "trailer", "name": "Trailer", "type": "uint8" }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer(new byte[20]);
+
+        var root = StructureParser.Parse(definition, buffer, nodeBudget: 4);
+        var body = root.Children[0];
+        var truncation = root.Children[^1];
+
+        Assert.Equal(2, root.Children.Count);
+        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.Equal(body.Offset + body.Length, truncation.Offset);
+        Assert.True(truncation.Offset < 8);
+    }
+
+    [Fact]
+    public void Parse_ExceedingNodeBudgetMidIteration_DoesNotSkipToSizedRepeatEnd()
+    {
+        const string json = """
+        {
+          "name": "Terminated",
+          "extensions": ["bin"],
+          "magic": "01",
+          "fields": [
+            {
+              "id": "frames",
+              "name": "Frames",
+              "type": "repeat",
+              "size": 10,
+              "until": "peek:0x00",
+              "fields": [
+                { "id": "id", "name": "ID", "type": "uint8" },
+                { "id": "size", "name": "Size", "type": "uint8" }
+              ]
+            }
+          ]
+        }
+        """;
+        var definition = JsonSerializer.Deserialize<FormatDefinition>(json, JsonOptions)!;
+        var buffer = new ArrayByteBuffer([0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+        var root = StructureParser.Parse(definition, buffer, nodeBudget: 1);
+        var frames = root.Children[0];
+        var truncation = root.Children[^1];
+
+        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.Equal(1, truncation.Offset);
+        Assert.Equal(frames.Offset + frames.Length, truncation.Offset);
+    }
+
+    [Fact]
+    public void Parse_DefaultNodeBudget_IsOneHundredThousand()
+    {
+        var buffer = new ArrayByteBuffer(new byte[1024 * 1024]);
+
+        var root = StructureParser.Parse(LoadByteRepeatDefinition(), buffer);
+        var truncation = root.Children[^1];
+
+        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.Equal("ノード数の上限 (100,000) に到達", truncation.Description);
+    }
+
     [Fact]
     public void DefinitionRegistry_TryMatch_MatchesWav()
     {
