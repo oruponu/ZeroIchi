@@ -189,6 +189,32 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
     }
 
     [Fact]
+    public async Task Undo_AfterHexInputAndSave_RestoresOriginalByte()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 0;
+            vm.OnByteModified(0, 0xA0, cursorPositionAfter: 0);
+            vm.OnByteModified(0, 0xAB, cursorPositionAfter: 1);
+            vm.CursorPosition = 1;
+            await vm.SaveFileCommand.ExecuteAsync(null);
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal(0xA0, vm.Document!.Buffer.ReadByte(0));
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal(1, vm.Document.Buffer.ReadByte(0));
+            Assert.Equal(0, vm.CursorPosition);
+        }
+        finally
+        {
+            vm.Document?.Dispose();
+        }
+    }
+
+    [Fact]
     public async Task RedoAndUndo_AfterRangeDelete_RestoreCursorAroundEdit()
     {
         var vm = CreateViewModel();
