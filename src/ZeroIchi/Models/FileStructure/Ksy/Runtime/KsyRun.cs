@@ -22,9 +22,11 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         var stream = KsStream.FromBuffer(buffer);
         var root = new KsyNode(format.Id, null, stream, 0);
         Exception? failure = null;
+        var parsed = false;
         try
         {
             Guard(root, () => ReadObject(format.Root, null, null, stream, [], root));
+            parsed = true;
             EvaluateForDisplay();
         }
         catch (Exception e) when (e is not OutOfMemoryException)
@@ -34,7 +36,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
 
         _frozen = true;
         var children = BuildChildren(root);
-        if (failure is not null) children.Add(Unparsed(failure));
+        if (failure is not null) children.Add(Unparsed(failure, parsed));
         return new FileStructureNode
         {
             Name = format.Id,
@@ -180,9 +182,9 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         }
     }
 
-    private FileStructureNode Unparsed(Exception failure)
+    private FileStructureNode Unparsed(Exception failure, bool parsed)
     {
-        var offset = ReferenceEquals(_observed, failure) && _failOffset is { } observed
+        var offset = !parsed && ReferenceEquals(_observed, failure) && _failOffset is { } observed
             ? Math.Clamp(observed, 0, buffer.Length)
             : buffer.Length;
         return new FileStructureNode

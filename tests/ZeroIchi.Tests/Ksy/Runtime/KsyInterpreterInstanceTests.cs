@@ -248,6 +248,27 @@ public sealed class KsyInterpreterInstanceTests
     }
 
     [Fact]
+    public void Parse_LimitDuringTheEvaluationForDisplayLeavesAnEmptyUnparsedNodeAtTheEnd()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: a
+                type: u1
+            instances:
+              many:
+                pos: 0
+                type: u1
+                repeat: expr
+                repeat-expr: 1000
+            """, new byte[2000], new KsyParseOptions { NodeBudget = 50 });
+
+        var unparsed = Node(root, "未解析");
+        Assert.Equal((2000L, 0L, "ノード数の上限 (50) に到達"), (unparsed.Offset, unparsed.Length, unparsed.Description));
+    }
+
+    [Fact]
     public void Parse_RandomInputNeverThrows()
     {
         const string yaml = """
