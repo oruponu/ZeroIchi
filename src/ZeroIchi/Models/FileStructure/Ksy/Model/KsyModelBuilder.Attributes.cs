@@ -113,6 +113,7 @@ public static partial class KsyModelBuilder
             var encodingName = map.Get("encoding") is { } encodingNode && GetString(map, "encoding", path) is { } name
                 ? CanonicalEncoding(encodingNode, Child(path, "encoding"), name)
                 : null;
+            if (map.Get("encoding") is not null && encodingName is null) return null;
             var hasEnum = map.Get("enum") is not null;
             var dataType = ReadDataType(map, path, owner, encodingName, hasEnum);
             if (dataType is null) return null;
@@ -272,7 +273,8 @@ public static partial class KsyModelBuilder
                 var name = encoding ?? owner.EffectiveEncoding;
                 if (name is null || !KsEncodings.TryGet(name, out var resolved))
                 {
-                    Error(node, path, "A string type needs an encoding (encoding or meta/encoding)");
+                    if (!IsInChain(owner, _invalidEncoding))
+                        Error(node, path, "A string type needs an encoding (encoding or meta/encoding)");
                     return null;
                 }
                 return new KsyStrType(name, resolved, text == "strz");
@@ -284,9 +286,18 @@ public static partial class KsyModelBuilder
         private KsyByteOrder? ExplicitOrder(Group suffix, int size, YamlNode node, string path, KsyType owner, string text)
         {
             if (suffix.Success) return ParseByteOrder(suffix.Value);
-            if (size > 1 && owner.EffectiveEndian is null)
+            if (size > 1 && owner.EffectiveEndian is null && !IsInChain(owner, _invalidEndian))
                 Error(node, path, $"Type '{text}' needs an endianness (le/be suffix or meta/endian)");
             return null;
+        }
+
+        private static bool IsInChain(KsyType type, HashSet<KsyType> types)
+        {
+            for (var scope = type; scope is not null; scope = scope.Outer)
+            {
+                if (types.Contains(scope)) return true;
+            }
+            return false;
         }
 
         private KsyDataType? ReadUserType(YamlScalar node, string path, KsyType owner, string text)

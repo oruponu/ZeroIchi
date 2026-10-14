@@ -80,7 +80,11 @@ public static partial class KsyModelBuilder
 
         private void ReadMeta(KsyType type, YamlMapping meta, string path)
         {
-            if (meta.Get("endian") is { } endian) type.Endian = ReadEndian(endian, Child(path, "endian"), type);
+            if (meta.Get("endian") is { } endian)
+            {
+                type.Endian = ReadEndian(endian, Child(path, "endian"), type);
+                if (type.Endian is null) _invalidEndian.Add(type);
+            }
 
             if (GetString(meta, "bit-endian", path) is { } bitEndian)
             {
@@ -91,6 +95,7 @@ public static partial class KsyModelBuilder
 
             if (GetString(meta, "encoding", path) is { } encoding)
                 type.Encoding = CanonicalEncoding(meta.Get("encoding")!, Child(path, "encoding"), encoding);
+            if (meta.Get("encoding") is not null && type.Encoding is null) _invalidEncoding.Add(type);
 
             if (type.Outer is not null)
             {

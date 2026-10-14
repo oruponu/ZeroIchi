@@ -331,4 +331,20 @@ public sealed class KsyModelBuilderTypeTests
     {
         Assert.Contains("must be a mapping", SingleError("- a\n- b\n").Message);
     }
+
+    [Fact]
+    public void Parse_InvalidEndian_DoesNotCascadeToMultiByteTypes()
+    {
+        var error = SingleError("meta:\n  id: x\n  endian: lee\nseq:\n  - id: a\n    type: u4\ntypes:\n  t:\n    seq:\n      - id: b\n        type: s2\n");
+
+        Assert.Contains("endian must be", error.Message);
+    }
+
+    [Fact]
+    public void Parse_InvalidMetaEncoding_DoesNotCascadeToStrings()
+    {
+        var error = SingleError("meta:\n  id: x\n  encoding: klingon\nseq:\n  - id: a\n    type: strz\ntypes:\n  t:\n    seq:\n      - id: b\n        type: str\n        size: 2\n");
+
+        Assert.Contains("Unknown encoding", error.Message);
+    }
 }

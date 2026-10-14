@@ -76,6 +76,8 @@ public static partial class KsyModelBuilder
         private readonly List<(KsyType Type, YamlMapping Map)> _types = [];
         private readonly List<ExpressionUse> _expressions = [];
         private readonly Dictionary<KsyType, HashSet<string>> _declared = [];
+        private readonly HashSet<KsyType> _invalidEndian = [];
+        private readonly HashSet<KsyType> _invalidEncoding = [];
         private YamlMapping? _root;
 
         private sealed record ExpressionUse(KsExpr Expr, KsyType Context, YamlScalar Node, string Path);

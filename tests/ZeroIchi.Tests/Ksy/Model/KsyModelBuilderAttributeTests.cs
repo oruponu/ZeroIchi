@@ -650,4 +650,12 @@ public sealed class KsyModelBuilderAttributeTests
 
         Assert.Equal((5, 11), (error.Line, error.Column));
     }
+
+    [Fact]
+    public void Parse_InvalidAttributeEncoding_DoesNotCascade()
+    {
+        var error = SingleError("meta:\n  id: x\nseq:\n  - id: a\n    type: str\n    encoding: foo\n    size: 4\n");
+
+        Assert.Contains("Unknown encoding 'foo'", error.Message);
+    }
 }
