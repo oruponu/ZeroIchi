@@ -66,6 +66,7 @@ public static partial class KsyModelBuilder
         private readonly KsyFormat _format = new(file);
         private readonly List<(KsyType Type, YamlMapping Map)> _types = [];
         private readonly List<ExpressionUse> _expressions = [];
+        private YamlMapping? _root;
 
         private sealed record ExpressionUse(KsExpr Expr, KsyType Context, YamlScalar Node, string Path);
 
@@ -85,6 +86,7 @@ public static partial class KsyModelBuilder
                 return false;
             }
 
+            _root = root;
             _format.Root = CreateType(root, null, null, "");
             LoadImports(root);
             return true;
@@ -108,6 +110,7 @@ public static partial class KsyModelBuilder
         public void Finish()
         {
             CheckExpressions();
+            ReadDetection(_root!);
         }
 
         private void Error(YamlNode node, string path, string message) =>
