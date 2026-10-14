@@ -11,6 +11,9 @@ public sealed class FileStructureNode
     public string Description { get; init; } = "";
     public ValueKind ValueKind { get; init; }
     public IReadOnlyList<FileStructureNode> Children { get; init; } = [];
+    public bool HasRange { get; init; } = true;
+    public string? Error { get; init; }
+    public bool IsIncomplete { get; init; }
 
     public bool HasChildren => Children.Count > 0;
 }
