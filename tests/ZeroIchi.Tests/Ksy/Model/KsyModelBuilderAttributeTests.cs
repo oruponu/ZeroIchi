@@ -380,6 +380,8 @@ public sealed class KsyModelBuilderAttributeTests
     [InlineData("a[]")]
     [InlineData("A")]
     [InlineData("a(1")]
+    [InlineData("a(1][0)")]
+    [InlineData("a(1]+[2)")]
     public void Parse_InvalidTypeReference_IsError(string type)
     {
         SingleError($"meta:\n  id: x\nseq:\n  - id: f\n    type: '{type}'\ntypes:\n  a:\n    seq: []\n");

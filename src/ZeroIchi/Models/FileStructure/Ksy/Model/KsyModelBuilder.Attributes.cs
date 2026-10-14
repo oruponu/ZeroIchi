@@ -302,8 +302,12 @@ public static partial class KsyModelBuilder
 
                 try
                 {
-                    var list = KsExpressionParser.Parse("[" + text[(open + 1)..^1] + "]");
-                    arguments = ((KsArrayLiteral)list).Elements;
+                    if (KsExpressionParser.Parse("[" + text[(open + 1)..^1] + "]") is not KsArrayLiteral list)
+                    {
+                        Error(node, path, $"Invalid type arguments in '{text}'");
+                        return null;
+                    }
+                    arguments = list.Elements;
                     foreach (var argument in arguments)
                         _expressions.Add(new ExpressionUse(argument, owner, node, path));
                 }
