@@ -278,6 +278,25 @@ public sealed class KsyModelBuilderReferenceTests
     }
 
     [Fact]
+    public void Parse_StaticSize_LongTypeChainOnSmallStack_DoesNotOverflow()
+    {
+        const int length = 2000;
+        var yaml = new System.Text.StringBuilder("meta:\n  id: x\nseq:\n  - id: a\n    type: t0\ninstances:\n  s:\n    value: sizeof<t0>\ntypes:\n");
+        for (var i = 0; i < length; i++)
+            yaml.Append($"  t{i}:\n    seq:\n      - id: a\n        type: t{i + 1}\n");
+        yaml.Append($"  t{length}:\n    seq:\n      - id: v\n        type: u1\n");
+        KsyLoadResult? result = null;
+
+        var exception = SmallStack.Run(() => result = KsyModelBuilder.Parse(yaml.ToString()));
+
+        Assert.Null(exception);
+        Assert.True(result!.Format is not null, string.Join("\n", result.Diagnostics));
+        Assert.Equal(8L, result.Format!.Root.SizeInBits);
+        Assert.Equal(8L, result.Format.Root.Types["t0"].SizeInBits);
+        Assert.Equal(8L, result.Format.Root.Types[$"t{length}"].SizeInBits);
+    }
+
+    [Fact]
     public void Parse_StaticSize_SharedTypesAreComputedOnce()
     {
         const int depth = 22;

@@ -9,23 +9,40 @@ internal sealed class KsyStaticSize
     private readonly HashSet<KsyType> _visiting = [];
     private readonly Dictionary<KsyType, long?> _computed = [];
 
-    public long? Compute(KsyType type)
+    public long? Compute(KsyType root)
     {
-        if (_computed.TryGetValue(type, out var known)) return known;
-        if (!_visiting.Add(type)) return null;
-
-        long? result;
-        try
+        var pending = new Stack<(KsyType Type, bool Expanded)>();
+        pending.Push((root, false));
+        while (pending.Count > 0)
         {
-            result = SeqBits(type);
-        }
-        finally
-        {
-            _visiting.Remove(type);
-        }
+            var (type, expanded) = pending.Pop();
+            if (_computed.ContainsKey(type)) continue;
 
-        _computed[type] = result;
-        return result;
+            if (expanded)
+            {
+                _visiting.Remove(type);
+                _computed[type] = SeqBits(type);
+                continue;
+            }
+
+            if (!_visiting.Add(type)) continue;
+            pending.Push((type, true));
+            foreach (var dependency in Dependencies(type))
+            {
+                if (!_computed.ContainsKey(dependency) && !_visiting.Contains(dependency))
+                    pending.Push((dependency, false));
+            }
+        }
+        return _computed[root];
+    }
+
+    private static IEnumerable<KsyType> Dependencies(KsyType type)
+    {
+        foreach (var attribute in type.Seq)
+        {
+            if (attribute is { DataType: KsyUserType user, Contents: null, Size: null, SizeEos: false, Terminator: null })
+                yield return user.Type;
+        }
     }
 
     private long? SeqBits(KsyType type)
@@ -71,7 +88,7 @@ internal sealed class KsyStaticSize
         {
             KsyIntType i => i.Size * 8L,
             KsyFloatType f => f.Size * 8L,
-            KsyUserType user => Compute(user.Type),
+            KsyUserType user => _computed.GetValueOrDefault(user.Type),
             _ => null,
         };
     }
