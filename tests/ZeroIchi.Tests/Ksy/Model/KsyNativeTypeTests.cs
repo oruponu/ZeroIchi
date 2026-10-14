@@ -1,4 +1,5 @@
 using ZeroIchi.Models.FileStructure.Ksy.Model;
+using ZeroIchi.Models.FileStructure.Ksy.Runtime;
 using static ZeroIchi.Tests.Ksy.Model.KsyTestLoader;
 
 namespace ZeroIchi.Tests.Ksy.Model;
@@ -8,6 +9,8 @@ public sealed class KsyNativeTypeTests
     private sealed class TestNativeType : IKsyNativeType
     {
         public string Name => "test_blob";
+
+        public KsyNativeResult Read(KsStream stream) => new(0, []);
     }
 
     private static KsyNativeTypeRegistry Registry()

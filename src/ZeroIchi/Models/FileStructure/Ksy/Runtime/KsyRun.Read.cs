@@ -156,6 +156,8 @@ internal sealed partial class KsyRun
                 return ReadSwitch(obj, attribute, switchType, io, node, scope);
             case KsyUserType user when !HasSize(attribute):
                 return ReadUser(obj, attribute, user, io, node, scope);
+            case KsyNativeType native when !HasSize(attribute):
+                return ReadNative(attribute, native, io, node);
             default:
                 return ReadSized(obj, attribute, type, io, node, scope);
         }
@@ -296,8 +298,45 @@ internal sealed partial class KsyRun
                 : KsValue.FromBytes(processed),
             KsyStrType s => KsValue.FromString(s.Encoding.GetString(processed ?? Load(io, range, attribute))),
             KsyUserType user => ReadUser(obj, attribute, user, Window(io, range, processed), node, scope),
+            KsyNativeType native => ReadNative(attribute, native, Window(io, range, processed), node),
             _ => throw new KsyParseException($"{attribute.Path}: Unsupported data type"),
         };
+    }
+
+    private KsValue ReadNative(KsyAttribute attribute, KsyNativeType native, KsStream io, KsyNode node)
+    {
+        var name = native.Native.Name;
+        io.AlignToByte();
+        var start = io.Position;
+        KsyNativeResult result;
+        try
+        {
+            result = native.Native.Read(io);
+        }
+        catch (Exception e) when (e is not KsyParseException and not OutOfMemoryException)
+        {
+            throw new KsyParseException($"{attribute.Path}: Native type '{name}' failed: {e.Message}");
+        }
+
+        if (result.Consumed < 0 || result.Consumed > io.Size - start)
+        {
+            throw new KsyParseException(
+                $"{attribute.Path}: Native type '{name}' consumed {result.Consumed} byte(s) but {io.Size - start} remain");
+        }
+        io.Seek(start + result.Consumed);
+
+        node.FixedDescription = ("", ValueKind.None);
+        foreach (var child in result.Nodes)
+        {
+            if (child.Position < 0 || child.Length < 0 || child.Position > io.Size - child.Length)
+                throw new KsyParseException($"{attribute.Path}: Native type '{name}' returned a node outside the stream");
+
+            var childNode = NewNode(child.Name, null, io, child.Position);
+            childNode.End = child.Position + child.Length;
+            childNode.FixedDescription = (child.Description, child.ValueKind);
+            node.Children.Add(childNode);
+        }
+        return KsValue.FromBytes(new KsStreamBytes(io, new KsRange(start, result.Consumed), options.MaxBytesLoad));
     }
 
     private static KsStream Window(KsStream io, KsRange range, byte[]? processed) =>

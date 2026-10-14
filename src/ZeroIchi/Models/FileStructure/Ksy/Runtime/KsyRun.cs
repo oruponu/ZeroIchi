@@ -214,7 +214,8 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     private FileStructureNode Build(KsyNode node)
     {
         var hasRange = node.Stream is { IsFileBacked: true };
-        var (text, kind) = node.IsContainer ? ("", ValueKind.None) : KsyDescriptions.Describe(node.Value);
+        var (text, kind) = node.FixedDescription
+            ?? (node.IsContainer ? ("", ValueKind.None) : KsyDescriptions.Describe(node.Value));
         if (node.IsIncomplete) text = text.Length == 0 ? "(未完了)" : $"{text} (未完了)";
 
         return new FileStructureNode
