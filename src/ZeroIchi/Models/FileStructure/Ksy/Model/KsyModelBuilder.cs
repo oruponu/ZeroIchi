@@ -18,6 +18,16 @@ public static partial class KsyModelBuilder
         return new KsyLoadResult(failed ? null : root, session.Diagnostics);
     }
 
+    public static KsyLoadResult Load(string path, IKsyImportSource source, KsyNativeTypeRegistry? natives = null)
+    {
+        if (!source.TryRead(path, out var text))
+        {
+            var missing = new KsyDiagnostic(KsySeverity.Error, path, 1, 1, "", $"File '{path}' not found");
+            return new KsyLoadResult(null, [missing]);
+        }
+        return Parse(text, path, source, natives);
+    }
+
     private sealed class Session(IKsyImportSource imports, KsyNativeTypeRegistry natives)
     {
         private readonly Dictionary<string, FileBuilder> _files = new(StringComparer.Ordinal);
@@ -26,6 +36,8 @@ public static partial class KsyModelBuilder
         public IKsyImportSource Imports { get; } = imports;
         public KsyNativeTypeRegistry Natives { get; } = natives;
         public List<KsyDiagnostic> Diagnostics { get; } = [];
+
+        public bool TryGetFile(string path, out FileBuilder? file) => _files.TryGetValue(path, out file);
 
         public KsyFormat? Begin(string path, string text)
         {
@@ -74,6 +86,7 @@ public static partial class KsyModelBuilder
             }
 
             _format.Root = CreateType(root, null, null, "");
+            LoadImports(root);
             return true;
         }
 
