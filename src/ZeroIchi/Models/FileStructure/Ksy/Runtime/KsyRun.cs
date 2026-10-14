@@ -12,6 +12,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     private readonly Dictionary<KsyType, KsyTypeLayout> _layouts = [];
     private readonly List<KsObject> _objects = [];
     private int _nodeCount;
+    private long _loaded;
     private Exception? _observed;
     private long? _failOffset;
     private bool _frozen;
@@ -57,6 +58,18 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
             throw new KsyParseException("Node budget exceeded") { IsBudget = true, IsLimit = true };
         _nodeCount++;
         return new KsyNode(name, fieldId, stream, start);
+    }
+
+    private void ChargeLoad(long bytes)
+    {
+        _loaded += bytes;
+        if (_loaded > options.MaxTotalLoad)
+        {
+            throw new KsyParseException($"Data loaded into memory exceeds the limit ({options.MaxTotalLoad} bytes)")
+            {
+                IsLimit = true,
+            };
+        }
     }
 
     private T Guard<T>(KsyNode node, Func<T> read)

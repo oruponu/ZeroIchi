@@ -8,4 +8,5 @@ public sealed record KsyParseOptions
     public int MaxDepth { get; init; } = 256;
     public long MaxDecompressedSize { get; init; } = 64L * 1024 * 1024;
     public long MaxBytesLoad { get; init; } = 16L * 1024 * 1024;
+    public long MaxTotalLoad { get; init; } = 256L * 1024 * 1024;
 }

@@ -3,7 +3,8 @@ using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Runtime;
 
-internal sealed class KsStreamBytes(KsStream stream, KsRange range, long loadLimit) : IKsBytes
+internal sealed class KsStreamBytes(KsStream stream, KsRange range, long loadLimit, Action<long>? charge = null)
+    : IKsBytes
 {
     private byte[]? _data;
 
@@ -17,6 +18,7 @@ internal sealed class KsStreamBytes(KsStream stream, KsRange range, long loadLim
             throw new KsExpressionException(
                 $"Byte array of {range.Length} bytes is too large to load (limit {loadLimit})", -1, 0);
         }
+        charge?.Invoke(range.Length);
         return _data = stream.ReadArray(range);
     }
 

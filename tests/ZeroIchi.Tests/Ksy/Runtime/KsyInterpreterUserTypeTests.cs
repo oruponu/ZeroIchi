@@ -376,6 +376,34 @@ public sealed class KsyInterpreterUserTypeTests
         Assert.Equal("Nesting is too deep for the available stack", Node(root, "未解析").Description);
     }
 
+    [Fact]
+    public void Parse_DataLoadedIntoMemoryIsLimitedForTheWholeRun()
+    {
+        var compressed = Compress(new byte[1000]);
+        var chunk = new[] { (byte)compressed.Length }.Concat(compressed).ToArray();
+        var data = Enumerable.Repeat(chunk, 5).SelectMany(c => c).ToArray();
+
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: chunks
+                type: chunk
+                repeat: eos
+            types:
+              chunk:
+                seq:
+                  - id: len
+                    type: u1
+                  - id: body
+                    size: len
+                    process: zlib
+            """, data, new KsyParseOptions { MaxTotalLoad = 3000 });
+
+        Assert.Equal("Data loaded into memory exceeds the limit (3000 bytes)", Node(root, "未解析").Description);
+        Assert.Equal(3, Node(root, "chunks").Children.Count);
+    }
+
     private static byte[] Compress(byte[] data)
     {
         using var output = new MemoryStream();

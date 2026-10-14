@@ -294,7 +294,7 @@ internal sealed partial class KsyRun
         return type switch
         {
             KsyBytesType => processed is null
-                ? KsValue.FromBytes(new KsStreamBytes(io, range, options.MaxBytesLoad))
+                ? KsValue.FromBytes(new KsStreamBytes(io, range, options.MaxBytesLoad, ChargeLoad))
                 : KsValue.FromBytes(processed),
             KsyStrType s => KsValue.FromString(s.Encoding.GetString(processed ?? Load(io, range, attribute))),
             KsyUserType user => ReadUser(obj, attribute, user, Window(io, range, processed), node, scope),
@@ -336,7 +336,8 @@ internal sealed partial class KsyRun
             childNode.FixedDescription = (child.Description, child.ValueKind);
             node.Children.Add(childNode);
         }
-        return KsValue.FromBytes(new KsStreamBytes(io, new KsRange(start, result.Consumed), options.MaxBytesLoad));
+        var consumed = new KsRange(start, result.Consumed);
+        return KsValue.FromBytes(new KsStreamBytes(io, consumed, options.MaxBytesLoad, ChargeLoad));
     }
 
     private static KsStream Window(KsStream io, KsRange range, byte[]? processed) =>
@@ -363,15 +364,17 @@ internal sealed partial class KsyRun
             throw new KsyParseException(
                 $"{attribute.Path}: Byte array of {range.Length} bytes is too large to load (limit {options.MaxBytesLoad})");
         }
+        ChargeLoad(range.Length);
         return io.ReadArray(range);
     }
 
     private byte[] Process(KsyProcess process, byte[] data, IKsEvalScope scope, KsyAttribute attribute)
     {
         var argument = process.Argument is { } expr ? Evaluate(expr, scope, attribute.Path, "process") : KsValue.Null;
+        byte[] result;
         try
         {
-            return process.Kind switch
+            result = process.Kind switch
             {
                 KsyProcessKind.Zlib => KsProcess.Zlib(data, options.MaxDecompressedSize),
                 KsyProcessKind.Xor => KsProcess.Xor(data, argument),
@@ -383,6 +386,8 @@ internal sealed partial class KsyRun
         {
             throw ExpressionError(attribute.Path, "process", e);
         }
+        ChargeLoad(result.Length);
+        return result;
     }
 
     private static KsValue ReadContents(KsStream io, byte[] expected, KsyNode node)
