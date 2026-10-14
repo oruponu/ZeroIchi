@@ -70,7 +70,7 @@ public static partial class KsyModelBuilder
                 {
                     var typePath = Child(Child(path, "types"), key.Text);
                     if (!CheckIdentifier(key, typePath, key.Text, "type")) continue;
-                    if (AsMapping(value, typePath) is { } typeMap)
+                    if (AsItemMapping(value, typePath) is { } typeMap)
                         type.AddType(CreateType(typeMap, key.Text, type, typePath));
                 }
             }
@@ -224,7 +224,7 @@ public static partial class KsyModelBuilder
             for (var i = 0; i < sequence.Items.Count; i++)
             {
                 var itemPath = Child(path, i.ToString());
-                if (AsMapping(sequence.Items[i], itemPath) is not { } item) continue;
+                if (AsItemMapping(sequence.Items[i], itemPath) is not { } item) continue;
                 CheckKeys(item, itemPath, ParamKeys, "a parameter");
 
                 var id = GetString(item, "id", itemPath);

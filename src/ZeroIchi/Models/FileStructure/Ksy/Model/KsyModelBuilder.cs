@@ -161,6 +161,13 @@ public static partial class KsyModelBuilder
             return null;
         }
 
+        private YamlMapping? AsItemMapping(YamlNode node, string path)
+        {
+            if (node is YamlMapping mapping) return mapping;
+            Error(node, path, "Expected a mapping");
+            return null;
+        }
+
         private YamlSequence? AsSequence(YamlNode? node, string path)
         {
             if (node is null or YamlSequence) return (YamlSequence?)node;

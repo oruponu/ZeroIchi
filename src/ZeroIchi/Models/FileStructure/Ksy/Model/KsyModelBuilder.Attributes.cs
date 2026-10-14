@@ -53,7 +53,7 @@ public static partial class KsyModelBuilder
                 for (var i = 0; i < items.Items.Count; i++)
                 {
                     var itemPath = Child(seqPath, i.ToString(CultureInfo.InvariantCulture));
-                    if (AsMapping(items.Items[i], itemPath) is not { } item) continue;
+                    if (AsItemMapping(items.Items[i], itemPath) is not { } item) continue;
 
                     var id = GetString(item, "id", itemPath);
                     if (id is null)
@@ -79,7 +79,7 @@ public static partial class KsyModelBuilder
                     if (!CheckIdentifier(key, itemPath, key.Text, "instance")) continue;
                     if (!ids.TryAdd(key.Text, itemPath))
                         Error(key, itemPath, $"Duplicate attribute id '{key.Text}'");
-                    if (AsMapping(value, itemPath) is not { } item) continue;
+                    if (AsItemMapping(value, itemPath) is not { } item) continue;
 
                     var kind = item.Get("value") is null ? KsyAttributeKind.ParseInstance : KsyAttributeKind.ValueInstance;
                     if (ParseAttribute(item, itemPath, type, kind, key.Text) is { } attribute)

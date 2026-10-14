@@ -336,4 +336,17 @@ public sealed class KsyModelBuilderReferenceTests
                 size-eos: true
 
         """;
+
+    [Theory]
+    [InlineData("instances:\n  v: ~\n", "/instances/v")]
+    [InlineData("seq:\n  - ~\n", "/seq/0")]
+    [InlineData("types:\n  foo:\n", "/types/foo")]
+    [InlineData("params:\n  - ~\n", "/params/0")]
+    public void Parse_EmptyItemBody_IsError(string body, string path)
+    {
+        var error = SingleError("meta:\n  id: x\n" + body);
+
+        Assert.Contains("Expected a mapping", error.Message);
+        Assert.Equal(path, error.Path);
+    }
 }
