@@ -183,6 +183,14 @@ public sealed class KsyModelBuilderAttributeTests
         Assert.Contains("size, size-eos or terminator is required", SingleError("meta:\n  id: x\nseq:\n  - id: a\n").Message);
     }
 
+    [Theory]
+    [InlineData("    size-eos: false\n")]
+    [InlineData("    type: str\n    encoding: ASCII\n    size-eos: false\n")]
+    public void Parse_SizeEosFalseAlone_IsNotASize(string lines)
+    {
+        Assert.Contains("size, size-eos or terminator is required", SingleError("meta:\n  id: x\nseq:\n  - id: a\n" + lines).Message);
+    }
+
     [Fact]
     public void Parse_SizeAndSizeEos_IsError()
     {

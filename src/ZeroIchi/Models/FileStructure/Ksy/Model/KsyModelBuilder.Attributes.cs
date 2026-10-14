@@ -141,7 +141,8 @@ public static partial class KsyModelBuilder
             if (size is not null && sizeEos)
                 Error(map, path, "size and size-eos cannot be used together");
 
-            var hasSize = map.Get("size") is not null || map.Get("size-eos") is not null || terminator is not null
+            var sizeEosGiven = sizeEos || map.Get("size-eos") is { } eosNode && eosNode is not YamlScalar { Value.Kind: YamlScalarKind.Bool };
+            var hasSize = map.Get("size") is not null || sizeEosGiven || terminator is not null
                 || map.Get("terminator") is not null;
             switch (dataType)
             {
