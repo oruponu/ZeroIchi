@@ -65,6 +65,15 @@ public sealed class KsyNativeTypeTests
     }
 
     [Fact]
+    public void Parse_NativeTypeWithArguments_IsError()
+    {
+        var error = SingleError("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: blob\n    type: test_blob(4)\n", natives: Registry());
+
+        Assert.Contains("Native type 'test_blob' does not take arguments", error.Message);
+        Assert.Equal("/seq/0/type", error.Path);
+    }
+
+    [Fact]
     public void Parse_NativeTypeIsVariableSize()
     {
         var format = Load("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: blob\n    type: test_blob\n", natives: Registry());
