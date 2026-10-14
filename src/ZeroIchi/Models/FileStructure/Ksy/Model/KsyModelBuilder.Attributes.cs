@@ -56,6 +56,7 @@ public static partial class KsyModelBuilder
                     if (AsItemMapping(items.Items[i], itemPath) is not { } item) continue;
 
                     var id = GetString(item, "id", itemPath);
+                    if (id is not null) Declare(type, id);
                     if (id is null)
                         id = $"_unnamed{i}";
                     else if (!CheckIdentifier(item.Get("id")!, Child(itemPath, "id"), id, "attribute"))
@@ -76,6 +77,7 @@ public static partial class KsyModelBuilder
                 foreach (var (key, value) in instanceMap.Entries)
                 {
                     var itemPath = Child(instancesPath, key.Text);
+                    Declare(type, key.Text);
                     if (!CheckIdentifier(key, itemPath, key.Text, "instance")) continue;
                     if (!ids.TryAdd(key.Text, itemPath))
                         Error(key, itemPath, $"Duplicate attribute id '{key.Text}'");

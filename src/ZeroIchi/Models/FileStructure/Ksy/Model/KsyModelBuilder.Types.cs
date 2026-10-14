@@ -233,6 +233,7 @@ public static partial class KsyModelBuilder
                     Error(item, itemPath, "id is required");
                     continue;
                 }
+                Declare(type, id);
                 if (!CheckIdentifier(item.Get("id")!, Child(itemPath, "id"), id, "parameter")) continue;
                 if (!ids.Add(id))
                 {

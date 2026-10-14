@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
@@ -27,7 +28,16 @@ public static partial class KsyModelBuilder
             }
         }
 
-        private static string? CheckNode(ExpressionUse use, KsExpr node)
+        private void Declare(KsyType type, string name)
+        {
+            if (!_declared.TryGetValue(type, out var names)) _declared[type] = names = new HashSet<string>(StringComparer.Ordinal);
+            names.Add(name);
+        }
+
+        private bool IsDeclared(KsyType type, string name) =>
+            _declared.TryGetValue(type, out var names) && names.Contains(name);
+
+        private string? CheckNode(ExpressionUse use, KsExpr node)
         {
             var context = use.Context;
             switch (node)
@@ -37,13 +47,13 @@ public static partial class KsyModelBuilder
                 case KsName name when ReservedNames.Contains(name.Name):
                     return null;
                 case KsName name:
-                    return FindMember(context, name.Name) is not null || HasParam(context, name.Name)
+                    return IsDeclared(context, name.Name)
                         ? null
                         : $"Name '{name.Name}' not found in type '{context.Name}'";
                 case KsMember { Target: KsName { Name: "_root" }, Name: var rootMember } when !rootMember.StartsWith('_'):
                 {
                     var root = context.Format.Root;
-                    return FindMember(root, rootMember) is not null || HasParam(root, rootMember)
+                    return IsDeclared(root, rootMember)
                         ? null
                         : $"Name '{rootMember}' not found in type '{root.Name}'";
                 }
@@ -83,8 +93,6 @@ public static partial class KsyModelBuilder
 
         private static KsyAttribute? FindMember(KsyType type, string name) =>
             type.Seq.FirstOrDefault(a => a.Id == name) ?? type.Instances.FirstOrDefault(a => a.Id == name);
-
-        private static bool HasParam(KsyType type, string name) => type.Params.Any(p => p.Id == name);
 
         private static IEnumerable<KsExpr> Children(KsExpr node) => node switch
         {

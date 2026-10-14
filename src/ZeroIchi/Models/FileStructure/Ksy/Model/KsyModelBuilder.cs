@@ -75,6 +75,7 @@ public static partial class KsyModelBuilder
         private readonly KsyFormat _format = new(file);
         private readonly List<(KsyType Type, YamlMapping Map)> _types = [];
         private readonly List<ExpressionUse> _expressions = [];
+        private readonly Dictionary<KsyType, HashSet<string>> _declared = [];
         private YamlMapping? _root;
 
         private sealed record ExpressionUse(KsExpr Expr, KsyType Context, YamlScalar Node, string Path);

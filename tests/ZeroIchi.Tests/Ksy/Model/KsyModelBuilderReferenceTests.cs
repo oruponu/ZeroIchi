@@ -337,7 +337,24 @@ public sealed class KsyModelBuilderReferenceTests
 
         """;
 
+    [Fact]
+    public void Parse_ReferencesToAttributeWithUnknownType_AreNotReported()
+    {
+        var error = SingleError("meta:\n  id: x\nseq:\n  - id: hdr\n    type: nonexistent\n  - id: body\n    size: hdr.len\ninstances:\n  v:\n    value: hdr.len + 1\n");
+
+        Assert.Contains("Type 'nonexistent' not found", error.Message);
+    }
+
+    [Fact]
+    public void Parse_ReferencesToAttributeWithInvalidId_AreNotReported()
+    {
+        var error = SingleError("meta:\n  id: x\nseq:\n  - id: Bad\n    type: u1\n  - id: b\n    size: Bad\n");
+
+        Assert.Contains("Invalid attribute name 'Bad'", error.Message);
+    }
+
     [Theory]
+    [InlineData("instances:\n  v:\n  w:\n    value: v\n", "/instances/v")]
     [InlineData("instances:\n  v: ~\n", "/instances/v")]
     [InlineData("seq:\n  - ~\n", "/seq/0")]
     [InlineData("types:\n  foo:\n", "/types/foo")]
