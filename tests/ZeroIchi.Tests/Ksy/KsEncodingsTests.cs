@@ -36,11 +36,29 @@ public sealed class KsEncodingsTests
     }
 
     [Fact]
-    public void CanonicalNames_Has35Entries_AndNoneThrows()
+    public void CanonicalNames_Has35Entries_AndAllAreAvailable()
     {
         Assert.Equal(35, KsEncodings.CanonicalNames.Count);
         foreach (var name in KsEncodings.CanonicalNames)
-            KsEncodings.TryGet(name, out _);
+            Assert.True(KsEncodings.TryGet(name, out _), name);
+    }
+
+    [Theory]
+    [InlineData("ISO-8859-10", 0xA1, "Ą")]
+    [InlineData("ISO-8859-14", 0xA1, "Ḃ")]
+    [InlineData("ISO-8859-16", 0xA4, "€")]
+    [InlineData("ISO-8859-16", 0x41, "A")]
+    public void Iso8859WithoutDotNetProvider_Decodes(string name, byte value, string expected)
+    {
+        Assert.True(KsEncodings.TryGet(name, out var encoding));
+        Assert.Equal(expected, encoding.GetString([value]));
+    }
+
+    [Fact]
+    public void Iso8859WithoutDotNetProvider_EncodesAndReplacesUnmappable()
+    {
+        Assert.True(KsEncodings.TryGet("ISO-8859-16", out var encoding));
+        Assert.Equal(new byte[] { 0x41, 0xA1, 0xA4, 0x3F }, encoding.GetBytes("AĄ€あ"));
     }
 
     [Fact]
