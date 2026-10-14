@@ -332,6 +332,9 @@ public static partial class KsyModelBuilder
                 return new KsyUserType(type, arguments);
             }
 
+            if (_format.OpaqueTypes && parts.Length == 1 && session.Natives.TryGet(name, out var native))
+                return new KsyNativeType(native);
+
             Error(node, path, $"Type '{name}' not found");
             return null;
         }
