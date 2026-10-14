@@ -136,6 +136,18 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         }
     }
 
+    private static bool Equal(KsExpr node, KsValue left, KsValue right, string path, string key)
+    {
+        try
+        {
+            return KsEvaluator.ValuesEqual(node, left, right);
+        }
+        catch (KsExpressionException e)
+        {
+            throw ExpressionError(path, key, e);
+        }
+    }
+
     private FileStructureNode Unparsed(Exception failure)
     {
         var offset = ReferenceEquals(_observed, failure) && _failOffset is { } observed
