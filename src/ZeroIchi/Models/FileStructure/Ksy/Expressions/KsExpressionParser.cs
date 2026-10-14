@@ -314,6 +314,7 @@ public sealed class KsExpressionParser
         while (Current.Kind == KsTokenKind.Comma)
         {
             Advance();
+            if (end == KsTokenKind.RBracket && Current.Kind == end) break;
             items.Add(ParseTernary());
         }
         return items;
