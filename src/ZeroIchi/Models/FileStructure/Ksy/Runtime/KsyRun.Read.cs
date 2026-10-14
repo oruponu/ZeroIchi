@@ -127,7 +127,7 @@ internal sealed partial class KsyRun
         return Guard(node, () =>
         {
             var value = attribute is { DataType: KsyBytesType, Contents: { } expected }
-                ? ReadContents(io, expected, node)
+                ? ReadContents(attribute, expected, io, node, scope)
                 : ReadData(obj, attribute, attribute.DataType!, io, node, scope);
             if (attribute.Enum is { } enumType && value.Kind == KsValueKind.Int)
                 value = KsValue.FromEnum(enumType, value.AsInt);
@@ -390,9 +390,11 @@ internal sealed partial class KsyRun
         return result;
     }
 
-    private static KsValue ReadContents(KsStream io, byte[] expected, KsyNode node)
+    private KsValue ReadContents(KsyAttribute attribute, byte[] expected, KsStream io, KsyNode node,
+        IKsEvalScope scope)
     {
         var actual = io.ReadArray(io.ReadRange(expected.Length));
+        if (attribute.Process is { } process) actual = Process(process, actual, scope, attribute);
         if (!actual.AsSpan().SequenceEqual(expected))
         {
             node.Error =

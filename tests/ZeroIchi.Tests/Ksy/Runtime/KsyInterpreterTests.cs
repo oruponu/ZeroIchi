@@ -171,6 +171,23 @@ public sealed class KsyInterpreterTests
     }
 
     [Fact]
+    public void Parse_ContentsAreComparedAfterTheProcess()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: magic
+                contents: [0x01, 0x02]
+                process: xor(0xFF)
+            """, [0xFE, 0xFD]);
+
+        var magic = Node(root, "magic");
+        Assert.Null(magic.Error);
+        Assert.Equal(("01 02", 0L, 2L), (magic.Description, magic.Offset, magic.Length));
+    }
+
+    [Fact]
     public void Parse_EnumShowsTheValueAndItsName()
     {
         var root = Parse("""
