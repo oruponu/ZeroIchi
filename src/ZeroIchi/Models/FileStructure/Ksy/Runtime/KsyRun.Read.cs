@@ -8,6 +8,8 @@ namespace ZeroIchi.Models.FileStructure.Ksy.Runtime;
 
 internal sealed partial class KsyRun
 {
+    private static readonly KsyBytesType RawBytes = new();
+
     private int _depth;
 
     private KsObject ReadObject(KsyType type, KsObject? caller, IKsStruct? parent, KsStream io, KsValue[] args,
@@ -71,8 +73,49 @@ internal sealed partial class KsyRun
     }
 
     private KsValue ReadAttribute(KsObject obj, KsyAttribute attribute, KsStream io, List<KsyNode> siblings,
-        IKsEvalScope scope) =>
-        ReadElement(obj, attribute, io, attribute.Id, siblings, scope);
+        IKsEvalScope scope)
+    {
+        if (attribute.Repeat == KsyRepeatKind.None) return ReadElement(obj, attribute, io, attribute.Id, siblings, scope);
+
+        var container = NewNode(attribute.Id, attribute.Id, io, attribute.DataType is KsyBitType ? io.BitStart : io.Position);
+        container.IsContainer = true;
+        siblings.Add(container);
+        return Guard(container, () =>
+        {
+            var items = new List<KsValue>();
+            var element = new KsScope(scope);
+            switch (attribute.Repeat)
+            {
+                case KsyRepeatKind.Eos:
+                    while (!io.IsEof) ReadItem();
+                    break;
+                case KsyRepeatKind.Expr:
+                {
+                    var count = EvaluateLong(attribute.RepeatExpr!, scope, attribute.Path, "repeat-expr");
+                    for (var i = 0L; i < count; i++) ReadItem();
+                    break;
+                }
+                default:
+                    do
+                    {
+                        ReadItem();
+                        element.Underscore = items[^1];
+                    } while (!EvaluateBool(attribute.RepeatExpr!, element, attribute.Path, "repeat-until"));
+                    break;
+            }
+
+            var value = KsValue.FromArray(items);
+            container.Value = value;
+            return value;
+
+            void ReadItem()
+            {
+                element.Index = items.Count;
+                var name = $"{attribute.Id}[{items.Count}]";
+                items.Add(ReadElement(obj, attribute, io, name, container.Children, element));
+            }
+        });
+    }
 
     private KsValue ReadElement(KsObject obj, KsyAttribute attribute, KsStream io, string name,
         List<KsyNode> siblings, IKsEvalScope scope)
@@ -87,6 +130,8 @@ internal sealed partial class KsyRun
             if (attribute.Enum is { } enumType && value.Kind == KsValueKind.Int)
                 value = KsValue.FromEnum(enumType, value.AsInt);
             node.Value = value;
+            if (attribute.Valid is { } validation && Validate(validation, value, attribute, scope) is { } error)
+                node.Error = error;
             return value;
         });
     }
@@ -105,12 +150,95 @@ internal sealed partial class KsyRun
                 var bits = io.ReadBits(t.Width, t.BitOrder == KsyByteOrder.Be);
                 return t.IsBool ? KsValue.FromBool(bits != 0) : KsValue.FromInt(bits);
             }
+            case KsySwitchType switchType:
+                return ReadSwitch(obj, attribute, switchType, io, node, scope);
             case KsyUserType user when !HasSize(attribute):
                 return ReadUser(obj, attribute, user, io, node, scope);
             default:
                 return ReadSized(obj, attribute, type, io, node, scope);
         }
     }
+
+    private KsValue ReadSwitch(KsObject obj, KsyAttribute attribute, KsySwitchType switchType, KsStream io,
+        KsyNode node, IKsEvalScope scope)
+    {
+        var path = attribute.Path;
+        var on = Evaluate(switchType.On, scope, path, "type/switch-on");
+        KsyDataType? chosen = null;
+        KsyDataType? fallback = null;
+        foreach (var switchCase in switchType.Cases)
+        {
+            if (switchCase.Match is not { } match)
+            {
+                fallback = switchCase.Type;
+                continue;
+            }
+            if (Equal(match, on, Evaluate(match, scope, path, "type/cases"), path, "type/cases"))
+            {
+                chosen = switchCase.Type;
+                break;
+            }
+        }
+
+        chosen ??= fallback;
+        if (chosen is not null) return ReadData(obj, attribute, chosen, io, node, scope);
+        return attribute.Size is not null || attribute.SizeEos
+            ? ReadSized(obj, attribute, RawBytes, io, node, scope)
+            : KsValue.Null;
+    }
+
+    private static string? Validate(KsyValidation validation, KsValue value, KsyAttribute attribute,
+        IKsEvalScope scope)
+    {
+        var path = attribute.Path;
+        switch (validation)
+        {
+            case KsyValidEq eq:
+            {
+                var expected = Evaluate(eq.Value, scope, path, "valid");
+                return Equal(eq.Value, value, expected, path, "valid")
+                    ? null
+                    : $"Validation failed: expected {Show(expected)}, got {Show(value)}";
+            }
+            case KsyValidRange range:
+            {
+                if (range.Min is { } min)
+                {
+                    var limit = Evaluate(min, scope, path, "valid/min");
+                    if (Compare(min, value, limit, path, "valid/min") < 0)
+                        return $"Validation failed: {Show(value)} is less than {Show(limit)}";
+                }
+                if (range.Max is { } max)
+                {
+                    var limit = Evaluate(max, scope, path, "valid/max");
+                    if (Compare(max, value, limit, path, "valid/max") > 0)
+                        return $"Validation failed: {Show(value)} is greater than {Show(limit)}";
+                }
+                return null;
+            }
+            case KsyValidAnyOf anyOf:
+            {
+                foreach (var option in anyOf.Values)
+                {
+                    if (Equal(option, value, Evaluate(option, scope, path, "valid/any-of"), path, "valid/any-of"))
+                        return null;
+                }
+                return $"Validation failed: {Show(value)} is not any of the allowed values";
+            }
+            case KsyValidInEnum:
+                return value.Kind == KsValueKind.Enum && value.EnumType.GetName(value.EnumValue) is null
+                    ? $"Validation failed: {Show(value)} is not defined in enum '{value.EnumType.Name}'"
+                    : null;
+            case KsyValidExpr expr:
+                return EvaluateBool(expr.Condition, new KsScope(scope) { Underscore = value }, path, "valid/expr")
+                    ? null
+                    : $"Validation failed: {Show(value)} does not satisfy the expression";
+            default:
+                return null;
+        }
+    }
+
+    private static string Show(KsValue value) => KsyDescriptions.Describe(value).Text;
 
     private static bool HasSize(KsyAttribute attribute) =>
         attribute.Size is not null || attribute.SizeEos || attribute.Terminator is not null;

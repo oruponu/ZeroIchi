@@ -11,7 +11,7 @@ internal sealed class KsyNode(string name, string? fieldId, KsStream? stream, lo
     public long Start { get; } = start;
     public long? End { get; set; }
     public KsValue Value { get; set; }
-    public bool IsContainer { get; init; }
+    public bool IsContainer { get; set; }
     public string? Error { get; set; }
     public bool IsIncomplete { get; set; }
     public List<KsyNode> Children { get; } = [];
