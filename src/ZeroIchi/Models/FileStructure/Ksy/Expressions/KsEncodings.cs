@@ -63,6 +63,29 @@ public static class KsEncodings
         return names;
     }
 
+    public static string? Canonicalize(string name)
+    {
+        var key = Normalize(name);
+        foreach (var canonical in CanonicalNames)
+        {
+            if (Normalize(canonical) == key) return canonical;
+        }
+
+        return key switch
+        {
+            "USASCII" => "ASCII",
+            "SJIS" => "Shift_JIS",
+            "437" or "CP437" => "IBM437",
+            "866" or "CP866" => "IBM866",
+            _ when key.Length == 6 && key.StartsWith("CP125", StringComparison.Ordinal) && key[5] is >= '0' and <= '8' =>
+                $"windows-{key[2..]}",
+            _ => null,
+        };
+    }
+
+    private static string Normalize(string name) =>
+        name.Replace("-", "").Replace("_", "").ToUpperInvariant();
+
     public static bool TryGet(string name, [NotNullWhen(true)] out Encoding? encoding)
     {
         encoding = null;
