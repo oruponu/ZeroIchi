@@ -658,4 +658,14 @@ public sealed class KsyModelBuilderAttributeTests
 
         Assert.Contains("Unknown encoding 'foo'", error.Message);
     }
+
+    [Theory]
+    [InlineData("    type: u1\n    enum: nope\n", "Enum 'nope' not found")]
+    [InlineData("    size: 1\n    enum: e\n", "Unknown key 'enum'")]
+    public void Parse_InEnumWithBrokenEnum_DoesNotCascade(string lines, string messagePart)
+    {
+        var error = SingleError("meta:\n  id: x\nseq:\n  - id: a\n" + lines + "    valid:\n      in-enum: true\nenums:\n  e:\n    1: one\n");
+
+        Assert.Contains(messagePart, error.Message);
+    }
 }

@@ -161,7 +161,7 @@ public static partial class KsyModelBuilder
             var valid = map.Get("valid") is { } validNode ? ReadValidation(validNode, Child(path, "valid"), owner) : null;
             if (valid is not null && contents is not null)
                 Error(map, path, "contents and valid cannot be used together");
-            if (valid is KsyValidInEnum && enumType is null)
+            if (valid is KsyValidInEnum && map.Get("enum") is null)
                 Error(map.Get("valid")!, Child(path, "valid"), "valid/in-enum requires enum");
 
             return new KsyAttribute
