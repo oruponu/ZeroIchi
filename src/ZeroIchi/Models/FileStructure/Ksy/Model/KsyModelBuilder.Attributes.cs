@@ -411,10 +411,18 @@ public static partial class KsyModelBuilder
 
         private static byte? ParseContentNumber(string text)
         {
-            var value = text.StartsWith("0x", StringComparison.Ordinal)
-                ? long.Parse(text[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture)
-                : long.Parse(text, CultureInfo.InvariantCulture);
-            return value is >= -128 and <= 255 ? (byte)value : null;
+            if (text.StartsWith("0x", StringComparison.Ordinal))
+            {
+                return ulong.TryParse(text.AsSpan(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var hex)
+                    && hex <= 255
+                        ? (byte)hex
+                        : null;
+            }
+
+            return long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value)
+                && value is >= -128 and <= 255
+                    ? (byte)value
+                    : null;
         }
 
         private static byte[] DefaultZeroTerminator(string encoding) => encoding switch

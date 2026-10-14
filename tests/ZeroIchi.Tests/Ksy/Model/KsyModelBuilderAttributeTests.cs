@@ -243,6 +243,10 @@ public sealed class KsyModelBuilderAttributeTests
     [InlineData("5")]
     [InlineData("[256]")]
     [InlineData("[true]")]
+    [InlineData("['256']")]
+    [InlineData("['9223372036854775808']")]
+    [InlineData("['0xFFFFFFFFFFFFFFFF']")]
+    [InlineData("['0x100']")]
     public void Parse_InvalidContents_IsError(string yaml)
     {
         SingleError($"meta:\n  id: x\nseq:\n  - id: a\n    contents: {yaml}\n");
