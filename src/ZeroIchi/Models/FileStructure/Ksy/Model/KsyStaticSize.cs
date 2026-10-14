@@ -4,13 +4,32 @@ using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Model;
 
-internal static class KsyStaticSize
+internal sealed class KsyStaticSize
 {
-    public static long? Compute(KsyType type, HashSet<KsyType> visiting)
-    {
-        if (type.SizeInBits is { } known) return known;
-        if (!visiting.Add(type)) return null;
+    private readonly HashSet<KsyType> _visiting = [];
+    private readonly Dictionary<KsyType, long?> _computed = [];
 
+    public long? Compute(KsyType type)
+    {
+        if (_computed.TryGetValue(type, out var known)) return known;
+        if (!_visiting.Add(type)) return null;
+
+        long? result;
+        try
+        {
+            result = SeqBits(type);
+        }
+        finally
+        {
+            _visiting.Remove(type);
+        }
+
+        _computed[type] = result;
+        return result;
+    }
+
+    private long? SeqBits(KsyType type)
+    {
         try
         {
             long bits = 0;
@@ -30,7 +49,7 @@ internal static class KsyStaticSize
                     continue;
                 }
 
-                var element = ElementBits(attribute, visiting);
+                var element = ElementBits(attribute);
                 if (element is null) return null;
                 bits = checked((bits + 7) / 8 * 8 + element.Value * count.Value);
             }
@@ -40,13 +59,9 @@ internal static class KsyStaticSize
         {
             return null;
         }
-        finally
-        {
-            visiting.Remove(type);
-        }
     }
 
-    private static long? ElementBits(KsyAttribute attribute, HashSet<KsyType> visiting)
+    private long? ElementBits(KsyAttribute attribute)
     {
         if (attribute.Contents is { } contents) return contents.Length * 8L;
         if (attribute.Size is { } size) return Constant(size) is { } bytes ? checked(bytes * 8) : null;
@@ -56,7 +71,7 @@ internal static class KsyStaticSize
         {
             KsyIntType i => i.Size * 8L,
             KsyFloatType f => f.Size * 8L,
-            KsyUserType user => Compute(user.Type, visiting),
+            KsyUserType user => Compute(user.Type),
             _ => null,
         };
     }

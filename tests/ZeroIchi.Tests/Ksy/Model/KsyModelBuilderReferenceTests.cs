@@ -278,6 +278,22 @@ public sealed class KsyModelBuilderReferenceTests
     }
 
     [Fact]
+    public void Parse_StaticSize_SharedTypesAreComputedOnce()
+    {
+        const int depth = 22;
+        var yaml = new System.Text.StringBuilder("meta:\n  id: x\nseq:\n  - id: a\n    type: t0\ntypes:\n");
+        for (var i = 0; i < depth; i++)
+            yaml.Append($"  t{i}:\n    seq:\n      - id: a\n        type: t{i + 1}\n      - id: b\n        type: t{i + 1}\n");
+        yaml.Append($"  t{depth}:\n    seq:\n      - id: v\n        type: u1\n");
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        var format = Load(yaml.ToString());
+
+        Assert.Equal(8L << depth, format.Root.SizeInBits);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), stopwatch.Elapsed.ToString());
+    }
+
+    [Fact]
     public void KsyType_ImplementsTypeInfoAndEnumType()
     {
         var format = Load("meta:\n  id: x\nseq:\n  - id: a\n    type: u2le\nenums:\n  e:\n    5: five\n");
