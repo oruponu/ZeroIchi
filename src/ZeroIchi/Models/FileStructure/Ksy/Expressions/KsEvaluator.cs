@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Expressions;
@@ -9,6 +10,9 @@ public static class KsEvaluator
 {
     public static KsValue Evaluate(KsExpr expr, IKsEvalScope scope)
     {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            throw Error(expr, "Expression is nested too deeply");
+
         try
         {
             return EvaluateCore(expr, scope);

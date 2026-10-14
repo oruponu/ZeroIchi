@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
@@ -112,7 +113,7 @@ public sealed class KsExpressionParser
 
     private void EnterDepth()
     {
-        if (++_depth > MaxDepth)
+        if (++_depth > MaxDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
             throw Error("Expression is nested too deeply", Current);
     }
 

@@ -123,4 +123,14 @@ public sealed class KsExpressionParserTests
 
         Assert.Equal("1", KsExprPrinter.Print(KsExpressionParser.Parse(source)));
     }
+
+    [Fact]
+    public void Parse_LegalNestingOnSmallStack_ReportsDepthError()
+    {
+        var source = new string('(', 127) + "1" + new string(')', 127);
+
+        var e = Assert.IsType<KsExpressionException>(SmallStack.Run(() => KsExpressionParser.Parse(source)));
+
+        Assert.Contains("too deeply", e.Message);
+    }
 }

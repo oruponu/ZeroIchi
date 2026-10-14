@@ -307,4 +307,16 @@ public sealed class KsEvaluatorTests
         Assert.Throws<KsExpressionException>(() =>
             KsEvaluator.EvaluateNonNegativeLong(KsExpressionParser.Parse(source), new TestScope()));
     }
+
+    [Fact]
+    public void Evaluate_LegalDeepAstOnSmallStack_ReportsDepthError()
+    {
+        var chain = string.Concat(Enumerable.Repeat("+1", 120));
+        var expr = KsExpressionParser.Parse("(1" + chain + ")" + chain);
+        Assert.Equal((Int128)241, KsEvaluator.Evaluate(expr, new TestScope()).AsInt);
+
+        var e = Assert.IsType<KsExpressionException>(SmallStack.Run(() => KsEvaluator.Evaluate(expr, new TestScope())));
+
+        Assert.Contains("too deeply", e.Message);
+    }
 }
