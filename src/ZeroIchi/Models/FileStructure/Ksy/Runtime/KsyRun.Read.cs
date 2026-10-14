@@ -19,6 +19,8 @@ internal sealed partial class KsyRun
         try
         {
             var obj = new KsObject(this, type, parent, caller?.RootObject, io, args, node);
+            _objects.Add(obj);
+            node.Instances = new KsyNode?[type.Instances.Count];
             obj.Endian = ResolveEndian(obj, caller);
             for (var i = 0; i < type.Seq.Count; i++) ReadSeqAttribute(obj, i);
             return obj;

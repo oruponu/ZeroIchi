@@ -15,5 +15,6 @@ internal sealed class KsyNode(string name, string? fieldId, KsStream? stream, lo
     public string? Error { get; set; }
     public bool IsIncomplete { get; set; }
     public List<KsyNode> Children { get; } = [];
+    public KsyNode?[] Instances { get; set; } = [];
     public FileStructureNode? Built { get; set; }
 }

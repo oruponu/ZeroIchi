@@ -10,6 +10,7 @@ namespace ZeroIchi.Models.FileStructure.Ksy.Runtime;
 internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyParseOptions options)
 {
     private readonly Dictionary<KsyType, KsyTypeLayout> _layouts = [];
+    private readonly List<KsObject> _objects = [];
     private int _nodeCount;
     private Exception? _observed;
     private long? _failOffset;
@@ -22,6 +23,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         try
         {
             Guard(root, () => ReadObject(format.Root, null, null, stream, [], root));
+            EvaluateForDisplay();
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
@@ -89,6 +91,9 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
             _failOffset = stream.FileOffset(stream.Position);
         return false;
     }
+
+    private static bool IsLimit(Exception e) =>
+        e is KsyParseException { IsLimit: true } or InsufficientExecutionStackException;
 
     private static string Message(Exception e) => e switch
     {
@@ -185,6 +190,10 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         {
             order.Add(node);
             foreach (var child in node.Children) pending.Push(child);
+            foreach (var instance in node.Instances)
+            {
+                if (instance is not null) pending.Push(instance);
+            }
         }
 
         for (var i = order.Count - 1; i > 0; i--) order[i].Built = Build(order[i]);
@@ -193,8 +202,12 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
 
     private static List<FileStructureNode> Collect(KsyNode node)
     {
-        var children = new List<FileStructureNode>(node.Children.Count);
+        var children = new List<FileStructureNode>(node.Children.Count + node.Instances.Length);
         foreach (var child in node.Children) children.Add(child.Built!);
+        foreach (var instance in node.Instances)
+        {
+            if (instance is not null) children.Add(instance.Built!);
+        }
         return children;
     }
 
