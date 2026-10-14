@@ -20,6 +20,7 @@ internal sealed partial class KsyRun
             case KsyInstanceStatus.Evaluating:
                 throw new KsyParseException($"{attribute.Path}: Cyclic reference to instance '{attribute.Id}'");
         }
+        if (_frozen) throw new KsExpressionException($"Instance '{attribute.Id}' was not evaluated", -1, 0);
 
         EnterNesting();
         state.Status = KsyInstanceStatus.Evaluating;

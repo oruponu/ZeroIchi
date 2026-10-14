@@ -14,6 +14,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     private int _nodeCount;
     private Exception? _observed;
     private long? _failOffset;
+    private bool _frozen;
 
     public FileStructureNode Run()
     {
@@ -30,6 +31,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
             failure = e;
         }
 
+        _frozen = true;
         var children = BuildChildren(root);
         if (failure is not null) children.Add(Unparsed(failure));
         return new FileStructureNode
@@ -211,11 +213,18 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         return children;
     }
 
+    private static (string Text, ValueKind Kind) Describe(KsyNode node)
+    {
+        if (node.IsContainer) return ("", ValueKind.None);
+        return node.Value is { Kind: KsValueKind.Struct, AsStruct: KsObject obj }
+            ? (KsySummary.Describe(obj), ValueKind.None)
+            : KsyDescriptions.Describe(node.Value);
+    }
+
     private FileStructureNode Build(KsyNode node)
     {
         var hasRange = node.Stream is { IsFileBacked: true };
-        var (text, kind) = node.FixedDescription
-            ?? (node.IsContainer ? ("", ValueKind.None) : KsyDescriptions.Describe(node.Value));
+        var (text, kind) = node.FixedDescription ?? Describe(node);
         if (node.IsIncomplete) text = text.Length == 0 ? "(未完了)" : $"{text} (未完了)";
 
         return new FileStructureNode
