@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ZeroIchi.Models.FileStructure;
 using static ZeroIchi.Tests.Ksy.Runtime.KsyTestRunner;
 
@@ -171,6 +172,30 @@ public sealed class KsySummaryTests
             """, data);
 
         Assert.Equal(new string('a', 256) + " ...", Node(root, "holder").Description);
+    }
+
+    [Fact]
+    public void Parse_SelfReferencingRepresentationFinishesQuickly()
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: items
+                type: item
+                repeat: eos
+            types:
+              item:
+                -webide-representation: '{_parent.items}'
+                seq:
+                  - id: v
+                    type: u1
+            """, new byte[100]);
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Took {stopwatch.Elapsed}");
+        Assert.StartsWith("…, …", Node(root, "items/items[0]").Description);
     }
 
     [Fact]

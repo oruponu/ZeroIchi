@@ -12,6 +12,7 @@ internal static partial class KsySummary
     private const int MaxDepth = 4;
     private const int MaxItems = 16;
     private const int MaxLength = 256;
+    private const int MaxSteps = 1000;
     private const string Omitted = "…";
 
     [GeneratedRegex(@"\{(.*?)\}")]
@@ -19,26 +20,32 @@ internal static partial class KsySummary
 
     private readonly record struct Format(bool Dec, bool Str, string Separator);
 
+    private sealed class Context
+    {
+        public HashSet<KsObject> Visiting { get; } = new(ReferenceEqualityComparer.Instance);
+        public int Steps { get; set; }
+    }
+
     public static string Describe(KsObject obj)
     {
-        var text = Summarize(obj, 0, new HashSet<KsObject>(ReferenceEqualityComparer.Instance));
+        var text = Summarize(obj, 0, new Context());
         return text.Length > MaxLength ? $"{text[..MaxLength]} ..." : text;
     }
 
-    private static string Summarize(KsObject obj, int depth, HashSet<KsObject> visiting)
+    private static string Summarize(KsObject obj, int depth, Context context)
     {
-        visiting.Add(obj);
+        context.Visiting.Add(obj);
         try
         {
             if (obj.Type.WebideRepresentation is { } template)
-                return Placeholder().Replace(template, m => Expand(obj, m.Groups[1].Value, depth, visiting));
+                return Placeholder().Replace(template, m => Expand(obj, m.Groups[1].Value, depth, context));
 
             if (obj.Type.ToStringExpr is { } expr)
             {
                 try
                 {
                     var value = KsEvaluator.Evaluate(expr, obj);
-                    return Render(value, new Format(false, false, ", "), depth, visiting);
+                    return Render(value, new Format(false, false, ", "), depth, context);
                 }
                 catch (Exception e) when (e is KsExpressionException or KsyParseException)
                 {
@@ -49,11 +56,11 @@ internal static partial class KsySummary
         }
         finally
         {
-            visiting.Remove(obj);
+            context.Visiting.Remove(obj);
         }
     }
 
-    private static string Expand(KsObject obj, string placeholder, int depth, HashSet<KsObject> visiting)
+    private static string Expand(KsObject obj, string placeholder, int depth, Context context)
     {
         var colon = placeholder.IndexOf(':');
         var path = colon < 0 ? placeholder : placeholder[..colon];
@@ -72,7 +79,7 @@ internal static partial class KsySummary
                 return "";
             }
         }
-        return Render(value, format, depth, visiting);
+        return Render(value, format, depth, context);
     }
 
     private static Format ParseFormat(string text)
@@ -93,8 +100,11 @@ internal static partial class KsySummary
         return format;
     }
 
-    private static string Render(KsValue value, Format format, int depth, HashSet<KsObject> visiting)
+    private static string Render(KsValue value, Format format, int depth, Context context)
     {
+        context.Steps++;
+        if (context.Steps > MaxSteps) return Omitted;
+
         switch (value.Kind)
         {
             case KsValueKind.Int:
@@ -104,17 +114,17 @@ internal static partial class KsySummary
             case KsValueKind.Bytes:
                 return format.Str ? Ascii(value.AsBytes) : KsyDescriptions.Bytes(value.AsBytes);
             case KsValueKind.Struct:
-                return value.AsStruct is KsObject child && depth < MaxDepth && !visiting.Contains(child)
-                    ? Summarize(child, depth + 1, visiting)
+                return value.AsStruct is KsObject child && depth < MaxDepth && !context.Visiting.Contains(child)
+                    ? Summarize(child, depth + 1, context)
                     : Omitted;
             case KsValueKind.Array:
             {
                 var items = value.AsArray;
                 var sb = new StringBuilder();
-                for (var i = 0; i < items.Count && i < MaxItems; i++)
+                for (var i = 0; i < items.Count && i < MaxItems && sb.Length <= MaxLength; i++)
                 {
                     if (i > 0) sb.Append(format.Separator);
-                    sb.Append(Render(items[i], format, depth, visiting));
+                    sb.Append(Render(items[i], format, depth, context));
                 }
                 if (items.Count > MaxItems) sb.Append(format.Separator).Append(Omitted);
                 return sb.ToString();
