@@ -200,12 +200,12 @@ public static class KsEvaluator
                     Arithmetic(e, l, r),
                 KsBinaryOp.Shl or KsBinaryOp.Shr or KsBinaryOp.BitAnd or KsBinaryOp.BitOr or KsBinaryOp.BitXor =>
                     IntegerOnly(e, l, r),
-                KsBinaryOp.Eq => KsValue.FromBool(AreEqual(e, l, r)),
-                KsBinaryOp.Ne => KsValue.FromBool(!AreEqual(e, l, r)),
-                KsBinaryOp.Lt => KsValue.FromBool(CompareOrdered(e, l, r) < 0),
-                KsBinaryOp.Le => KsValue.FromBool(CompareOrdered(e, l, r) <= 0),
-                KsBinaryOp.Gt => KsValue.FromBool(CompareOrdered(e, l, r) > 0),
-                KsBinaryOp.Ge => KsValue.FromBool(CompareOrdered(e, l, r) >= 0),
+                KsBinaryOp.Eq => KsValue.FromBool(AreEqual(e, e.Op, l, r)),
+                KsBinaryOp.Ne => KsValue.FromBool(!AreEqual(e, e.Op, l, r)),
+                KsBinaryOp.Lt => KsValue.FromBool(CompareOrdered(e, e.Op, l, r) < 0),
+                KsBinaryOp.Le => KsValue.FromBool(CompareOrdered(e, e.Op, l, r) <= 0),
+                KsBinaryOp.Gt => KsValue.FromBool(CompareOrdered(e, e.Op, l, r) > 0),
+                KsBinaryOp.Ge => KsValue.FromBool(CompareOrdered(e, e.Op, l, r) >= 0),
                 _ => throw Error(e, "Unsupported operator"),
             };
         }
@@ -215,8 +215,8 @@ public static class KsEvaluator
         }
     }
 
-    private static KsExpressionException OperandsError(KsBinary e, KsValue l, KsValue r) =>
-        Error(e, $"Operator {OperatorText(e.Op)} cannot be applied to {KindName(l)} and {KindName(r)}");
+    private static KsExpressionException OperandsError(KsExpr node, KsBinaryOp op, KsValue l, KsValue r) =>
+        Error(node, $"Operator {OperatorText(op)} cannot be applied to {KindName(l)} and {KindName(r)}");
 
     private static KsValue Arithmetic(KsBinary e, KsValue l, KsValue r)
     {
@@ -237,7 +237,7 @@ public static class KsEvaluator
             });
         }
 
-        if (!IsNumber(l) || !IsNumber(r)) throw OperandsError(e, l, r);
+        if (!IsNumber(l) || !IsNumber(r)) throw OperandsError(e, e.Op, l, r);
 
         var x = ToDouble(l);
         var y = ToDouble(r);
@@ -256,7 +256,7 @@ public static class KsEvaluator
 
     private static KsValue IntegerOnly(KsBinary e, KsValue l, KsValue r)
     {
-        if (l.Kind != KsValueKind.Int || r.Kind != KsValueKind.Int) throw OperandsError(e, l, r);
+        if (l.Kind != KsValueKind.Int || r.Kind != KsValueKind.Int) throw OperandsError(e, e.Op, l, r);
 
         var a = l.AsInt;
         var b = r.AsInt;
@@ -278,10 +278,22 @@ public static class KsEvaluator
             ? l.AsInt.CompareTo(r.AsInt)
             : ToDouble(l).CompareTo(ToDouble(r));
 
-    private static bool AreEqual(KsBinary e, KsValue l, KsValue r)
+    internal static bool ValuesEqual(KsExpr node, KsValue left, KsValue right)
+    {
+        if (left.Kind == KsValueKind.Null || right.Kind == KsValueKind.Null) throw Error(node, "Value is null");
+        return AreEqual(node, KsBinaryOp.Eq, left, right);
+    }
+
+    internal static int CompareValues(KsExpr node, KsValue left, KsValue right)
+    {
+        if (left.Kind == KsValueKind.Null || right.Kind == KsValueKind.Null) throw Error(node, "Value is null");
+        return CompareOrdered(node, KsBinaryOp.Lt, left, right);
+    }
+
+    private static bool AreEqual(KsExpr node, KsBinaryOp op, KsValue l, KsValue r)
     {
         if (IsNumber(l) && IsNumber(r)) return CompareNumbers(l, r) == 0;
-        if (l.Kind != r.Kind) throw OperandsError(e, l, r);
+        if (l.Kind != r.Kind) throw OperandsError(node, op, l, r);
 
         return l.Kind switch
         {
@@ -290,19 +302,19 @@ public static class KsEvaluator
             KsValueKind.Bytes => l.AsBytes.ToArray().AsSpan().SequenceEqual(r.AsBytes.ToArray()),
             KsValueKind.Enum => ReferenceEquals(l.EnumType, r.EnumType)
                 ? l.EnumValue == r.EnumValue
-                : throw Error(e, $"Cannot compare different enums ({l.EnumType.Name} and {r.EnumType.Name})"),
-            _ => throw OperandsError(e, l, r),
+                : throw Error(node, $"Cannot compare different enums ({l.EnumType.Name} and {r.EnumType.Name})"),
+            _ => throw OperandsError(node, op, l, r),
         };
     }
 
-    private static int CompareOrdered(KsBinary e, KsValue l, KsValue r)
+    private static int CompareOrdered(KsExpr node, KsBinaryOp op, KsValue l, KsValue r)
     {
         if (IsNumber(l) && IsNumber(r)) return CompareNumbers(l, r);
         if (l.Kind == KsValueKind.String && r.Kind == KsValueKind.String)
             return Math.Sign(string.CompareOrdinal(l.AsString, r.AsString));
         if (l.Kind == KsValueKind.Bytes && r.Kind == KsValueKind.Bytes)
             return Math.Sign(l.AsBytes.ToArray().AsSpan().SequenceCompareTo(r.AsBytes.ToArray()));
-        throw OperandsError(e, l, r);
+        throw OperandsError(node, op, l, r);
     }
 
     private static KsValue EvaluateMember(KsMember e, IKsEvalScope scope)
