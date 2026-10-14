@@ -40,6 +40,9 @@ public static partial class KsyModelBuilder
         {
             foreach (var file in _order) file.ParseAllParams();
             foreach (var file in _order) file.ParseAllMembers();
+            var visiting = new HashSet<KsyType>();
+            foreach (var file in _order) file.ComputeSizes(visiting);
+            foreach (var file in _order) file.Finish();
         }
     }
 
@@ -82,6 +85,16 @@ public static partial class KsyModelBuilder
         public void ParseAllMembers()
         {
             foreach (var (type, map) in _types) ParseMembers(type, map);
+        }
+
+        public void ComputeSizes(HashSet<KsyType> visiting)
+        {
+            foreach (var (type, _) in _types) type.SizeInBits = KsyStaticSize.Compute(type, visiting);
+        }
+
+        public void Finish()
+        {
+            CheckExpressions();
         }
 
         private void Error(YamlNode node, string path, string message) =>
