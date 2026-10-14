@@ -12,10 +12,11 @@ public static partial class KsyModelBuilder
         KsyNativeTypeRegistry? natives = null)
     {
         var session = new Session(imports ?? new KsyMemoryImportSource(), natives ?? KsyNativeTypeRegistry.Empty);
-        var root = session.Begin(path, text);
+        var root = session.Register(path, text);
+        session.BeginAll();
         session.Complete();
-        var failed = root is null || session.Diagnostics.Exists(d => d.Severity == KsySeverity.Error);
-        return new KsyLoadResult(failed ? null : root, session.Diagnostics);
+        var failed = !root.Started || session.Diagnostics.Exists(d => d.Severity == KsySeverity.Error);
+        return new KsyLoadResult(failed ? null : root.Format, session.Diagnostics);
     }
 
     public static KsyLoadResult Load(string path, IKsyImportSource source, KsyNativeTypeRegistry? natives = null)
@@ -31,6 +32,7 @@ public static partial class KsyModelBuilder
     private sealed class Session(IKsyImportSource imports, KsyNativeTypeRegistry natives)
     {
         private readonly Dictionary<string, FileBuilder> _files = new(StringComparer.Ordinal);
+        private readonly Queue<(FileBuilder File, string Text)> _pending = [];
         private readonly List<FileBuilder> _order = [];
 
         public IKsyImportSource Imports { get; } = imports;
@@ -39,13 +41,20 @@ public static partial class KsyModelBuilder
 
         public bool TryGetFile(string path, out FileBuilder? file) => _files.TryGetValue(path, out file);
 
-        public KsyFormat? Begin(string path, string text)
+        public FileBuilder Register(string path, string text)
         {
             var file = new FileBuilder(this, path);
             _files.Add(path, file);
-            if (!file.Begin(text)) return null;
-            _order.Add(file);
-            return file.Format;
+            _pending.Enqueue((file, text));
+            return file;
+        }
+
+        public void BeginAll()
+        {
+            while (_pending.TryDequeue(out var next))
+            {
+                if (next.File.Begin(next.Text)) _order.Add(next.File);
+            }
         }
 
         public void Complete()
@@ -72,6 +81,8 @@ public static partial class KsyModelBuilder
 
         public KsyFormat Format => _format;
 
+        public bool Started { get; private set; }
+
         public bool Begin(string text)
         {
             var yaml = YamlLoader.Load(text);
@@ -89,6 +100,7 @@ public static partial class KsyModelBuilder
             _root = root;
             _format.Root = CreateType(root, null, null, "");
             LoadImports(root);
+            Started = true;
             return true;
         }
 

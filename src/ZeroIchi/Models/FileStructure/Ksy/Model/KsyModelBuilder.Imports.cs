@@ -31,11 +31,10 @@ public static partial class KsyModelBuilder
                         Error(items[i], itemPath, $"Import '{paths[i]}' not found");
                         continue;
                     }
-                    session.Begin(resolved, text);
-                    session.TryGetFile(resolved, out imported);
+                    imported = session.Register(resolved, text);
                 }
 
-                if (imported!.Format.Root is not null) _format.AddImport(imported.Format);
+                _format.AddImport(imported!.Format);
             }
         }
 

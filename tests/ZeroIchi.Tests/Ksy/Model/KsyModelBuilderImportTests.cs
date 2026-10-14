@@ -106,6 +106,25 @@ public sealed class KsyModelBuilderImportTests
     }
 
     [Fact]
+    public void Load_LongImportChainOnSmallStack_DoesNotOverflow()
+    {
+        const int length = 1500;
+        var source = new KsyMemoryImportSource();
+        for (var i = 0; i < length; i++)
+            source.Add($"f{i}", $"meta:\n  id: f{i}\n  imports: [f{i + 1}]\n");
+        source.Add($"f{length}", $"meta:\n  id: f{length}\nseq:\n  - id: v\n    type: u1\n");
+        KsyLoadResult? result = null;
+
+        var exception = SmallStack.Run(() => result = KsyModelBuilder.Load("f0", source));
+
+        Assert.Null(exception);
+        Assert.True(result!.Format is not null, string.Join("\n", result.Diagnostics));
+        var last = result.Format!;
+        while (last.Imports.Count > 0) last = last.Imports[0];
+        Assert.Equal($"f{length}", last.Id);
+    }
+
+    [Fact]
     public void Load_ImportCycle_IsAllowed()
     {
         var source = new KsyMemoryImportSource()
