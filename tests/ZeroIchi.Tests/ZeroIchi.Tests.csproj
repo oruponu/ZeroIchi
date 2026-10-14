@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Ksy\Model\Resources\**\*.ksy" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\ZeroIchi\ZeroIchi.csproj" />
   </ItemGroup>
 
