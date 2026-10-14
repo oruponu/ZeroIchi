@@ -59,6 +59,12 @@ public sealed class KsyNativeTypeTests
     }
 
     [Fact]
+    public void Parse_ArrayMethodsOnRepeatedNativeValues_AreAllowed()
+    {
+        Load("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: blobs\n    type: test_blob\n    size: 4\n    repeat: expr\n    repeat-expr: 2\ninstances:\n  v:\n    value: blobs.size\n", natives: Registry());
+    }
+
+    [Fact]
     public void Parse_NativeTypeIsVariableSize()
     {
         var format = Load("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: blob\n    type: test_blob\n", natives: Registry());

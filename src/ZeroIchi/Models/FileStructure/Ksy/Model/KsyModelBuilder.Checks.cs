@@ -50,7 +50,8 @@ public static partial class KsyModelBuilder
                 case KsMember { Target: KsName target } member when FindMember(context, target.Name) is { } attribute:
                     return attribute.DataType switch
                     {
-                        KsyNativeType => $"Members of native type '{target.Name}' cannot be referenced",
+                        KsyNativeType when attribute.Repeat == KsyRepeatKind.None =>
+                            $"Members of native type '{target.Name}' cannot be referenced",
                         KsyUserType user when member.Name == "_sizeof" && attribute.Size is null && !attribute.SizeEos
                             && attribute.Terminator is null && user.Type.SizeInBits is null =>
                             $"_sizeof cannot be used on variable-size type '{user.Type.Name}'",
