@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
@@ -219,6 +220,7 @@ public static partial class KsyModelBuilder
             if (AsSequence(map.Get("params"), path) is not { } sequence) return;
 
             var result = new List<KsyParam>();
+            var ids = new HashSet<string>(StringComparer.Ordinal);
             for (var i = 0; i < sequence.Items.Count; i++)
             {
                 var itemPath = Child(path, i.ToString());
@@ -232,6 +234,11 @@ public static partial class KsyModelBuilder
                     continue;
                 }
                 if (!CheckIdentifier(item.Get("id")!, Child(itemPath, "id"), id, "parameter")) continue;
+                if (!ids.Add(id))
+                {
+                    Error(item.Get("id")!, Child(itemPath, "id"), $"Duplicate attribute id '{id}'");
+                    continue;
+                }
 
                 var typeName = GetString(item, "type", itemPath);
                 var isArray = typeName?.EndsWith("[]") == true;

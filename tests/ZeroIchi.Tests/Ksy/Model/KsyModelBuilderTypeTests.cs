@@ -132,6 +132,16 @@ public sealed class KsyModelBuilderTypeTests
     }
 
     [Fact]
+    public void Parse_DuplicateParamIds_IsError()
+    {
+        var error = SingleError("meta:\n  id: x\nparams:\n  - id: p\n    type: u1\n  - id: p\n    type: u2\n");
+
+        Assert.Contains("Duplicate attribute id 'p'", error.Message);
+        Assert.Equal("/params/1/id", error.Path);
+        Assert.Equal((6, 9), (error.Line, error.Column));
+    }
+
+    [Fact]
     public void Parse_SwitchEndian()
     {
         var format = Load("""
