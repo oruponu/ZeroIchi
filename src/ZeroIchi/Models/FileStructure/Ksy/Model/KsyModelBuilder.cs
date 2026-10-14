@@ -39,6 +39,7 @@ public static partial class KsyModelBuilder
         public void Complete()
         {
             foreach (var file in _order) file.ParseAllParams();
+            foreach (var file in _order) file.ParseAllMembers();
         }
     }
 
@@ -76,6 +77,11 @@ public static partial class KsyModelBuilder
         public void ParseAllParams()
         {
             foreach (var (type, map) in _types) ParseParams(type, map);
+        }
+
+        public void ParseAllMembers()
+        {
+            foreach (var (type, map) in _types) ParseMembers(type, map);
         }
 
         private void Error(YamlNode node, string path, string message) =>
