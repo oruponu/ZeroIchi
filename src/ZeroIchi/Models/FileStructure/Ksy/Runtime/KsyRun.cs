@@ -21,22 +21,20 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     {
         var stream = KsStream.FromBuffer(buffer);
         var root = new KsyNode(format.Id, null, stream, 0);
-        Exception? failure = null;
-        var parsed = false;
         try
         {
             Guard(root, () => ReadObject(format.Root, null, null, stream, [], root));
-            parsed = true;
+            Parsed = true;
             EvaluateForDisplay();
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
-            failure = e;
+            Failure = e;
         }
 
         _frozen = true;
         var children = BuildChildren(root);
-        if (failure is not null) children.Add(Unparsed(failure, parsed));
+        if (Failure is { } failure) children.Add(Unparsed(failure, Parsed));
         return new FileStructureNode
         {
             Name = format.Id,
@@ -47,6 +45,14 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
             IsIncomplete = root.IsIncomplete,
         };
     }
+
+    internal Exception? Failure { get; private set; }
+
+    internal bool Parsed { get; private set; }
+
+    internal KsObject? RootObject => _objects.Count > 0 ? _objects[0] : null;
+
+    internal void Thaw() => _frozen = false;
 
     public KsyTypeLayout Layout(KsyType type)
     {

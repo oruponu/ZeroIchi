@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Ksy\Model\Resources\**\*.ksy" />
+    <None Include="KaitaiConformance\**\*" Exclude="KaitaiConformance\**\*.cs" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
