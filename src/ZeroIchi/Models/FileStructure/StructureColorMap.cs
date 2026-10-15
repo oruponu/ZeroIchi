@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ZeroIchi.Models.FileStructure;
 
@@ -40,7 +41,39 @@ public sealed class StructureColorMap
     {
         var ranges = new List<(long Offset, long Length, ValueKind Kind)>();
         CollectLeafRanges(root, ranges);
-        return new StructureColorMap(ranges);
+        return new StructureColorMap(Flatten(ranges));
+    }
+
+    private static List<(long Offset, long Length, ValueKind Kind)> Flatten(
+        List<(long Offset, long Length, ValueKind Kind)> ranges)
+    {
+        var sorted = ranges.OrderBy(r => r.Offset).ToList();
+        var segments = new List<(long Offset, long Length, ValueKind Kind)>(sorted.Count);
+        var open = new Stack<(long Offset, long Length, ValueKind Kind)>();
+        var cursor = long.MinValue;
+
+        sorted.Add((long.MaxValue, 0, ValueKind.None));
+        foreach (var next in sorted)
+        {
+            while (open.TryPeek(out var top) && cursor < next.Offset)
+            {
+                var end = top.Offset + top.Length;
+                if (end <= cursor)
+                {
+                    open.Pop();
+                    continue;
+                }
+
+                var start = Math.Max(cursor, top.Offset);
+                var segmentEnd = Math.Min(end, next.Offset);
+                segments.Add((start, segmentEnd - start, top.Kind));
+                cursor = segmentEnd;
+            }
+
+            cursor = Math.Max(cursor, next.Offset);
+            open.Push(next);
+        }
+        return segments;
     }
 
     private static void CollectLeafRanges(FileStructureNode node,
