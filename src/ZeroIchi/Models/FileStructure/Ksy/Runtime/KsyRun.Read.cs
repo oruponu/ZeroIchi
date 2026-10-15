@@ -15,10 +15,12 @@ internal sealed partial class KsyRun
     private KsObject ReadObject(KsyType type, KsObject? caller, IKsStruct? parent, KsStream io, KsValue[] args,
         KsyNode node)
     {
+        var depth = (caller?.Depth ?? 0) + 1;
+        if (depth > options.MaxDepth) throw NestingLimit();
         EnterNesting();
         try
         {
-            var obj = new KsObject(this, type, parent, caller?.RootObject, io, args, node);
+            var obj = new KsObject(this, type, parent, caller?.RootObject, io, args, node) { Depth = depth };
             _objects.Add(obj);
             node.Instances = new KsyNode?[type.Instances.Count];
             obj.Endian = ResolveEndian(obj, caller);
@@ -33,11 +35,13 @@ internal sealed partial class KsyRun
 
     private void EnterNesting()
     {
-        if (_depth >= options.MaxDepth)
-            throw new KsyParseException($"Type nesting exceeds the limit ({options.MaxDepth})") { IsLimit = true };
+        if (_depth >= options.MaxDepth) throw NestingLimit();
         RuntimeHelpers.EnsureSufficientExecutionStack();
         _depth++;
     }
+
+    private KsyParseException NestingLimit() =>
+        new($"Type nesting exceeds the limit ({options.MaxDepth})") { IsLimit = true };
 
     private static KsyByteOrder? ResolveEndian(KsObject obj, KsObject? caller)
     {
