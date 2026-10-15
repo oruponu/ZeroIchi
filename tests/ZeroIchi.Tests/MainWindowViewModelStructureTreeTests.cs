@@ -79,6 +79,18 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         Assert.Equal("Signature", vm.StructureTreeItems[0].Name);
     }
 
+    [Fact]
+    public async Task SelectingANodeWithoutRange_KeepsTheCursorAndSelection()
+    {
+        var vm = await OpenAsync("a.bin", "ZI\u0005"u8.ToArray(), MagicYaml);
+        using var _ = vm.Document;
+        vm.SelectedStructureItem = vm.StructureTreeItems.Single(i => i.Name == "len");
+
+        vm.SelectedStructureItem = vm.StructureTreeItems.Single(i => i.Name == "doubled");
+
+        Assert.Equal((2L, 2L, 1L), (vm.CursorPosition, vm.SelectionStart, vm.SelectionLength));
+    }
+
     private sealed class StubDialogService : IDialogService
     {
         public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
