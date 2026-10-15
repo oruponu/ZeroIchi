@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure;
+using ZeroIchi.Models.FileStructure.Ksy;
+using ZeroIchi.Models.FileStructure.Ksy.Runtime;
 
 namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
+    internal KsyFormatRegistry KsyFormats { get; init; } = KsyFormatRegistry.Default;
+
     partial void OnSelectedStructureItemChanged(StructureTreeItem? value)
     {
         if (_isSyncingSelection) return;
@@ -59,14 +63,21 @@ public partial class MainWindowViewModel
         StructureTreeItems.Clear();
         SelectedStructureItem = null;
 
-        var definition = DefinitionRegistry.TryMatch(buffer);
-        if (definition is null)
+        FileStructureNode root;
+        if (KsyFormats.Detect(buffer, Document?.FilePath) is { } format)
+        {
+            root = KsyInterpreter.Parse(format, buffer);
+        }
+        else if (DefinitionRegistry.TryMatch(buffer) is { } definition)
+        {
+            root = StructureParser.Parse(definition, buffer);
+        }
+        else
         {
             StructureColors = null;
             return;
         }
 
-        var root = StructureParser.Parse(definition, buffer);
         StructureColors = StructureColorMap.Build(root);
         foreach (var child in root.Children)
             AddTreeItem(child, 0, expanded);
