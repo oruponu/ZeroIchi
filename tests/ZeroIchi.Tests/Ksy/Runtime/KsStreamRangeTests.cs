@@ -90,6 +90,15 @@ public sealed class KsStreamRangeTests
     }
 
     [Fact]
+    public void Truncate_PaddingEqualToTheTerminatorIsNotStripped()
+    {
+        var stream = Stream((byte)'a', (byte)'.', (byte)'.', (byte)'.');
+
+        Assert.Equal(new KsRange(0, 2), stream.Truncate(new KsRange(0, 4), (byte)'.', [(byte)'.'], true));
+        Assert.Equal(new KsRange(0, 1), stream.Truncate(new KsRange(0, 4), (byte)'.', [(byte)'.'], false));
+    }
+
+    [Fact]
     public void Truncate_PaddingLongerThanOneChunk()
     {
         var data = new byte[10_000];

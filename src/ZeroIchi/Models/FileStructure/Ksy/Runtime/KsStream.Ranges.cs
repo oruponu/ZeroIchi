@@ -50,7 +50,7 @@ public sealed partial class KsStream
     public KsRange Truncate(KsRange range, byte? padRight, byte[]? terminator, bool include)
     {
         var length = range.Length;
-        if (padRight is { } pad) length = TrimEnd(range.Start, length, pad);
+        if (padRight is { } pad && terminator?[^1] != pad) length = TrimEnd(range.Start, length, pad);
         if (terminator is not null)
         {
             var found = IndexOf(terminator, range.Start, range.Start + length);
