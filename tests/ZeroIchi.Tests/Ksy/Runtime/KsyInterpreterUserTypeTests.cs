@@ -308,6 +308,33 @@ public sealed class KsyInterpreterUserTypeTests
     }
 
     [Fact]
+    public void Parse_SwitchedEndianFallsBackToTheDefaultCase()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: tag
+                type: u1
+              - id: block
+                type: block
+            types:
+              block:
+                meta:
+                  endian:
+                    switch-on: _parent.tag
+                    cases:
+                      1: be
+                      _: le
+                seq:
+                  - id: v
+                    type: u2
+            """, [2, 0x01, 0x00]);
+
+        Assert.Equal("1", Node(root, "block/v").Description);
+    }
+
+    [Fact]
     public void Parse_SizeOfAFixedTypeIsAvailableAtRuntime()
     {
         var root = Parse("""

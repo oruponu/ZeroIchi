@@ -49,12 +49,18 @@ internal sealed partial class KsyRun
             {
                 var path = obj.Type.Path;
                 var on = Evaluate(switchEndian.On, obj, path, "meta/endian");
+                KsyByteOrder? fallback = null;
                 foreach (var endianCase in switchEndian.Cases)
                 {
+                    if (endianCase.Match is KsName { Name: "_" })
+                    {
+                        fallback = endianCase.Order;
+                        continue;
+                    }
                     var match = Evaluate(endianCase.Match, obj, path, "meta/endian");
                     if (Equal(endianCase.Match, on, match, path, "meta/endian")) return endianCase.Order;
                 }
-                throw new KsyParseException($"{path}/meta/endian: No case matches {on}");
+                return fallback ?? throw new KsyParseException($"{path}/meta/endian: No case matches {on}");
             }
             case KsySwitchEndian:
                 return caller?.Endian;
