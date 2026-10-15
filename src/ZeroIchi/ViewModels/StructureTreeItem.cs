@@ -13,6 +13,7 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
     private static readonly IBrush NumericBrush = new SolidColorBrush(Color.Parse("#B5CEA8"));
     private static readonly IBrush AsciiBrush = new SolidColorBrush(Color.Parse("#CE9178"));
     private static readonly IBrush BytesBrush = DefaultBrush;
+    private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.Parse("#F48771"));
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExpandIcon))]
@@ -23,10 +24,16 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
     public bool HasChildren { get; } = node.HasChildren;
 
     public string Name => Node.Name;
-    public string Description => Node.Description;
+    public string Description => Node.Error switch
+    {
+        null => Node.Description,
+        var error when Node.Description.Length == 0 => error,
+        var error => $"{Node.Description}  {error}",
+    };
+
     public Thickness Indent => new(Depth * 16, 0, 0, 0);
 
-    public IBrush DescriptionForeground => Node.ValueKind switch
+    public IBrush DescriptionForeground => Node.Error is not null ? ErrorBrush : Node.ValueKind switch
     {
         ValueKind.Numeric => NumericBrush,
         ValueKind.Ascii => AsciiBrush,
