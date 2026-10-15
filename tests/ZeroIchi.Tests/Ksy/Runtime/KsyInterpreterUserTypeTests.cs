@@ -379,6 +379,32 @@ public sealed class KsyInterpreterUserTypeTests
     }
 
     [Fact]
+    public void Parse_NestingThroughInstancesIsLimited()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: c
+                type: chain
+            types:
+              chain:
+                seq:
+                  - id: v
+                    type: u1
+                instances:
+                  next:
+                    pos: 1
+                    size-eos: true
+                    type: chain
+                    if: _io.size > 1
+            """, new byte[16], new KsyParseOptions { MaxDepth = 5 });
+
+        Assert.Equal("Type nesting exceeds the limit (5)", Node(root, "未解析").Description);
+        Assert.Equal("", Names(Node(root, "c/next/next/next/next")));
+    }
+
+    [Fact]
     public void Parse_DeepNestingOnASmallStackStopsWithoutCrashing()
     {
         FileStructureNode? root = null;

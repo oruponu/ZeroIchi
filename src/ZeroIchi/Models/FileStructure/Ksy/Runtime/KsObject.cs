@@ -41,6 +41,7 @@ internal sealed class KsObject : IKsyObject, IKsEvalScope
     internal KsStream Stream { get; }
     internal KsyNode Node { get; }
     internal KsyByteOrder? Endian { get; set; }
+    internal int Depth { get; init; }
 
     internal void SetField(int index, KsValue value)
     {
