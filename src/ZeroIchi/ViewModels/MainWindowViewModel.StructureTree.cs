@@ -15,7 +15,7 @@ public partial class MainWindowViewModel
     partial void OnSelectedStructureItemChanged(StructureTreeItem? value)
     {
         if (_isSyncingSelection) return;
-        if (value is null || Document?.Buffer is null) return;
+        if (value is null || Document?.Buffer is null || !value.Node.HasRange) return;
         _isSyncingSelection = true;
         CursorPosition = value.Node.Offset;
         SelectionStart = value.Node.Offset;
