@@ -309,11 +309,13 @@
                                             <TextBlock Margin="2,0,0,0"
                                                        VerticalAlignment="Center"
                                                        FontSize="11"
+                                                       FontStyle="{Binding FontStyle}"
                                                        Foreground="#D4D4D4"
                                                        Text="{Binding Name}"/>
                                             <TextBlock Margin="6,0,0,0"
                                                        VerticalAlignment="Center"
                                                        FontSize="10"
+                                                       FontStyle="{Binding FontStyle}"
                                                        Foreground="{Binding DescriptionForeground}"
                                                        Text="{Binding Description}"/>
                                         </StackPanel>

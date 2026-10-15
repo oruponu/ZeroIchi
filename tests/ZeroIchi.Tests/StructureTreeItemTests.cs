@@ -35,4 +35,11 @@ public sealed class StructureTreeItemTests
         Assert.Equal(Color.Parse("#B5CEA8"), normal.Color);
         Assert.Equal(Color.Parse("#F48771"), error.Color);
     }
+
+    [Fact]
+    public void FontStyle_IsItalicWithoutAFileRange()
+    {
+        Assert.Equal(FontStyle.Normal, Item("5").FontStyle);
+        Assert.Equal(FontStyle.Italic, Item("5", hasRange: false).FontStyle);
+    }
 }

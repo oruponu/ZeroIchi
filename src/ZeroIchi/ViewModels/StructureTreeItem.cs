@@ -31,6 +31,7 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
         var error => $"{Node.Description}  {error}",
     };
 
+    public FontStyle FontStyle => Node.HasRange ? FontStyle.Normal : FontStyle.Italic;
     public Thickness Indent => new(Depth * 16, 0, 0, 0);
 
     public IBrush DescriptionForeground => Node.Error is not null ? ErrorBrush : Node.ValueKind switch
