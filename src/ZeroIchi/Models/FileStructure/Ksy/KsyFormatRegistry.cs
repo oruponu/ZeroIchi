@@ -9,16 +9,23 @@ namespace ZeroIchi.Models.FileStructure.Ksy;
 
 public sealed class KsyFormatRegistry
 {
-    private readonly List<KsyFormat> _formats = [];
+    private readonly Lazy<List<KsyFormat>> _formats;
 
-    public static KsyFormatRegistry Default { get; } = new();
+    public KsyFormatRegistry() : this(() => [])
+    {
+    }
 
-    internal void Register(KsyFormat format) => _formats.Add(format);
+    internal KsyFormatRegistry(Func<List<KsyFormat>> load) => _formats = new Lazy<List<KsyFormat>>(load);
+
+    public static KsyFormatRegistry Default { get; } = new(KsyBuiltinFormats.Load);
+
+    internal void Register(KsyFormat format) => _formats.Value.Add(format);
 
     public KsyFormat? Detect(ByteBuffer buffer, string? filePath)
     {
         KsyFormat? best = null;
-        foreach (var format in _formats)
+        var formats = _formats.Value;
+        foreach (var format in formats)
         {
             if (format.Magic is { } magic && Matches(buffer, magic) && magic.Length > (best?.Magic?.Length ?? 0))
                 best = format;
@@ -28,7 +35,7 @@ public sealed class KsyFormatRegistry
         var extension = Path.GetExtension(filePath ?? "").TrimStart('.');
         if (extension.Length == 0) return null;
 
-        foreach (var format in _formats)
+        foreach (var format in formats)
         {
             if (format.Magic is not null) continue;
             if (format.FileExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)) return format;

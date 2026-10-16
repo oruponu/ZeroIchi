@@ -111,8 +111,19 @@ public sealed class KsyFormatRegistryTests
     }
 
     [Fact]
-    public void Default_IsEmpty()
+    public void Formats_AreLoadedOnceAtTheFirstDetection()
     {
-        Assert.Null(KsyFormatRegistry.Default.Detect(Bytes(0x89, 0x50, 0x4E, 0x47), "a.png"));
+        var loads = 0;
+        var format = Format("meta:\n  id: x\nseq:\n  - id: m\n    contents: [7]\n");
+        var registry = new KsyFormatRegistry(() =>
+        {
+            loads++;
+            return [format];
+        });
+
+        Assert.Equal(0, loads);
+        Assert.Same(format, registry.Detect(Bytes(7), null));
+        Assert.Null(registry.Detect(Bytes(8), null));
+        Assert.Equal(1, loads);
     }
 }
