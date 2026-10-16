@@ -9,7 +9,10 @@ internal static class KsyBuiltinFormats
 {
     internal const string ResourcePrefix = "ZeroIchi.Formats.";
 
-    internal static IReadOnlyList<string> Roots { get; } = [];
+    internal static IReadOnlyList<string> Roots { get; } =
+    [
+        "image/png",
+    ];
 
     internal static KsyNativeTypeRegistry CreateNativeTypes() => new();
 
