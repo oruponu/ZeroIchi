@@ -12,7 +12,10 @@ public interface IKsyNativeType
     KsyNativeResult Read(KsStream stream);
 }
 
-public sealed record KsyNativeNode(string Name, long Position, long Length, string Description, ValueKind ValueKind);
+public sealed record KsyNativeNode(string Name, long Position, long Length, string Description, ValueKind ValueKind)
+{
+    public IReadOnlyList<KsyNativeNode> Children { get; init; } = [];
+}
 
 public sealed record KsyNativeResult(long Consumed, IReadOnlyList<KsyNativeNode> Nodes);
 

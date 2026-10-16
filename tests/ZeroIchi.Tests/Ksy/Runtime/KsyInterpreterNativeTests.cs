@@ -31,6 +31,28 @@ public sealed class KsyInterpreterNativeTests
         public KsyNativeResult Read(KsStream stream) => error is null ? new KsyNativeResult(consumed, []) : throw error;
     }
 
+    private sealed class Events(long childLength = 2) : IKsyNativeType
+    {
+        public string Name => "events";
+
+        public KsyNativeResult Read(KsStream stream)
+        {
+            var start = stream.Position;
+            const long consumed = 3;
+            return new KsyNativeResult(consumed,
+            [
+                new KsyNativeNode("event[0]", start, consumed, "", ValueKind.None)
+                {
+                    Children =
+                    [
+                        new KsyNativeNode("v_time", start, 1, "0", ValueKind.Numeric),
+                        new KsyNativeNode("status", start + 1, childLength, "90 3C", ValueKind.Bytes),
+                    ],
+                },
+            ]);
+        }
+    }
+
     private static KsyNativeTypeRegistry Registry(params IKsyNativeType[] types)
     {
         var registry = new KsyNativeTypeRegistry();
@@ -62,6 +84,41 @@ public sealed class KsyInterpreterNativeTests
         Assert.Equal((1L, 2L, "2 bytes", ValueKind.Bytes), (data.Offset, data.Length, data.Description, data.ValueKind));
         Assert.Equal((3L, 1L), (Node(root, "blob/marker").Offset, Node(root, "blob/marker").Length));
         Assert.Equal((4L, "9"), (Node(root, "after").Offset, Node(root, "after").Description));
+    }
+
+    [Fact]
+    public void Parse_NativeNodesCanHaveChildren()
+    {
+        var root = Parse(Yaml.Replace("scan_to_marker", "events"), [7, 0, 0x90, 0x3C, 9], natives: Registry(new Events()));
+
+        Assert.Equal("event[0]", Names(Node(root, "blob")));
+        var item = Node(root, "blob/event[0]");
+        Assert.Equal((1L, 3L, "v_time,status"), (item.Offset, item.Length, Names(item)));
+        var status = Node(root, "blob/event[0]/status");
+        Assert.Equal((2L, 2L, "90 3C", ValueKind.Bytes), (status.Offset, status.Length, status.Description, status.ValueKind));
+        Assert.Equal((4L, "9"), (Node(root, "after").Offset, Node(root, "after").Description));
+    }
+
+    [Fact]
+    public void Parse_NodeBudgetInsideNativeNodesKeepsTheConsumedRange()
+    {
+        var root = Parse(Yaml.Replace("scan_to_marker", "events"), [7, 0, 0x90, 0x3C, 9],
+            new KsyParseOptions { NodeBudget = 4 }, Registry(new Events()));
+
+        var blob = Node(root, "blob");
+        Assert.Equal((1L, 3L, true), (blob.Offset, blob.Length, blob.IsIncomplete));
+        Assert.Equal("v_time", Names(Node(root, "blob/event[0]")));
+        Assert.Equal("head,blob,未解析", Names(root));
+        Assert.Equal((4L, 1L), (Node(root, "未解析").Offset, Node(root, "未解析").Length));
+    }
+
+    [Fact]
+    public void Parse_NestedNativeNodeOutsideTheStreamIsAnError()
+    {
+        var root = Parse(Yaml.Replace("scan_to_marker", "events"), [7, 0, 0x90, 0x3C, 9],
+            natives: Registry(new Events(childLength: 100)));
+
+        Assert.Equal("Native(events, returned a node outside the stream)", Summary(Node(root, "blob").Error));
     }
 
     [Fact]
