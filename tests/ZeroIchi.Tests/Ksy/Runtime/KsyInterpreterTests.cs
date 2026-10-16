@@ -282,4 +282,50 @@ public sealed class KsyInterpreterTests
         var unparsed = Node(root, "未解析");
         Assert.Equal((2L, 1L, "NodeBudget(2)"), (unparsed.Offset, unparsed.Length, Summary(unparsed.Error)));
     }
+
+    [Fact]
+    public void Parse_SizeofOfAFieldIsTheLengthItTook()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+              endian: le
+            seq:
+              - id: magic
+                contents: AB
+              - id: len
+                type: u4
+              - id: body
+                type: block
+                size: 3
+            types:
+              block:
+                seq:
+                  - id: a
+                    type: u2
+            instances:
+              sizes:
+                value: magic._sizeof * 1000 + len._sizeof * 100 + body._sizeof * 10 + body.a._sizeof
+            """, [(byte)'A', (byte)'B', 1, 0, 0, 0, 7, 8, 9]);
+
+        Assert.Equal("2432", Node(root, "sizes").Description);
+    }
+
+    [Fact]
+    public void Parse_SizeofOfASkippedFieldIsAnError()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+            seq:
+              - id: a
+                type: u1
+                if: false
+            instances:
+              size:
+                value: a._sizeof
+            """, [1]);
+
+        Assert.Equal("/instances/size/value: Value is null", Node(root, "size").Error?.Message);
+    }
 }

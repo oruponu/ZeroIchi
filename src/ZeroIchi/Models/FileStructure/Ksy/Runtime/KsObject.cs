@@ -11,6 +11,7 @@ internal sealed class KsObject : IKsyObject, IKsEvalScope
     private readonly KsyTypeLayout _layout;
     private readonly KsValue[] _fields;
     private readonly bool[] _read;
+    private readonly KsyNode?[] _fieldNodes;
     private readonly KsValue[] _params;
     private readonly InstanceState[] _instances;
 
@@ -27,6 +28,7 @@ internal sealed class KsObject : IKsyObject, IKsEvalScope
         _layout = run.Layout(type);
         _fields = new KsValue[type.Seq.Count];
         _read = new bool[type.Seq.Count];
+        _fieldNodes = new KsyNode?[type.Seq.Count];
         _instances = new InstanceState[type.Instances.Count];
     }
 
@@ -48,6 +50,8 @@ internal sealed class KsObject : IKsyObject, IKsEvalScope
         _fields[index] = value;
         _read[index] = true;
     }
+
+    internal void SetFieldNode(int index, KsyNode node) => _fieldNodes[index] = node;
 
     internal ref InstanceState Instance(int index) => ref _instances[index];
 
@@ -77,6 +81,19 @@ internal sealed class KsObject : IKsyObject, IKsEvalScope
                 return true;
         }
     }
+
+    public bool TryGetFieldSize(string name, out long size)
+    {
+        size = 0;
+        if (!_layout.TryGet(name, out var member) || member.Kind != KsyMemberKind.Seq) return false;
+        if (!_read[member.Index]) throw new KsExpressionException($"'{name}' has not been read yet", -1, 0);
+        if (Type.Seq[member.Index].DataType is KsyBitType || _fieldNodes[member.Index] is not { End: { } end } node)
+            return false;
+        size = end - node.Start;
+        return true;
+    }
+
+    public bool TryResolveFieldSize(string name, out long size) => TryGetFieldSize(name, out size);
 
     public bool TryResolveName(string name, out KsValue value)
     {

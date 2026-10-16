@@ -24,6 +24,8 @@ internal sealed class KsScope(IKsEvalScope inner) : IKsEvalScope
         }
     }
 
+    public bool TryResolveFieldSize(string name, out long size) => inner.TryResolveFieldSize(name, out size);
+
     public IKsEnumType? ResolveEnum(IReadOnlyList<string> path) => inner.ResolveEnum(path);
 
     public IKsTypeInfo? ResolveType(IReadOnlyList<string> path) => inner.ResolveType(path);

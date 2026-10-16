@@ -22,8 +22,6 @@ public sealed class KaitaiConformanceTests
     {
         ["debug_array_user_current_excluded"] = "Depends on the compiler's debug mode (arrays visible while being read)",
         ["debug_array_user_eof_exception"] = "Depends on the compiler's debug mode (partial arrays kept after an error)",
-        ["expr_sizeof_value_0"] = "_sizeof of a field (not of a type) is not supported",
-        ["expr_sizeof_value_sized"] = "_sizeof of a sized field is not supported (the type's static size is used)",
         ["imports_abs"] = "Imports /common/vlq_base128_le from the format gallery, which is not part of the suite",
         ["nested_types_import"] = "Kaitai sets _parent and _root to null across .ksy files; spec §3.4 keeps the creating object and the main root",
         ["opaque_external_type"] = OpaqueType,
