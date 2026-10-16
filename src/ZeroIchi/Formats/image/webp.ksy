@@ -1,5 +1,6 @@
 meta:
   id: webp
+  -zeroichi-magic: 52 49 46 46 ?? ?? ?? ?? 57 45 42 50
   title: WebP
   file-extension: webp
   xref:
