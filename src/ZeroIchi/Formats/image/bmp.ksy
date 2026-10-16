@@ -1,5 +1,6 @@
 meta:
   id: bmp
+  -zeroichi-magic: 42 4D
   file-extension: bmp
   xref:
     forensicswiki: bmp
