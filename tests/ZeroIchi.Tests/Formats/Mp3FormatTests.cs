@@ -87,6 +87,41 @@ public sealed class Mp3FormatTests
         Assert.Equal((33L, 4L), (Node(root, "audio_data").Offset, Node(root, "audio_data").Length));
     }
 
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void Parse_EmptyTagHasNoFrames(int version)
+    {
+        var root = Parse("media/mp3", [.. Tag(version, 0), .. Audio]);
+
+        Assert.Equal("", Errors(root));
+        Assert.Equal("header,padding", Names(Node(root, "tag")));
+        Assert.Equal((10L, 4L), (Node(root, "audio_data").Offset, Node(root, "audio_data").Length));
+    }
+
+    [Fact]
+    public void Parse_PaddingShorterThanAFrameHeaderIsReadAsPadding()
+    {
+        var root = Parse("media/mp3", [.. Tag(3, 0, new byte[5]), .. Audio]);
+
+        Assert.Equal("", Errors(root));
+        Assert.Equal((10L, 5L), (Node(root, "tag/padding").Offset, Node(root, "tag/padding").Length));
+        Assert.Equal((15L, 4L), (Node(root, "audio_data").Offset, Node(root, "audio_data").Length));
+    }
+
+    [Fact]
+    public void Parse_Version24FooterWithoutFramesIsNotReadAsAFrame()
+    {
+        byte[] footer = [.. "3DI"u8, 4, 0, 0x10, .. Synchsafe(0)];
+
+        var root = Parse("media/mp3", [.. Tag(4, 0x10), .. footer, .. Audio]);
+
+        Assert.Equal("", Errors(root));
+        Assert.Equal("header,footer", Names(Node(root, "tag")));
+        Assert.Equal((20L, 4L), (Node(root, "audio_data").Offset, Node(root, "audio_data").Length));
+    }
+
     [Fact]
     public void Parse_UnknownVersionKeepsTheTagAsBytes()
     {

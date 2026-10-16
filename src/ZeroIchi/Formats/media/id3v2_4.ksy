@@ -31,6 +31,7 @@ types:
         type: frame
         repeat: until
         repeat-until: _io.pos + 10 > 10 + header.size.value or _.is_invalid
+        if: _io.pos + 10 <= 10 + header.size.value
       - id: padding
         type: padding
         if: not header.flags.flag_footer
