@@ -62,6 +62,35 @@ public sealed class KsyBuiltinFormatsTests
     }
 
     [Fact]
+    public void BuiltinDefinitions_LoadWithCrlfLineEndings()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var embedded = KsyBuiltinFormats.CreateSource();
+        var source = new KsyMemoryImportSource();
+        foreach (var path in EmbeddedPaths())
+        {
+            Assert.True(embedded.TryRead(path, out var text));
+            source.Add(path, text.ReplaceLineEndings("\r\n"));
+        }
+
+        var problems = EmbeddedPaths()
+            .SelectMany(path => KsyModelBuilder.Load(path, source, KsyBuiltinFormats.CreateNativeTypes()).Diagnostics)
+            .Select(d => d.ToString())
+            .ToList();
+
+        Assert.Empty(problems);
+    }
+
+    [Theory]
+    [InlineData("image/png")]
+    [InlineData("media/id3v2_4")]
+    [InlineData("common/vlq_base128_be")]
+    public void Source_ReadsTheEmbeddedDefinitions(string path)
+    {
+        Assert.True(KsyBuiltinFormats.CreateSource().TryRead(path, out _));
+    }
+
+    [Fact]
     public void Roots_AreEmbeddedDefinitions()
     {
         Assert.All(KsyBuiltinFormats.Roots, root => Assert.Contains(root, EmbeddedPaths()));
