@@ -28,10 +28,9 @@ types:
       - id: frames
         type: frame
         repeat: until
-        repeat-until: _io.pos + _.size > header.size.value or _.is_invalid
+        repeat-until: _io.pos + 10 > 10 + header.size.value or _.is_invalid
       - id: padding
-        if: header.flags.flag_headerex
-        size: header_ex.padding_size - _io.pos
+        size: 10 + header.size.value - _io.pos
 
   header:
     doc: ID3v2 fixed header
