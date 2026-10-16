@@ -111,9 +111,9 @@ public sealed class KsyInterpreterInstanceTests
             """, [1, 2, 3]);
 
         Assert.True(Node(root, "bad").IsIncomplete);
-        Assert.Contains("needed 5 byte(s) at position 2", Node(root, "bad").Error);
+        Assert.Contains("needed 5 byte(s) at position 2", Node(root, "bad").Error?.Message);
         Assert.Equal((1L, "2"), (Node(root, "next").Offset, Node(root, "next").Description));
-        Assert.DoesNotContain(root.Children, c => c.Name == "未解析");
+        Assert.DoesNotContain(root.Children, c => c.IsUnparsed);
     }
 
     [Fact]
@@ -155,10 +155,10 @@ public sealed class KsyInterpreterInstanceTests
                 value: a
             """, [7]);
 
-        Assert.Contains("Cyclic reference to instance 'p'", Node(root, "q").Error);
+        Assert.Contains("Cyclic reference to instance 'p'", Node(root, "q").Error?.Message);
         Assert.True(Node(root, "p").IsIncomplete);
         Assert.Equal("7", Node(root, "fine").Description);
-        Assert.DoesNotContain(root.Children, c => c.Name == "未解析");
+        Assert.DoesNotContain(root.Children, c => c.IsUnparsed);
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public sealed class KsyInterpreterInstanceTests
             """, [7]);
 
         Assert.Equal(("", null), (Node(root, "passed").Description, Node(root, "passed").Error));
-        Assert.Contains("Value is null", Node(root, "used").Error);
+        Assert.Contains("Value is null", Node(root, "used").Error?.Message);
         Assert.Equal("5", Node(root, "chosen").Description);
     }
 
@@ -265,7 +265,7 @@ public sealed class KsyInterpreterInstanceTests
             """, new byte[2000], new KsyParseOptions { NodeBudget = 50 });
 
         var unparsed = Node(root, "未解析");
-        Assert.Equal((2000L, 0L, "ノード数の上限 (50) に到達"), (unparsed.Offset, unparsed.Length, unparsed.Description));
+        Assert.Equal((2000L, 0L, "NodeBudget(50)"), (unparsed.Offset, unparsed.Length, Summary(unparsed.Error)));
     }
 
     [Fact]

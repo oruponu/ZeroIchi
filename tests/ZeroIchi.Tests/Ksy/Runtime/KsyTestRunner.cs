@@ -21,12 +21,18 @@ internal static class KsyTestRunner
         var node = root;
         foreach (var name in path.Split('/'))
         {
-            var next = node.Children.FirstOrDefault(c => c.Name == name);
-            Assert.True(next is not null, $"'{name}' not found under '{node.Name}' ({string.Join(", ", node.Children.Select(c => c.Name))})");
+            var next = node.Children.FirstOrDefault(c => DisplayName(c) == name);
+            Assert.True(next is not null, $"'{name}' not found under '{node.Name}' ({Names(node)})");
             node = next;
         }
         return node;
     }
 
-    public static string Names(FileStructureNode node) => string.Join(",", node.Children.Select(c => c.Name));
+    public static string Names(FileStructureNode node) => string.Join(",", node.Children.Select(DisplayName));
+
+    public static string Summary(FileStructureError? error) => error is null
+        ? ""
+        : $"{error.Kind}({string.Join(", ", error.Arguments)}){(error.InConvertedData ? " converted" : "")}";
+
+    private static string DisplayName(FileStructureNode node) => node.IsUnparsed ? "未解析" : node.Name;
 }

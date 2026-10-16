@@ -47,7 +47,7 @@ internal sealed partial class KsyRun
     {
         ref var state = ref obj.Instance(index);
         state.Status = KsyInstanceStatus.Failed;
-        state.Error = Message(e);
+        state.Error = ErrorOf(e);
         return false;
     }
 
@@ -114,7 +114,7 @@ internal sealed partial class KsyRun
                     if (obj.Node.Instances[j] is null)
                     {
                         var id = obj.Type.Instances[j].Id;
-                        obj.Node.Instances[j] = new KsyNode(id, id, null, 0) { Error = Message(e), End = 0 };
+                        obj.Node.Instances[j] = new KsyNode(id, id, null, 0) { Error = ErrorOf(e), End = 0 };
                     }
                 }
             }

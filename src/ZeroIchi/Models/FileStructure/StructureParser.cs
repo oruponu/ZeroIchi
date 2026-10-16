@@ -1,7 +1,6 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using ZeroIchi.Models.Buffers;
@@ -56,10 +55,11 @@ public static class StructureParser
 
     private static FileStructureNode CreateTruncationNode(long offset, long bufferLength, int nodeBudget) => new()
     {
-        Name = "未解析",
+        Name = "",
         Offset = offset,
         Length = bufferLength - offset,
-        Description = string.Create(CultureInfo.InvariantCulture, $"ノード数の上限 ({nodeBudget:N0}) に到達"),
+        IsUnparsed = true,
+        Error = FileStructureError.Limit(FileStructureErrorKind.NodeBudget, nodeBudget, "Node budget exceeded"),
     };
 
     private static List<FileStructureNode> ParseFields(

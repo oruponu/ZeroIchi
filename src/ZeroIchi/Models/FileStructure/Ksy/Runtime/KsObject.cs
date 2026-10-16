@@ -55,7 +55,7 @@ internal sealed class KsObject : IKsyObject, IKsEvalScope
     {
         public KsyInstanceStatus Status;
         public KsValue Value;
-        public string? Error;
+        public FileStructureError? Error;
     }
 
     public bool TryGetMember(string name, out KsValue value)

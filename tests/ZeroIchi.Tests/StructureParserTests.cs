@@ -1298,8 +1298,6 @@ public sealed class StructureParserTests
         Assert.Equal("SOS", segments.Children[^1].Name);
     }
 
-    private const string TruncationNodeName = "未解析";
-
     private static FormatDefinition LoadByteRepeatDefinition()
     {
         const string json = """
@@ -1341,7 +1339,7 @@ public sealed class StructureParserTests
         var truncation = root.Children[^1];
 
         Assert.Equal(2, root.Children.Count);
-        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.True(truncation.IsUnparsed);
         Assert.Equal(items.Offset + items.Length, truncation.Offset);
         Assert.Equal(100, truncation.Offset + truncation.Length);
         Assert.True(CountNodes(root) - 2 <= 10 + 2);
@@ -1394,7 +1392,7 @@ public sealed class StructureParserTests
         var outer = root.Children[0];
         var truncation = root.Children[^1];
 
-        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.True(truncation.IsUnparsed);
         Assert.Equal(outer.Offset + outer.Length, truncation.Offset);
         Assert.True(CountNodes(root) - 2 <= 10 + 3);
     }
@@ -1436,7 +1434,7 @@ public sealed class StructureParserTests
         var truncation = root.Children[^1];
 
         Assert.Equal(2, root.Children.Count);
-        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.True(truncation.IsUnparsed);
         Assert.Equal(body.Offset + body.Length, truncation.Offset);
         Assert.True(truncation.Offset < 8);
     }
@@ -1471,7 +1469,7 @@ public sealed class StructureParserTests
         var frames = root.Children[0];
         var truncation = root.Children[^1];
 
-        Assert.Equal(TruncationNodeName, truncation.Name);
+        Assert.True(truncation.IsUnparsed);
         Assert.Equal(1, truncation.Offset);
         Assert.Equal(frames.Offset + frames.Length, truncation.Offset);
     }
@@ -1484,8 +1482,8 @@ public sealed class StructureParserTests
         var root = StructureParser.Parse(LoadByteRepeatDefinition(), buffer);
         var truncation = root.Children[^1];
 
-        Assert.Equal(TruncationNodeName, truncation.Name);
-        Assert.Equal("ノード数の上限 (100,000) に到達", truncation.Description);
+        Assert.True(truncation.IsUnparsed);
+        Assert.Equal((FileStructureErrorKind.NodeBudget, "100000"), (truncation.Error?.Kind, truncation.Error?.Arguments[0]));
     }
 
     [Fact]

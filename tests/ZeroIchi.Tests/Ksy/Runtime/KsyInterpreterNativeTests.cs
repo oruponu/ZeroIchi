@@ -81,7 +81,7 @@ public sealed class KsyInterpreterNativeTests
         var root = Parse(Yaml.Replace("scan_to_marker", "faulty"), [7, 1, 2],
             natives: Registry(new Faulty(0, new InvalidOperationException("broken"))));
 
-        Assert.Equal("/seq/1: Native type 'faulty' failed: broken", Node(root, "blob").Error);
+        Assert.Equal("/seq/1: Native type 'faulty' failed: broken", Node(root, "blob").Error?.Message);
         Assert.Equal("head,blob,未解析", Names(root));
     }
 
@@ -90,7 +90,7 @@ public sealed class KsyInterpreterNativeTests
     {
         var root = Parse(Yaml.Replace("scan_to_marker", "faulty"), [7, 1, 2], natives: Registry(new Faulty(5)));
 
-        Assert.Equal("/seq/1: Native type 'faulty' consumed 5 byte(s) but 2 remain", Node(root, "blob").Error);
+        Assert.Equal("/seq/1: Native type 'faulty' consumed 5 byte(s) but 2 remain", Node(root, "blob").Error?.Message);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class KsyInterpreterNativeTests
     {
         var root = Parse(Yaml, [7, 1, 2], natives: Registry(new ScanToMarker()));
 
-        Assert.Contains("Unexpected end of stream", Node(root, "blob").Error);
+        Assert.Contains("Unexpected end of stream", Node(root, "blob").Error?.Message);
         Assert.Equal((3L, 0L), (Node(root, "未解析").Offset, Node(root, "未解析").Length));
     }
 }

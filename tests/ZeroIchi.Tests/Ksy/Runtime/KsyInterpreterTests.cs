@@ -166,7 +166,7 @@ public sealed class KsyInterpreterTests
             """, [0x52, 0x49, 0x46, 0x47, 0x09]);
 
         Assert.Null(Node(root, "ok").Error);
-        Assert.Equal("Contents mismatch: expected 46 46, got 46 47", Node(root, "bad").Error);
+        Assert.Equal("Contents mismatch: expected 46 46, got 46 47", Node(root, "bad").Error?.Message);
         Assert.Equal("9", Node(root, "after").Description);
     }
 
@@ -246,11 +246,11 @@ public sealed class KsyInterpreterTests
         Assert.Equal("a,b,未解析", Names(root));
         var b = Node(root, "b");
         Assert.True(b.IsIncomplete);
-        Assert.Equal((1L, 0L, "(未完了)"), (b.Offset, b.Length, b.Description));
-        Assert.Contains("needed 4 byte(s) at position 1, but only 2 remain", b.Error);
+        Assert.Equal((1L, 0L, ""), (b.Offset, b.Length, b.Description));
+        Assert.Contains("needed 4 byte(s) at position 1, but only 2 remain", b.Error?.Message);
         var unparsed = Node(root, "未解析");
         Assert.Equal((1L, 2L), (unparsed.Offset, unparsed.Length));
-        Assert.Equal(b.Error, unparsed.Description);
+        Assert.Equal(b.Error, unparsed.Error);
     }
 
     [Fact]
@@ -258,7 +258,7 @@ public sealed class KsyInterpreterTests
     {
         var root = Parse("meta:\n  id: x\nseq:\n  - id: n\n    type: u1\n  - id: body\n    size: n - 5\n", [1]);
 
-        Assert.Equal("/seq/1/size: -4 cannot be used as a position or size", Node(root, "body").Error);
+        Assert.Equal("/seq/1/size: -4 cannot be used as a position or size", Node(root, "body").Error?.Message);
     }
 
     [Fact]
@@ -266,7 +266,7 @@ public sealed class KsyInterpreterTests
     {
         var root = Parse("meta:\n  id: x\nseq:\n  - id: a\n    size: b\n  - id: b\n    type: u1\n", [1]);
 
-        Assert.Equal("/seq/0/size: 'b' has not been read yet", Node(root, "a").Error);
+        Assert.Equal("/seq/0/size: 'b' has not been read yet", Node(root, "a").Error?.Message);
     }
 
     [Fact]
@@ -278,6 +278,6 @@ public sealed class KsyInterpreterTests
         Assert.Equal("a,b,未解析", Names(root));
         Assert.All(root.Children.Take(2), n => Assert.Null(n.Error));
         var unparsed = Node(root, "未解析");
-        Assert.Equal((2L, 1L, "ノード数の上限 (2) に到達"), (unparsed.Offset, unparsed.Length, unparsed.Description));
+        Assert.Equal((2L, 1L, "NodeBudget(2)"), (unparsed.Offset, unparsed.Length, Summary(unparsed.Error)));
     }
 }
