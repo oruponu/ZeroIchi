@@ -319,6 +319,8 @@ public static class KsEvaluator
 
     private static KsValue EvaluateMember(KsMember e, IKsEvalScope scope)
     {
+        if (e.Name == "_sizeof" && FieldSize(e.Target, scope) is { } fieldSize) return KsValue.FromInt(fieldSize);
+
         var target = Evaluate(e.Target, scope);
         if (target.Kind == KsValueKind.Null)
             throw Error(e, "Value is null");
@@ -343,6 +345,24 @@ public static class KsEvaluator
 
         if (obj.TryGetMember(e.Name, out var value)) return value;
         throw Error(e, $"'{obj.TypeName}' has no member '{e.Name}'");
+    }
+
+    private static long? FieldSize(KsExpr target, IKsEvalScope scope)
+    {
+        switch (target)
+        {
+            case KsName name:
+                return scope.TryResolveFieldSize(name.Name, out var size) ? size : null;
+            case KsMember member:
+            {
+                var owner = Evaluate(member.Target, scope);
+                return owner.Kind == KsValueKind.Struct && owner.AsStruct.TryGetFieldSize(member.Name, out var memberSize)
+                    ? memberSize
+                    : null;
+            }
+            default:
+                return null;
+        }
     }
 
     private static KsValue EvaluateIndex(KsIndex e, IKsEvalScope scope)

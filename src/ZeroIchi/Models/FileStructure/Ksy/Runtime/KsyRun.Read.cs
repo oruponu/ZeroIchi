@@ -86,7 +86,9 @@ internal sealed partial class KsyRun
             obj.SetField(index, KsValue.Null);
             return;
         }
+        var count = obj.Node.Children.Count;
         obj.SetField(index, ReadAttribute(obj, attribute, obj.Stream, obj.Node.Children, obj));
+        if (obj.Node.Children.Count > count) obj.SetFieldNode(index, obj.Node.Children[count]);
     }
 
     private KsValue ReadAttribute(KsObject obj, KsyAttribute attribute, KsStream io, List<KsyNode> siblings,

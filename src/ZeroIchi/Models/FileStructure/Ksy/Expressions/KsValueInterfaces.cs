@@ -30,6 +30,12 @@ public interface IKsStruct
     IKsStream Io { get; }
     long? StaticSize { get; }
     bool TryGetMember(string name, out KsValue value);
+
+    bool TryGetFieldSize(string name, out long size)
+    {
+        size = 0;
+        return false;
+    }
 }
 
 public interface IKsEnumType
@@ -50,4 +56,10 @@ public interface IKsEvalScope
     bool TryResolveName(string name, out KsValue value);
     IKsEnumType? ResolveEnum(IReadOnlyList<string> path);
     IKsTypeInfo? ResolveType(IReadOnlyList<string> path);
+
+    bool TryResolveFieldSize(string name, out long size)
+    {
+        size = 0;
+        return false;
+    }
 }
