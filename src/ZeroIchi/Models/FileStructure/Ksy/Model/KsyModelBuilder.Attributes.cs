@@ -352,8 +352,9 @@ public static partial class KsyModelBuilder
 
             if (_format.OpaqueTypes && parts.Length == 1 && session.Natives.TryGet(name, out var native))
             {
-                if (arguments.Count == 0) return new KsyNativeType(native);
-                Error(node, path, $"Native type '{name}' does not take arguments");
+                if (arguments.Count == native.ParameterCount) return new KsyNativeType(native, arguments);
+                Error(node, path,
+                    $"Native type '{name}' takes {native.ParameterCount} argument(s) but {arguments.Count} were given");
                 return null;
             }
 

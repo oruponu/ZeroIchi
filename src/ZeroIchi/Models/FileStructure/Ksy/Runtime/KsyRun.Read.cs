@@ -172,7 +172,7 @@ internal sealed partial class KsyRun
             case KsyUserType user when !HasSize(attribute):
                 return ReadUser(obj, attribute, user, io, node, scope);
             case KsyNativeType native when !HasSize(attribute):
-                return ReadNative(attribute, native, io, node);
+                return ReadNative(attribute, native, io, node, scope);
             default:
                 return ReadSized(obj, attribute, type, io, node, scope);
         }
@@ -323,20 +323,23 @@ internal sealed partial class KsyRun
                 : KsValue.FromBytes(processed),
             KsyStrType s => KsValue.FromString(s.Encoding.GetString(processed ?? Load(io, range, attribute))),
             KsyUserType user => ReadUser(obj, attribute, user, Window(io, range, processed), node, scope),
-            KsyNativeType native => ReadNative(attribute, native, Window(io, range, processed), node),
+            KsyNativeType native => ReadNative(attribute, native, Window(io, range, processed), node, scope),
             _ => throw new KsyParseException($"{attribute.Path}: Unsupported data type"),
         };
     }
 
-    private KsValue ReadNative(KsyAttribute attribute, KsyNativeType native, KsStream io, KsyNode node)
+    private KsValue ReadNative(KsyAttribute attribute, KsyNativeType native, KsStream io, KsyNode node,
+        IKsEvalScope scope)
     {
         var name = native.Native.Name;
+        var args = new KsValue[native.Arguments.Count];
+        for (var i = 0; i < args.Length; i++) args[i] = Evaluate(native.Arguments[i], scope, attribute.Path, "type");
         io.AlignToByte();
         var start = io.Position;
         KsyNativeResult result;
         try
         {
-            result = native.Native.Read(io);
+            result = native.Native.Read(io, args);
         }
         catch (Exception e) when (e is not KsyParseException and not OutOfMemoryException)
         {
