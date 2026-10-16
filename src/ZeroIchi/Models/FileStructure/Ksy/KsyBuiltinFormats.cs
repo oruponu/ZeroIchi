@@ -13,6 +13,7 @@ internal static class KsyBuiltinFormats
     [
         "image/bmp",
         "image/png",
+        "image/webp",
     ];
 
     internal static KsyNativeTypeRegistry CreateNativeTypes() => new();

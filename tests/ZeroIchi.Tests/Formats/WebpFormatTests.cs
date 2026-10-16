@@ -19,6 +19,12 @@ public sealed class WebpFormatTests
     }
 
     [Fact]
+    public void Default_DetectsWebpByItsSignature()
+    {
+        Assert.Equal("webp", Detect(Webp(Chunk("VP8L", [0x2F, 0, 0, 0, 0]))));
+    }
+
+    [Fact]
     public void Parse_AcceptsANonZeroPaddingByte()
     {
         var root = Parse("image/webp", Webp(Chunk("VP8L", [0x2F, 0, 0, 0, 0], padding: 0xAA)));
