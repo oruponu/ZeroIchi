@@ -351,7 +351,16 @@ internal sealed partial class KsyRun
         io.Seek(start + result.Consumed);
 
         node.FixedDescription = ("", ValueKind.None);
-        foreach (var child in result.Nodes)
+        AddNativeNodes(attribute, name, io, result.Nodes, node.Children);
+
+        var consumed = new KsRange(start, result.Consumed);
+        return KsValue.FromBytes(new KsStreamBytes(io, consumed, options.MaxBytesLoad, ChargeLoad));
+    }
+
+    private void AddNativeNodes(KsyAttribute attribute, string name, KsStream io,
+        IReadOnlyList<KsyNativeNode> nodes, List<KsyNode> siblings)
+    {
+        foreach (var child in nodes)
         {
             if (child.Position < 0 || child.Length < 0 || child.Position > io.Size - child.Length)
             {
@@ -362,10 +371,9 @@ internal sealed partial class KsyRun
             var childNode = NewNode(child.Name, null, io, child.Position);
             childNode.End = child.Position + child.Length;
             childNode.FixedDescription = (child.Description, child.ValueKind);
-            node.Children.Add(childNode);
+            siblings.Add(childNode);
+            AddNativeNodes(attribute, name, io, child.Children, childNode.Children);
         }
-        var consumed = new KsRange(start, result.Consumed);
-        return KsValue.FromBytes(new KsStreamBytes(io, consumed, options.MaxBytesLoad, ChargeLoad));
     }
 
     private static KsyParseException NativeError(string name, string detail, string message) =>
