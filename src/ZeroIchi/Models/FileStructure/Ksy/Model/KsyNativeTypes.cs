@@ -17,7 +17,10 @@ public sealed record KsyNativeNode(string Name, long Position, long Length, stri
     public IReadOnlyList<KsyNativeNode> Children { get; init; } = [];
 }
 
-public sealed record KsyNativeResult(long Consumed, IReadOnlyList<KsyNativeNode> Nodes);
+public sealed record KsyNativeResult(long Consumed, IReadOnlyList<KsyNativeNode> Nodes)
+{
+    public string? Error { get; init; }
+}
 
 public sealed class KsyNativeTypeRegistry
 {
