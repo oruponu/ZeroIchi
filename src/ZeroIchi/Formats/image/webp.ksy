@@ -40,8 +40,6 @@ types:
       - id: name
         type: u4
         enum: chunk_names
-        valid:
-          in-enum: true
       - id: len_data
         type: u4
       - id: data
@@ -58,7 +56,7 @@ types:
             chunk_names::xmp: xmp
             chunk_names::xmp_var: xmp
       - id: padding
-        contents: [0x00]
+        size: 1
         if: len_data % 2 != 0
   vp8:
     meta:
