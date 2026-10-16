@@ -216,10 +216,14 @@ public sealed class KsyInterpreterSwitchRepeatTests
                 repeat-expr: 2
                 valid:
                   max: 5
+              - id: low
+                type: u1
+                valid:
+                  min: 5
             enums:
               kind:
                 1: one
-            """, [2, 9, 3, 7, 3, 1, 6]);
+            """, [2, 9, 3, 7, 3, 1, 6, 1]);
 
         Assert.Equal("Validation failed: expected 1, got 2", Node(root, "eq").Error?.Message);
         Assert.Equal("Validation failed: 9 is greater than 4", Node(root, "range").Error?.Message);
@@ -228,6 +232,13 @@ public sealed class KsyInterpreterSwitchRepeatTests
         Assert.Equal("Validation failed: 3 does not satisfy the expression", Node(root, "even").Error?.Message);
         Assert.Null(Node(root, "items/items[0]").Error);
         Assert.Equal("Validation failed: 6 is greater than 5", Node(root, "items/items[1]").Error?.Message);
+        Assert.Equal("Validation failed: 1 is less than 5", Node(root, "low").Error?.Message);
+        Assert.Equal("ValidEq(1, 2)", Summary(Node(root, "eq").Error));
+        Assert.Equal("ValidMax(9, 4)", Summary(Node(root, "range").Error));
+        Assert.Equal("ValidAnyOf(3)", Summary(Node(root, "any").Error));
+        Assert.Equal("ValidInEnum(kind, 7)", Summary(Node(root, "known").Error));
+        Assert.Equal("ValidExpr(3)", Summary(Node(root, "even").Error));
+        Assert.Equal("ValidMin(1, 5)", Summary(Node(root, "low").Error));
         Assert.DoesNotContain(root.Children, c => c.IsUnparsed);
     }
 

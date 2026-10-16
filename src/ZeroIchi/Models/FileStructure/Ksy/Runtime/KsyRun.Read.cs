@@ -41,7 +41,11 @@ internal sealed partial class KsyRun
     }
 
     private KsyParseException NestingLimit() =>
-        new($"Type nesting exceeds the limit ({options.MaxDepth})") { IsLimit = true };
+        new(FileStructureError.Limit(FileStructureErrorKind.NestingLimit, options.MaxDepth,
+            $"Type nesting exceeds the limit ({options.MaxDepth})"))
+        {
+            IsLimit = true,
+        };
 
     private static KsyByteOrder? ResolveEndian(KsObject obj, KsObject? caller)
     {
@@ -64,7 +68,8 @@ internal sealed partial class KsyRun
                     var match = Evaluate(endianCase.Match, obj, path, "meta/endian");
                     if (Equal(endianCase.Match, on, match, path, "meta/endian")) return endianCase.Order;
                 }
-                return fallback ?? throw new KsyParseException($"{path}/meta/endian: No case matches {on}");
+                return fallback ?? throw new KsyParseException(new FileStructureError(
+                    FileStructureErrorKind.EndianSwitch, [Show(on)], $"{path}/meta/endian: No case matches {on}"));
             }
             case KsySwitchEndian:
                 return caller?.Endian;
@@ -143,7 +148,7 @@ internal sealed partial class KsyRun
                 value = KsValue.FromEnum(enumType, value.AsInt);
             node.Value = value;
             if (attribute.Valid is { } validation && Validate(validation, value, attribute, scope) is { } error)
-                node.Error = FileStructureError.Other(error);
+                node.Error = error;
             return value;
         });
     }
@@ -201,7 +206,7 @@ internal sealed partial class KsyRun
             : KsValue.Null;
     }
 
-    private static string? Validate(KsyValidation validation, KsValue value, KsyAttribute attribute,
+    private static FileStructureError? Validate(KsyValidation validation, KsValue value, KsyAttribute attribute,
         IKsEvalScope scope)
     {
         var path = attribute.Path;
@@ -212,7 +217,8 @@ internal sealed partial class KsyRun
                 var expected = Evaluate(eq.Value, scope, path, "valid");
                 return Equal(eq.Value, value, expected, path, "valid")
                     ? null
-                    : $"Validation failed: expected {Show(expected)}, got {Show(value)}";
+                    : new FileStructureError(FileStructureErrorKind.ValidEq, [Show(expected), Show(value)],
+                        $"Validation failed: expected {Show(expected)}, got {Show(value)}");
             }
             case KsyValidRange range:
             {
@@ -220,13 +226,19 @@ internal sealed partial class KsyRun
                 {
                     var limit = Evaluate(min, scope, path, "valid/min");
                     if (Compare(min, value, limit, path, "valid/min") < 0)
-                        return $"Validation failed: {Show(value)} is less than {Show(limit)}";
+                    {
+                        return new FileStructureError(FileStructureErrorKind.ValidMin, [Show(value), Show(limit)],
+                            $"Validation failed: {Show(value)} is less than {Show(limit)}");
+                    }
                 }
                 if (range.Max is { } max)
                 {
                     var limit = Evaluate(max, scope, path, "valid/max");
                     if (Compare(max, value, limit, path, "valid/max") > 0)
-                        return $"Validation failed: {Show(value)} is greater than {Show(limit)}";
+                    {
+                        return new FileStructureError(FileStructureErrorKind.ValidMax, [Show(value), Show(limit)],
+                            $"Validation failed: {Show(value)} is greater than {Show(limit)}");
+                    }
                 }
                 return null;
             }
@@ -237,16 +249,19 @@ internal sealed partial class KsyRun
                     if (Equal(option, value, Evaluate(option, scope, path, "valid/any-of"), path, "valid/any-of"))
                         return null;
                 }
-                return $"Validation failed: {Show(value)} is not any of the allowed values";
+                return new FileStructureError(FileStructureErrorKind.ValidAnyOf, [Show(value)],
+                    $"Validation failed: {Show(value)} is not any of the allowed values");
             }
             case KsyValidInEnum:
                 return value.Kind == KsValueKind.Enum && value.EnumType.GetName(value.EnumValue) is null
-                    ? $"Validation failed: {Show(value)} is not defined in enum '{value.EnumType.Name}'"
+                    ? new FileStructureError(FileStructureErrorKind.ValidInEnum, [value.EnumType.Name, Show(value)],
+                        $"Validation failed: {Show(value)} is not defined in enum '{value.EnumType.Name}'")
                     : null;
             case KsyValidExpr expr:
                 return EvaluateBool(expr.Condition, new KsScope(scope) { Underscore = value }, path, "valid/expr")
                     ? null
-                    : $"Validation failed: {Show(value)} does not satisfy the expression";
+                    : new FileStructureError(FileStructureErrorKind.ValidExpr, [Show(value)],
+                        $"Validation failed: {Show(value)} does not satisfy the expression");
             default:
                 return null;
         }
@@ -325,13 +340,13 @@ internal sealed partial class KsyRun
         }
         catch (Exception e) when (e is not KsyParseException and not OutOfMemoryException)
         {
-            throw new KsyParseException($"{attribute.Path}: Native type '{name}' failed: {e.Message}");
+            throw NativeError(name, e.Message, $"{attribute.Path}: Native type '{name}' failed: {e.Message}");
         }
 
         if (result.Consumed < 0 || result.Consumed > io.Size - start)
         {
-            throw new KsyParseException(
-                $"{attribute.Path}: Native type '{name}' consumed {result.Consumed} byte(s) but {io.Size - start} remain");
+            var detail = $"consumed {result.Consumed} byte(s) but {io.Size - start} remain";
+            throw NativeError(name, detail, $"{attribute.Path}: Native type '{name}' {detail}");
         }
         io.Seek(start + result.Consumed);
 
@@ -339,7 +354,10 @@ internal sealed partial class KsyRun
         foreach (var child in result.Nodes)
         {
             if (child.Position < 0 || child.Length < 0 || child.Position > io.Size - child.Length)
-                throw new KsyParseException($"{attribute.Path}: Native type '{name}' returned a node outside the stream");
+            {
+                const string detail = "returned a node outside the stream";
+                throw NativeError(name, detail, $"{attribute.Path}: Native type '{name}' {detail}");
+            }
 
             var childNode = NewNode(child.Name, null, io, child.Position);
             childNode.End = child.Position + child.Length;
@@ -349,6 +367,9 @@ internal sealed partial class KsyRun
         var consumed = new KsRange(start, result.Consumed);
         return KsValue.FromBytes(new KsStreamBytes(io, consumed, options.MaxBytesLoad, ChargeLoad));
     }
+
+    private static KsyParseException NativeError(string name, string detail, string message) =>
+        new(new FileStructureError(FileStructureErrorKind.Native, [name, detail], message));
 
     private static KsStream Window(KsStream io, KsRange range, byte[]? processed) =>
         processed is null ? io.Substream(range.Start, range.Length) : KsStream.FromBytes(processed);
@@ -371,8 +392,8 @@ internal sealed partial class KsyRun
     {
         if (range.Length > options.MaxBytesLoad)
         {
-            throw new KsyParseException(
-                $"{attribute.Path}: Byte array of {range.Length} bytes is too large to load (limit {options.MaxBytesLoad})");
+            throw new KsyParseException(FileStructureError.BytesLoadLimit(range.Length, options.MaxBytesLoad,
+                $"{attribute.Path}: Byte array of {range.Length} bytes is too large to load (limit {options.MaxBytesLoad})"));
         }
         ChargeLoad(range.Length);
         return io.ReadArray(range);
@@ -407,7 +428,8 @@ internal sealed partial class KsyRun
         if (attribute.Process is { } process) actual = Process(process, actual, scope, attribute);
         if (!actual.AsSpan().SequenceEqual(expected))
         {
-            node.Error = FileStructureError.Other(
+            node.Error = new FileStructureError(FileStructureErrorKind.ContentsMismatch,
+                [KsyDescriptions.Hex(expected), KsyDescriptions.Hex(actual)],
                 $"Contents mismatch: expected {KsyDescriptions.Hex(expected)}, got {KsyDescriptions.Hex(actual)}");
         }
         return KsValue.FromBytes(actual);
