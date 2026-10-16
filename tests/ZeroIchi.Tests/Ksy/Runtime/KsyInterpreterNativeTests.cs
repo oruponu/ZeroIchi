@@ -1,4 +1,5 @@
 using ZeroIchi.Models.FileStructure;
+using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
 using ZeroIchi.Models.FileStructure.Ksy.Runtime;
 using static ZeroIchi.Tests.Ksy.Runtime.KsyTestRunner;
@@ -11,7 +12,7 @@ public sealed class KsyInterpreterNativeTests
     {
         public string Name => "scan_to_marker";
 
-        public KsyNativeResult Read(KsStream stream)
+        public KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments)
         {
             var start = stream.Position;
             while (stream.ReadInteger(1, false, true) != 0xFF) { }
@@ -28,14 +29,15 @@ public sealed class KsyInterpreterNativeTests
     {
         public string Name => "faulty";
 
-        public KsyNativeResult Read(KsStream stream) => error is null ? new KsyNativeResult(consumed, []) : throw error;
+        public KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments) =>
+            error is null ? new KsyNativeResult(consumed, []) : throw error;
     }
 
     private sealed class Events(string? error = null, long childLength = 2) : IKsyNativeType
     {
         public string Name => "events";
 
-        public KsyNativeResult Read(KsStream stream)
+        public KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments)
         {
             var start = stream.Position;
             var consumed = error is null ? 3 : 1;
@@ -50,6 +52,20 @@ public sealed class KsyInterpreterNativeTests
                     ],
                 },
             ]) { Error = error };
+        }
+    }
+
+    private sealed class Take : IKsyNativeType
+    {
+        public string Name => "take";
+
+        public int ParameterCount => 2;
+
+        public KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments)
+        {
+            var length = (long)arguments[0].AsInt;
+            var description = arguments[1].AsBool ? "flagged" : "plain";
+            return new KsyNativeResult(length, [new KsyNativeNode("data", stream.Position, length, description, ValueKind.None)]);
         }
     }
 
@@ -134,6 +150,27 @@ public sealed class KsyInterpreterNativeTests
             natives: Registry(new Events(childLength: 100)));
 
         Assert.Equal("Native(events, returned a node outside the stream)", Summary(Node(root, "blob").Error));
+    }
+
+    [Fact]
+    public void Parse_NativeTypeReceivesItsArguments()
+    {
+        var root = Parse("""
+            meta:
+              id: x
+              ks-opaque-types: true
+            seq:
+              - id: n
+                type: u1
+              - id: blob
+                type: take(n, n > 1)
+              - id: after
+                type: u1
+            """, [2, 0xAA, 0xBB, 9], natives: Registry(new Take()));
+
+        Assert.Equal((1L, 2L), (Node(root, "blob").Offset, Node(root, "blob").Length));
+        Assert.Equal("flagged", Node(root, "blob/data").Description);
+        Assert.Equal((3L, "9"), (Node(root, "after").Offset, Node(root, "after").Description));
     }
 
     [Fact]

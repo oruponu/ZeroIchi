@@ -1,3 +1,4 @@
+using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
 using ZeroIchi.Models.FileStructure.Ksy.Runtime;
 using static ZeroIchi.Tests.Ksy.Model.KsyTestLoader;
@@ -10,13 +11,23 @@ public sealed class KsyNativeTypeTests
     {
         public string Name => "test_blob";
 
-        public KsyNativeResult Read(KsStream stream) => new(0, []);
+        public KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments) => new(0, []);
+    }
+
+    private sealed class PairNativeType : IKsyNativeType
+    {
+        public string Name => "pair_blob";
+
+        public int ParameterCount => 2;
+
+        public KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments) => new(0, []);
     }
 
     private static KsyNativeTypeRegistry Registry()
     {
         var registry = new KsyNativeTypeRegistry();
         registry.Register(new TestNativeType());
+        registry.Register(new PairNativeType());
         return registry;
     }
 
@@ -72,8 +83,25 @@ public sealed class KsyNativeTypeTests
     {
         var error = SingleError("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: blob\n    type: test_blob(4)\n", natives: Registry());
 
-        Assert.Contains("Native type 'test_blob' does not take arguments", error.Message);
+        Assert.Contains("Native type 'test_blob' takes 0 argument(s) but 1 were given", error.Message);
         Assert.Equal("/seq/0/type", error.Path);
+    }
+
+    [Fact]
+    public void Parse_NativeTypeTakesItsDeclaredArguments()
+    {
+        var format = Load("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: n\n    type: u1\n  - id: blob\n    type: pair_blob(n, n > 1)\n", natives: Registry());
+
+        var native = Assert.IsType<KsyNativeType>(Attribute(format, "blob").DataType);
+        Assert.Equal(2, native.Arguments.Count);
+    }
+
+    [Fact]
+    public void Parse_NativeTypeWithTooFewArguments_IsError()
+    {
+        var error = SingleError("meta:\n  id: x\n  ks-opaque-types: true\nseq:\n  - id: blob\n    type: pair_blob(1)\n", natives: Registry());
+
+        Assert.Contains("Native type 'pair_blob' takes 2 argument(s) but 1 were given", error.Message);
     }
 
     [Fact]

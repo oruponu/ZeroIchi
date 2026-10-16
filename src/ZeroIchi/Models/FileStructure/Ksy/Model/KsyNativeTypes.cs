@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 using ZeroIchi.Models.FileStructure.Ksy.Runtime;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Model;
@@ -9,7 +10,9 @@ public interface IKsyNativeType
 {
     string Name { get; }
 
-    KsyNativeResult Read(KsStream stream);
+    int ParameterCount => 0;
+
+    KsyNativeResult Read(KsStream stream, IReadOnlyList<KsValue> arguments);
 }
 
 public sealed record KsyNativeNode(string Name, long Position, long Length, string Description, ValueKind ValueKind)
