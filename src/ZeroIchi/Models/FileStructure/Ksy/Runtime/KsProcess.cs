@@ -57,14 +57,18 @@ internal static class KsProcess
             while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
             {
                 if (output.Length + read > limit)
-                    throw new KsyParseException($"Decompressed data exceeds the limit ({limit} bytes)");
+                {
+                    throw new KsyParseException(FileStructureError.Limit(FileStructureErrorKind.DecompressLimit, limit,
+                        $"Decompressed data exceeds the limit ({limit} bytes)"));
+                }
                 output.Write(buffer, 0, read);
             }
             return output.ToArray();
         }
         catch (InvalidDataException e)
         {
-            throw new KsyParseException($"Invalid zlib data: {e.Message}");
+            throw new KsyParseException(
+                new FileStructureError(FileStructureErrorKind.Zlib, [e.Message], $"Invalid zlib data: {e.Message}"));
         }
     }
 }

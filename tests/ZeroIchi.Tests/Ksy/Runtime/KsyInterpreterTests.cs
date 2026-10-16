@@ -167,6 +167,7 @@ public sealed class KsyInterpreterTests
 
         Assert.Null(Node(root, "ok").Error);
         Assert.Equal("Contents mismatch: expected 46 46, got 46 47", Node(root, "bad").Error?.Message);
+        Assert.Equal("ContentsMismatch(46 46, 46 47)", Summary(Node(root, "bad").Error));
         Assert.Equal("9", Node(root, "after").Description);
     }
 
@@ -248,6 +249,7 @@ public sealed class KsyInterpreterTests
         Assert.True(b.IsIncomplete);
         Assert.Equal((1L, 0L, ""), (b.Offset, b.Length, b.Description));
         Assert.Contains("needed 4 byte(s) at position 1, but only 2 remain", b.Error?.Message);
+        Assert.Equal("EndOfData(1, 4, 2)", Summary(b.Error));
         var unparsed = Node(root, "未解析");
         Assert.Equal((1L, 2L), (unparsed.Offset, unparsed.Length));
         Assert.Equal(b.Error, unparsed.Error);

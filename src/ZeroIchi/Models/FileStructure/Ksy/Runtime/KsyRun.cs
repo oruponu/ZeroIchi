@@ -79,7 +79,8 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         _loaded += bytes;
         if (_loaded > options.MaxTotalLoad)
         {
-            throw new KsyParseException($"Data loaded into memory exceeds the limit ({options.MaxTotalLoad} bytes)")
+            throw new KsyParseException(FileStructureError.Limit(FileStructureErrorKind.LoadLimit, options.MaxTotalLoad,
+                $"Data loaded into memory exceeds the limit ({options.MaxTotalLoad} bytes)"))
             {
                 IsLimit = true,
             };
@@ -128,7 +129,8 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     {
         KsyParseException parse => parse.Error,
         KsExpressionException => FileStructureError.Other(e.Message),
-        InsufficientExecutionStackException => FileStructureError.Other("Nesting is too deep for the available stack"),
+        InsufficientExecutionStackException =>
+            new(FileStructureErrorKind.StackLimit, [], "Nesting is too deep for the available stack"),
         _ => FileStructureError.Other($"Internal error: {e.Message}"),
     };
 

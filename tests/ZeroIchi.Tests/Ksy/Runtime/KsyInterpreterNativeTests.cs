@@ -82,6 +82,7 @@ public sealed class KsyInterpreterNativeTests
             natives: Registry(new Faulty(0, new InvalidOperationException("broken"))));
 
         Assert.Equal("/seq/1: Native type 'faulty' failed: broken", Node(root, "blob").Error?.Message);
+        Assert.Equal("Native(faulty, broken)", Summary(Node(root, "blob").Error));
         Assert.Equal("head,blob,未解析", Names(root));
     }
 
@@ -91,6 +92,7 @@ public sealed class KsyInterpreterNativeTests
         var root = Parse(Yaml.Replace("scan_to_marker", "faulty"), [7, 1, 2], natives: Registry(new Faulty(5)));
 
         Assert.Equal("/seq/1: Native type 'faulty' consumed 5 byte(s) but 2 remain", Node(root, "blob").Error?.Message);
+        Assert.Equal("Native(faulty, consumed 5 byte(s) but 2 remain)", Summary(Node(root, "blob").Error));
     }
 
     [Fact]

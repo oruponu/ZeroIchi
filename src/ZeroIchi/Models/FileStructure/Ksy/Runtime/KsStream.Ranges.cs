@@ -35,8 +35,9 @@ public sealed partial class KsStream
         {
             if (eosError)
             {
-                throw new KsyParseException(
-                    $"End of stream reached before terminator {Convert.ToHexString(terminator)} (from position {start})");
+                throw new KsyParseException(FileStructureError.MissingTerminator(KsyDescriptions.Hex(terminator),
+                    FileOffset(start), !IsFileBacked,
+                    $"End of stream reached before terminator {Convert.ToHexString(terminator)} (from position {start})"));
             }
             Position = Size;
             return new KsRange(start, Size - start);

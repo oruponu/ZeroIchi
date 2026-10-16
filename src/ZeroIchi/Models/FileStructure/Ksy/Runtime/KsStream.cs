@@ -40,7 +40,10 @@ public sealed partial class KsStream : IKsStream
     public void Seek(long position)
     {
         if (position < 0 || position > Size)
-            throw new KsyParseException($"Cannot seek to position {position} (stream size {Size})");
+        {
+            throw new KsyParseException(FileStructureError.Seek(FileOffset(position), FileOffset(Size), !IsFileBacked,
+                $"Cannot seek to position {position} (stream size {Size})"));
+        }
         AlignToByte();
         Position = position;
     }
@@ -134,8 +137,9 @@ public sealed partial class KsStream : IKsStream
     {
         if (count > Size - Position)
         {
-            throw new KsyParseException(
-                $"Unexpected end of stream: needed {count} byte(s) at position {Position}, but only {Math.Max(0, Size - Position)} remain");
+            var remaining = Math.Max(0, Size - Position);
+            throw new KsyParseException(FileStructureError.EndOfData(FileOffset(Position), !IsFileBacked, count, remaining,
+                $"Unexpected end of stream: needed {count} byte(s) at position {Position}, but only {remaining} remain"));
         }
     }
 

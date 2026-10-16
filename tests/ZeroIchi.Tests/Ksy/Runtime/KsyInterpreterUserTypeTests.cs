@@ -88,6 +88,7 @@ public sealed class KsyInterpreterUserTypeTests
         var big = Node(root, "body/big");
         Assert.Equal((1L, 0L, true), (big.Offset, big.Length, big.IsIncomplete));
         Assert.Contains("needed 8 byte(s) at position 0, but only 4 remain", big.Error?.Message);
+        Assert.Equal("EndOfData(1, 8, 4)", Summary(big.Error));
         Assert.Null(body.Error);
         Assert.Equal((1L, 4L), (Node(root, "未解析").Offset, Node(root, "未解析").Length));
     }
@@ -304,6 +305,7 @@ public sealed class KsyInterpreterUserTypeTests
             """, [2, 0, 0]);
 
         Assert.Equal("/types/block/meta/endian: No case matches 2", Node(root, "block").Error?.Message);
+        Assert.Equal("EndianSwitch(2)", Summary(Node(root, "block").Error));
         Assert.Equal("tag,block,未解析", Names(root));
     }
 
@@ -375,6 +377,7 @@ public sealed class KsyInterpreterUserTypeTests
 
         var deepest = Node(root, "next/next/next/next/next");
         Assert.Equal("Type nesting exceeds the limit (5)", deepest.Error?.Message);
+        Assert.Equal("NestingLimit(5)", Summary(deepest.Error));
         Assert.Equal("Type nesting exceeds the limit (5)", Node(root, "未解析").Error?.Message);
     }
 
@@ -427,6 +430,7 @@ public sealed class KsyInterpreterUserTypeTests
         Assert.Null(error);
         Assert.NotNull(root);
         Assert.Equal("Nesting is too deep for the available stack", Node(root, "未解析").Error?.Message);
+        Assert.Equal("StackLimit()", Summary(Node(root, "未解析").Error));
     }
 
     [Fact]
@@ -454,6 +458,7 @@ public sealed class KsyInterpreterUserTypeTests
             """, data, new KsyParseOptions { MaxTotalLoad = 3000 });
 
         Assert.Equal("Data loaded into memory exceeds the limit (3000 bytes)", Node(root, "未解析").Error?.Message);
+        Assert.Equal("LoadLimit(3000)", Summary(Node(root, "未解析").Error));
         Assert.Equal(3, Node(root, "chunks").Children.Count);
     }
 
