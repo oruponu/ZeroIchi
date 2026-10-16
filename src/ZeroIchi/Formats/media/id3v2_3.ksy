@@ -29,6 +29,7 @@ types:
         type: frame
         repeat: until
         repeat-until: _io.pos + 10 > 10 + header.size.value or _.is_invalid
+        if: _io.pos + 10 <= 10 + header.size.value
       - id: padding
         size: 10 + header.size.value - _io.pos
 
