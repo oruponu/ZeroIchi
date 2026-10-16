@@ -178,7 +178,7 @@ public sealed class KsyInterpreterSwitchRepeatTests
                 seq: []
             """, [1], new KsyParseOptions { NodeBudget = 50 });
 
-        Assert.Equal("ノード数の上限 (50) に到達", Node(root, "未解析").Description);
+        Assert.Equal("NodeBudget(50)", Summary(Node(root, "未解析").Error));
         Assert.True(Node(root, "items").IsIncomplete);
     }
 
@@ -221,14 +221,14 @@ public sealed class KsyInterpreterSwitchRepeatTests
                 1: one
             """, [2, 9, 3, 7, 3, 1, 6]);
 
-        Assert.Equal("Validation failed: expected 1, got 2", Node(root, "eq").Error);
-        Assert.Equal("Validation failed: 9 is greater than 4", Node(root, "range").Error);
-        Assert.Equal("Validation failed: 3 is not any of the allowed values", Node(root, "any").Error);
-        Assert.Equal("Validation failed: 7 is not defined in enum 'kind'", Node(root, "known").Error);
-        Assert.Equal("Validation failed: 3 does not satisfy the expression", Node(root, "even").Error);
+        Assert.Equal("Validation failed: expected 1, got 2", Node(root, "eq").Error?.Message);
+        Assert.Equal("Validation failed: 9 is greater than 4", Node(root, "range").Error?.Message);
+        Assert.Equal("Validation failed: 3 is not any of the allowed values", Node(root, "any").Error?.Message);
+        Assert.Equal("Validation failed: 7 is not defined in enum 'kind'", Node(root, "known").Error?.Message);
+        Assert.Equal("Validation failed: 3 does not satisfy the expression", Node(root, "even").Error?.Message);
         Assert.Null(Node(root, "items/items[0]").Error);
-        Assert.Equal("Validation failed: 6 is greater than 5", Node(root, "items/items[1]").Error);
-        Assert.DoesNotContain(root.Children, c => c.Name == "未解析");
+        Assert.Equal("Validation failed: 6 is greater than 5", Node(root, "items/items[1]").Error?.Message);
+        Assert.DoesNotContain(root.Children, c => c.IsUnparsed);
     }
 
     [Fact]

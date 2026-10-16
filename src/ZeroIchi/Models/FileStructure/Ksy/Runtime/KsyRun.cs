@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
@@ -63,7 +62,14 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     private KsyNode NewNode(string name, string? fieldId, KsStream? stream, long start)
     {
         if (_nodeCount >= options.NodeBudget)
-            throw new KsyParseException("Node budget exceeded") { IsBudget = true, IsLimit = true };
+        {
+            throw new KsyParseException(
+                FileStructureError.Limit(FileStructureErrorKind.NodeBudget, options.NodeBudget, "Node budget exceeded"))
+            {
+                IsBudget = true,
+                IsLimit = true,
+            };
+        }
         _nodeCount++;
         return new KsyNode(name, fieldId, stream, start);
     }
@@ -108,7 +114,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         {
             _observed = e;
             _failOffset = null;
-            if (e is not KsyParseException { IsBudget: true }) node.Error = Message(e);
+            if (e is not KsyParseException { IsBudget: true }) node.Error = ErrorOf(e);
         }
         if (_failOffset is null && node.Stream is { IsFileBacked: true } stream)
             _failOffset = stream.FileOffset(stream.Position);
@@ -118,11 +124,12 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     private static bool IsLimit(Exception e) =>
         e is KsyParseException { IsLimit: true } or InsufficientExecutionStackException;
 
-    private static string Message(Exception e) => e switch
+    private static FileStructureError ErrorOf(Exception e) => e switch
     {
-        KsyParseException or KsExpressionException => e.Message,
-        InsufficientExecutionStackException => "Nesting is too deep for the available stack",
-        _ => $"Internal error: {e.Message}",
+        KsyParseException parse => parse.Error,
+        KsExpressionException => FileStructureError.Other(e.Message),
+        InsufficientExecutionStackException => FileStructureError.Other("Nesting is too deep for the available stack"),
+        _ => FileStructureError.Other($"Internal error: {e.Message}"),
     };
 
     private static KsyParseException ExpressionError(string path, string key, KsExpressionException e) =>
@@ -195,12 +202,11 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
             : buffer.Length;
         return new FileStructureNode
         {
-            Name = "未解析",
+            Name = "",
             Offset = offset,
             Length = buffer.Length - offset,
-            Description = failure is KsyParseException { IsBudget: true }
-                ? string.Create(CultureInfo.InvariantCulture, $"ノード数の上限 ({options.NodeBudget:N0}) に到達")
-                : Message(failure),
+            IsUnparsed = true,
+            Error = ErrorOf(failure),
         };
     }
 
@@ -246,7 +252,6 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
     {
         var hasRange = node.Stream is { IsFileBacked: true };
         var (text, kind) = node.FixedDescription ?? Describe(node);
-        if (node.IsIncomplete) text = text.Length == 0 ? "(未完了)" : $"{text} (未完了)";
 
         return new FileStructureNode
         {

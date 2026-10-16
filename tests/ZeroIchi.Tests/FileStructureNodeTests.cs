@@ -23,12 +23,12 @@ public sealed class FileStructureNodeTests
             Offset = 0,
             Length = 0,
             HasRange = false,
-            Error = "Validation failed",
+            Error = FileStructureError.Other("Validation failed"),
             IsIncomplete = true,
         };
 
         Assert.False(node.HasRange);
-        Assert.Equal("Validation failed", node.Error);
+        Assert.Equal("Validation failed", node.Error?.Message);
         Assert.True(node.IsIncomplete);
     }
 }

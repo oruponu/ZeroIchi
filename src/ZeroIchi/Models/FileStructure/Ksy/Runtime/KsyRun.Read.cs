@@ -143,7 +143,7 @@ internal sealed partial class KsyRun
                 value = KsValue.FromEnum(enumType, value.AsInt);
             node.Value = value;
             if (attribute.Valid is { } validation && Validate(validation, value, attribute, scope) is { } error)
-                node.Error = error;
+                node.Error = FileStructureError.Other(error);
             return value;
         });
     }
@@ -407,8 +407,8 @@ internal sealed partial class KsyRun
         if (attribute.Process is { } process) actual = Process(process, actual, scope, attribute);
         if (!actual.AsSpan().SequenceEqual(expected))
         {
-            node.Error =
-                $"Contents mismatch: expected {KsyDescriptions.Hex(expected)}, got {KsyDescriptions.Hex(actual)}";
+            node.Error = FileStructureError.Other(
+                $"Contents mismatch: expected {KsyDescriptions.Hex(expected)}, got {KsyDescriptions.Hex(actual)}");
         }
         return KsValue.FromBytes(actual);
     }

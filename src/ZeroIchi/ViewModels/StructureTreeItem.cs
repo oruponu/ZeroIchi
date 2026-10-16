@@ -23,18 +23,24 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
     public int Depth { get; } = depth;
     public bool HasChildren { get; } = node.HasChildren;
 
-    public string Name => Node.Name;
-    public string Description => Node.Error switch
+    public string Name => Node.IsUnparsed ? "未解析" : Node.Name;
+
+    public string Description
     {
-        null => Node.Description,
-        var error when Node.Description.Length == 0 => error,
-        var error => $"{Node.Description}  {error}",
-    };
+        get
+        {
+            var text = Node.Description;
+            if (Node.IsIncomplete) text = text.Length == 0 ? "(未完了)" : $"{text} (未完了)";
+            if (Node.Error is not { } error) return text;
+            var message = FileStructureErrorText.Format(error);
+            return text.Length == 0 ? message : $"{text}  {message}";
+        }
+    }
 
     public FontStyle FontStyle => Node.HasRange ? FontStyle.Normal : FontStyle.Italic;
     public Thickness Indent => new(Depth * 16, 0, 0, 0);
 
-    public IBrush DescriptionForeground => Node.Error is not null ? ErrorBrush : Node.ValueKind switch
+    public IBrush DescriptionForeground => Node.Error is not null && !Node.IsUnparsed ? ErrorBrush : Node.ValueKind switch
     {
         ValueKind.Numeric => NumericBrush,
         ValueKind.Ascii => AsciiBrush,

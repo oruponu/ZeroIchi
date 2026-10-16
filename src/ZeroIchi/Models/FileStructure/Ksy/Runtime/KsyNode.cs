@@ -12,7 +12,7 @@ internal sealed class KsyNode(string name, string? fieldId, KsStream? stream, lo
     public long? End { get; set; }
     public KsValue Value { get; set; }
     public bool IsContainer { get; set; }
-    public string? Error { get; set; }
+    public FileStructureError? Error { get; set; }
     public bool IsIncomplete { get; set; }
     public (string Text, ValueKind Kind)? FixedDescription { get; set; }
     public List<KsyNode> Children { get; } = [];

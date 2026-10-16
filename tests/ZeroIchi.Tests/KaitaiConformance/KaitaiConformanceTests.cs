@@ -130,7 +130,7 @@ public sealed class KaitaiConformanceTests
 
     private static IEnumerable<string> Errors(FileStructureNode node)
     {
-        if (node.Error is not null) yield return node.Error;
+        if (node.Error is not null) yield return node.Error.Message;
         foreach (var child in node.Children)
         {
             foreach (var error in Errors(child)) yield return error;
