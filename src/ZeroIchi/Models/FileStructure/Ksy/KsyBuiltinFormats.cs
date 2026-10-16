@@ -14,6 +14,7 @@ internal static class KsyBuiltinFormats
         "image/bmp",
         "image/png",
         "image/webp",
+        "media/wav",
     ];
 
     internal static KsyNativeTypeRegistry CreateNativeTypes() => new();

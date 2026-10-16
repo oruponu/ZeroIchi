@@ -21,6 +21,12 @@ public sealed class WavFormatTests
     }
 
     [Fact]
+    public void Default_TellsWavFromWebp()
+    {
+        Assert.Equal("wav", Detect(Wav(Chunk("fmt ", Fmt))));
+    }
+
+    [Fact]
     public void Parse_ReadsTheFormatChunk()
     {
         var root = Parse("media/wav", Wav(Chunk("fmt ", Fmt), Chunk("data", [1, 2])));
