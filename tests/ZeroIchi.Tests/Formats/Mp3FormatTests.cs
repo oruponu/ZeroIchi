@@ -26,6 +26,12 @@ public sealed class Mp3FormatTests
     private static byte[] FrameV24(string id, byte[] data) => [.. Encoding.ASCII.GetBytes(id), .. Synchsafe(data.Length), 0, 0, .. data];
 
     [Fact]
+    public void Default_DetectsMp3ByTheId3Tag()
+    {
+        Assert.Equal("mp3", Detect([.. Tag(3, 0, FrameV23("TIT2", [0, 0x61])), .. Audio]));
+    }
+
+    [Fact]
     public void Parse_ReadsAVersion22Tag()
     {
         var root = Parse("media/mp3",
