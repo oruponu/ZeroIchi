@@ -30,7 +30,7 @@ types:
       - id: frames
         type: frame
         repeat: until
-        repeat-until: _io.pos + _.size.value > header.size.value or _.is_invalid
+        repeat-until: _io.pos + 10 > 10 + header.size.value or _.is_invalid
       - id: padding
         type: padding
         if: not header.flags.flag_footer
@@ -92,7 +92,7 @@ types:
   padding:
     seq:
       - id: padding
-        size: _root.tag.header.size.value - _io.pos
+        size: 10 + _parent.header.size.value - _io.pos
 
   # Section 3.4. ID3v2 footer
   footer:

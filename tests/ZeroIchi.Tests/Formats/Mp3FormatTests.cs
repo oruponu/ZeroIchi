@@ -45,6 +45,36 @@ public sealed class Mp3FormatTests
     }
 
     [Fact]
+    public void Parse_Version23KeepsReadingFramesAfterALargeFirstFrame()
+    {
+        var root = Parse("media/mp3",
+            [.. Tag(3, 0, FrameV23("TIT2", [0, .. new byte[49]]), FrameV23("TALB", [0, 0x62]), new byte[12]), .. Audio]);
+
+        Assert.Equal("", Errors(root));
+        Assert.Equal("frames[0],frames[1],frames[2]", Names(Node(root, "tag/frames")));
+        Assert.Equal("TALB", Node(root, "tag/frames/frames[1]/id").Description);
+        Assert.Equal("true", Node(root, "tag/frames/frames[2]/is_invalid").Description);
+        Assert.Equal((92L, 2L), (Node(root, "tag/padding").Offset, Node(root, "tag/padding").Length));
+        Assert.Equal((94L, 4L), (Node(root, "audio_data").Offset, Node(root, "audio_data").Length));
+    }
+
+    [Fact]
+    public void Parse_Version24UsesSynchsafeFrameSizesAndTheExtendedHeader()
+    {
+        byte[] extended = [.. Synchsafe(6), 1, 0];
+
+        var root = Parse("media/mp3",
+            [.. Tag(4, 0x40, extended, FrameV24("TIT2", [0, .. new byte[200]]), FrameV24("TPE1", [0, 0x79]), new byte[7]), .. Audio]);
+
+        Assert.Equal("", Errors(root));
+        Assert.Equal((10L, 6L), (Node(root, "tag/header_ex").Offset, Node(root, "tag/header_ex").Length));
+        Assert.Equal("201", Node(root, "tag/frames/frames[0]/size/value").Description);
+        Assert.Equal((227L, 12L), (Node(root, "tag/frames/frames[1]").Offset, Node(root, "tag/frames/frames[1]").Length));
+        Assert.Equal((239L, 7L), (Node(root, "tag/padding").Offset, Node(root, "tag/padding").Length));
+        Assert.Equal((246L, 4L), (Node(root, "audio_data").Offset, Node(root, "audio_data").Length));
+    }
+
+    [Fact]
     public void Parse_Version24FooterIsPartOfTheTag()
     {
         var frame = FrameV24("TIT2", [0, 0x61, 0x62]);
