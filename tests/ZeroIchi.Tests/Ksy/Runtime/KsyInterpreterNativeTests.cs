@@ -31,14 +31,14 @@ public sealed class KsyInterpreterNativeTests
         public KsyNativeResult Read(KsStream stream) => error is null ? new KsyNativeResult(consumed, []) : throw error;
     }
 
-    private sealed class Events(long childLength = 2) : IKsyNativeType
+    private sealed class Events(string? error = null, long childLength = 2) : IKsyNativeType
     {
         public string Name => "events";
 
         public KsyNativeResult Read(KsStream stream)
         {
             var start = stream.Position;
-            const long consumed = 3;
+            var consumed = error is null ? 3 : 1;
             return new KsyNativeResult(consumed,
             [
                 new KsyNativeNode("event[0]", start, consumed, "", ValueKind.None)
@@ -49,7 +49,7 @@ public sealed class KsyInterpreterNativeTests
                         new KsyNativeNode("status", start + 1, childLength, "90 3C", ValueKind.Bytes),
                     ],
                 },
-            ]);
+            ]) { Error = error };
         }
     }
 
@@ -97,6 +97,21 @@ public sealed class KsyInterpreterNativeTests
         var status = Node(root, "blob/event[0]/status");
         Assert.Equal((2L, 2L, "90 3C", ValueKind.Bytes), (status.Offset, status.Length, status.Description, status.ValueKind));
         Assert.Equal((4L, "9"), (Node(root, "after").Offset, Node(root, "after").Description));
+    }
+
+    [Fact]
+    public void Parse_NativeErrorKeepsTheNodesReadSoFar()
+    {
+        var root = Parse(Yaml.Replace("scan_to_marker", "events"), [7, 0, 0xF4, 9],
+            natives: Registry(new Events("unknown status F4", childLength: 0)));
+
+        var blob = Node(root, "blob");
+        Assert.Equal((1L, 1L, true), (blob.Offset, blob.Length, blob.IsIncomplete));
+        Assert.Equal("Native(events, unknown status F4)", Summary(blob.Error));
+        Assert.Equal("/seq/1: Native type 'events' failed: unknown status F4", blob.Error?.Message);
+        Assert.Equal("v_time,status", Names(Node(root, "blob/event[0]")));
+        Assert.Equal("head,blob,未解析", Names(root));
+        Assert.Equal((2L, 2L), (Node(root, "未解析").Offset, Node(root, "未解析").Length));
     }
 
     [Fact]

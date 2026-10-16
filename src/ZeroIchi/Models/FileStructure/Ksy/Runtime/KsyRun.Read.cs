@@ -352,6 +352,8 @@ internal sealed partial class KsyRun
 
         node.FixedDescription = ("", ValueKind.None);
         AddNativeNodes(attribute, name, io, result.Nodes, node.Children);
+        if (result.Error is { } error)
+            throw NativeError(name, error, $"{attribute.Path}: Native type '{name}' failed: {error}");
 
         var consumed = new KsRange(start, result.Consumed);
         return KsValue.FromBytes(new KsStreamBytes(io, consumed, options.MaxBytesLoad, ChargeLoad));
