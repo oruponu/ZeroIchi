@@ -80,6 +80,25 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
     }
 
     [Fact]
+    public async Task OpenFile_PngUsesTheBuiltinDefinitionByDefault()
+    {
+        byte[] png =
+        [
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0, 0, 0, 13, .. "IHDR"u8, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, .. "IEND"u8, 0, 0, 0, 0,
+        ];
+        var path = Path.Combine(_tempDir, "a.png");
+        File.WriteAllBytes(path, png);
+        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService());
+
+        await vm.OpenFileAsync(path);
+        using var _ = vm.Document;
+
+        Assert.Equal("magic,ihdr_len,ihdr_type,ihdr,ihdr_crc,chunks", Names(vm));
+    }
+
+    [Fact]
     public async Task SelectingANodeWithoutRange_KeepsTheCursorAndSelection()
     {
         var vm = await OpenAsync("a.bin", "ZI\u0005"u8.ToArray(), MagicYaml);
