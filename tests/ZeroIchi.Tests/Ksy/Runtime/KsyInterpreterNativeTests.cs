@@ -149,7 +149,17 @@ public sealed class KsyInterpreterNativeTests
         var root = Parse(Yaml.Replace("scan_to_marker", "events"), [7, 0, 0x90, 0x3C, 9],
             natives: Registry(new Events(childLength: 100)));
 
-        Assert.Equal("Native(events, returned a node outside the stream)", Summary(Node(root, "blob").Error));
+        Assert.Equal("Native(events, returned a node outside the bytes it read)", Summary(Node(root, "blob").Error));
+    }
+
+    [Fact]
+    public void Parse_NativeNodePastTheConsumedBytesIsAnError()
+    {
+        var root = Parse(Yaml.Replace("scan_to_marker", "events"), [7, 0, 0x90, 0x3C, 9],
+            natives: Registry(new Events(childLength: 3)));
+
+        Assert.Equal("Native(events, returned a node outside the bytes it read)", Summary(Node(root, "blob").Error));
+        Assert.Equal("head,blob,未解析", Names(root));
     }
 
     [Fact]

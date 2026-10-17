@@ -356,7 +356,7 @@ internal sealed partial class KsyRun
         io.Seek(start + result.Consumed);
 
         node.FixedDescription = ("", ValueKind.None);
-        AddNativeNodes(attribute, name, io, result.Nodes, node.Children);
+        AddNativeNodes(attribute, name, io, result.Nodes, node.Children, start, start + result.Consumed);
         if (result.Error is { } error)
             throw NativeError(name, error, $"{attribute.Path}: Native type '{name}' failed: {error}");
 
@@ -365,13 +365,13 @@ internal sealed partial class KsyRun
     }
 
     private void AddNativeNodes(KsyAttribute attribute, string name, KsStream io,
-        IReadOnlyList<KsyNativeNode> nodes, List<KsyNode> siblings)
+        IReadOnlyList<KsyNativeNode> nodes, List<KsyNode> siblings, long from, long to)
     {
         foreach (var child in nodes)
         {
-            if (child.Position < 0 || child.Length < 0 || child.Position > io.Size - child.Length)
+            if (child.Position < from || child.Length < 0 || child.Position > to - child.Length)
             {
-                const string detail = "returned a node outside the stream";
+                const string detail = "returned a node outside the bytes it read";
                 throw NativeError(name, detail, $"{attribute.Path}: Native type '{name}' {detail}");
             }
 
@@ -379,7 +379,8 @@ internal sealed partial class KsyRun
             childNode.End = child.Position + child.Length;
             childNode.FixedDescription = (child.Description, child.ValueKind);
             siblings.Add(childNode);
-            AddNativeNodes(attribute, name, io, child.Children, childNode.Children);
+            AddNativeNodes(attribute, name, io, child.Children, childNode.Children, child.Position,
+                child.Position + child.Length);
         }
     }
 
