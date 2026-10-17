@@ -1,5 +1,6 @@
 meta:
   id: jpeg
+  -zeroichi-magic: FF D8 FF
   title: JPEG (Joint Photographic Experts Group) File Interchange Format
   file-extension:
     - jpg

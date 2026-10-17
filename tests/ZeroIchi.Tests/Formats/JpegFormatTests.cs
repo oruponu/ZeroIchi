@@ -16,6 +16,12 @@ public sealed class JpegFormatTests
     ];
 
     [Fact]
+    public void Default_DetectsJpegByItsSignature()
+    {
+        Assert.Equal("jpeg", Detect([.. Header, 0x12, 0xFF, 0xD9]));
+    }
+
+    [Fact]
     public void Parse_ReadsTheScanUpToTheNextMarker()
     {
         var root = Parse("image/jpeg", [.. Header, 0x12, 0xFF, 0x00, 0x34, 0xFF, 0xD9]);
