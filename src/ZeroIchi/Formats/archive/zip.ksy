@@ -19,6 +19,7 @@ meta:
     - /common/dos_datetime
   endian: le
   bit-endian: le
+  ks-opaque-types: true
 doc: |
   ZIP is a popular archive file format, introduced in 1989 by Phil Katz
   and originally implemented in PKZIP utility by PKWARE.
@@ -51,6 +52,8 @@ types:
             0x0201: central_dir_entry
             0x0403: local_file
             0x0605: end_of_central_dir
+            0x0606: zip64_end_of_central_dir
+            0x0706: zip64_end_of_central_dir_locator
             0x0807: data_descriptor
   data_descriptor:
     seq:
@@ -65,7 +68,19 @@ types:
       - id: header
         type: local_file_header
       - id: body
-        size: header.len_body_compressed
+        size: 'header.len_body_compressed == 0xffff_ffff ? zip64.last.body.as<extra_field::zip64>.len_body_compressed : header.len_body_compressed'
+        if: not header.flags.has_data_descriptor
+      - id: body_with_descriptor
+        type: zip_data_with_descriptor(header.len_extra)
+        if: header.flags.has_data_descriptor
+    instances:
+      zip64:
+        io: header.extra._io
+        pos: 0
+        type: extra_field
+        repeat: until
+        repeat-until: _.code == extra_codes::zip64 or _io.eof
+        if: header.len_body_compressed == 0xffff_ffff and header.len_extra > 0
   local_file_header:
     seq:
       - id: version
@@ -199,6 +214,7 @@ types:
       local_header:
         pos: ofs_local_header
         type: pk_section
+        if: ofs_local_header >= 0
   # https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT - 4.3.16
   end_of_central_dir:
     seq:
@@ -220,6 +236,36 @@ types:
         type: str
         size: len_comment
         encoding: UTF-8
+  zip64_end_of_central_dir:
+    seq:
+      - id: len_record
+        type: u8
+      - id: version_made_by
+        type: u2
+      - id: version_needed_to_extract
+        type: u2
+      - id: disk_of_end_of_central_dir
+        type: u4
+      - id: disk_of_central_dir
+        type: u4
+      - id: num_central_dir_entries_on_disk
+        type: u8
+      - id: num_central_dir_entries_total
+        type: u8
+      - id: len_central_dir
+        type: u8
+      - id: ofs_central_dir
+        type: u8
+      - id: extensible_data
+        size: len_record - 44
+  zip64_end_of_central_dir_locator:
+    seq:
+      - id: disk_of_zip64_end_of_central_dir
+        type: u4
+      - id: ofs_zip64_end_of_central_dir
+        type: u8
+      - id: num_disks
+        type: u4
   extras:
     seq:
       - id: entries
@@ -240,7 +286,22 @@ types:
             'extra_codes::ntfs': ntfs
             'extra_codes::extended_timestamp': extended_timestamp
             'extra_codes::infozip_unix_var_size': infozip_unix_var_size
+            'extra_codes::zip64': zip64
     types:
+      zip64:
+        seq:
+          - id: len_body_uncompressed
+            type: u8
+            if: not _io.eof
+          - id: len_body_compressed
+            type: u8
+            if: not _io.eof
+          - id: ofs_local_header
+            type: u8
+            if: not _io.eof
+          - id: disk_start
+            type: u4
+            if: not _io.eof
       ntfs:
         doc-ref: 'https://github.com/LuaDist/zip/blob/b710806/proginfo/extrafld.txt#L191'
         seq:
