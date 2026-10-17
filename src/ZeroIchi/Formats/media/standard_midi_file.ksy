@@ -17,6 +17,7 @@ meta:
   imports:
     - /common/vlq_base128_be
   endian: be
+  ks-opaque-types: true
 doc: |
   Standard MIDI file, typically known just as "MID", is a standard way
   to serialize series of MIDI events, which is a protocol used in many
@@ -59,7 +60,7 @@ types:
       - id: len_events
         type: u4
       - id: events
-        type: track_events
+        type: midi_track_events
         size: len_events
   track_events:
     seq:

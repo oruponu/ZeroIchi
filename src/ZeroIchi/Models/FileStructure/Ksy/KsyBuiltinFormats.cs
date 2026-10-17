@@ -24,6 +24,7 @@ internal static class KsyBuiltinFormats
     {
         var natives = new KsyNativeTypeRegistry();
         natives.Register(new JpegEntropyData());
+        natives.Register(new MidiTrackEvents());
         return natives;
     }
 
