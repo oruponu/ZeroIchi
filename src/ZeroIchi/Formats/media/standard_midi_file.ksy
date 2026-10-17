@@ -1,5 +1,6 @@
 meta:
   id: standard_midi_file
+  -zeroichi-magic: 4D 54 68 64
   title: Standard MIDI file
   file-extension:
     - mid

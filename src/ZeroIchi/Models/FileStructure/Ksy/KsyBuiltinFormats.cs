@@ -17,6 +17,7 @@ internal static class KsyBuiltinFormats
         "image/png",
         "image/webp",
         "media/mp3",
+        "media/standard_midi_file",
         "media/wav",
     ];
 

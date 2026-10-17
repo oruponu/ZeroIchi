@@ -12,6 +12,12 @@ public sealed class MidiFormatTests
     ];
 
     [Fact]
+    public void Default_DetectsMidiByItsSignature()
+    {
+        Assert.Equal("standard_midi_file", Detect(Midi([0x00, 0xFF, 0x2F, 0x00])));
+    }
+
+    [Fact]
     public void Parse_ReadsEventsWithRunningStatus()
     {
         var root = Parse("media/standard_midi_file",
