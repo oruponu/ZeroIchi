@@ -48,6 +48,15 @@ public sealed class KsyBuiltinFormatsTests
     }
 
     [Fact]
+    public void Load_ReturnsNoFormatsWhenTheNativeTypesCannotBeCreated()
+    {
+        var formats = KsyBuiltinFormats.Load(() => new KsyMemoryImportSource(), ["any"],
+            () => throw new InvalidOperationException("duplicate native type"));
+
+        Assert.Empty(formats);
+    }
+
+    [Fact]
     public void BuiltinDefinitions_LoadWithoutDiagnostics()
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

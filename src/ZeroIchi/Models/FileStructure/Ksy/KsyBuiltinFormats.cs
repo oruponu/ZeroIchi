@@ -23,10 +23,21 @@ internal static class KsyBuiltinFormats
     internal static IKsyImportSource CreateSource() =>
         new KsyResourceImportSource(typeof(KsyBuiltinFormats).Assembly, ResourcePrefix);
 
-    internal static List<KsyFormat> Load()
+    internal static List<KsyFormat> Load() => Load(CreateSource, Roots, CreateNativeTypes);
+
+    internal static List<KsyFormat> Load(Func<IKsyImportSource> createSource, IEnumerable<string> roots,
+        Func<KsyNativeTypeRegistry> createNatives)
     {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        return Load(CreateSource(), Roots, CreateNativeTypes());
+        try
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            return Load(createSource(), roots, createNatives());
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Console.Error.WriteLine(e);
+            return [];
+        }
     }
 
     internal static List<KsyFormat> Load(IKsyImportSource source, IEnumerable<string> roots,
