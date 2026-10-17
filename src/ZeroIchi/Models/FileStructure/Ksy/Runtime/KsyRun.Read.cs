@@ -355,7 +355,7 @@ internal sealed partial class KsyRun
         }
         io.Seek(start + result.Consumed);
 
-        node.FixedDescription = ("", ValueKind.None);
+        if (result.Nodes.Count > 0) node.FixedDescription = ("", ValueKind.None);
         AddNativeNodes(attribute, name, io, result.Nodes, node.Children, start, start + result.Consumed);
         if (result.Error is { } error)
             throw NativeError(name, error, $"{attribute.Path}: Native type '{name}' failed: {error}");

@@ -195,6 +195,16 @@ public sealed class KsyInterpreterNativeTests
     }
 
     [Fact]
+    public void Parse_NativeTypeWithoutNodesIsShownAsBytes()
+    {
+        var root = Parse(Yaml.Replace("scan_to_marker", "faulty"), [7, 1, 2, 9], natives: Registry(new Faulty(2)));
+
+        var blob = Node(root, "blob");
+        Assert.Equal((1L, 2L, "01 02", ValueKind.Bytes), (blob.Offset, blob.Length, blob.Description, blob.ValueKind));
+        Assert.Equal((3L, "9"), (Node(root, "after").Offset, Node(root, "after").Description));
+    }
+
+    [Fact]
     public void Parse_NativeTypeFailureStopsWithItsMessage()
     {
         var root = Parse(Yaml.Replace("scan_to_marker", "faulty"), [7, 1, 2],
