@@ -12,6 +12,7 @@ internal static class KsyBuiltinFormats
 
     internal static IReadOnlyList<string> Roots { get; } =
     [
+        "archive/zip",
         "image/bmp",
         "image/jpeg",
         "image/png",

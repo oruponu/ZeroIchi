@@ -6,6 +6,12 @@ namespace ZeroIchi.Tests.Formats;
 public sealed class ZipFormatTests
 {
     [Fact]
+    public void Default_DetectsZipByItsSignature()
+    {
+        Assert.Equal("zip", Detect(new ZipBuilder().Add("a.txt", [1, 2, 3]).Build()));
+    }
+
+    [Fact]
     public void Parse_ReadsLocalFilesTheCentralDirectoryAndItsEnd()
     {
         var root = Parse("archive/zip", new ZipBuilder().Add("a.txt", [1, 2, 3]).Add("b.txt", [4]).Build());

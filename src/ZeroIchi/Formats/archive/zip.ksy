@@ -1,5 +1,6 @@
 meta:
   id: zip
+  -zeroichi-magic: 50 4B 03 04
   title: ZIP archive file
   file-extension: zip
   xref:
