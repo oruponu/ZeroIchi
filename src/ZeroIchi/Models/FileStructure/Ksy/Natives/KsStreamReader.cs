@@ -24,6 +24,13 @@ internal sealed class KsStreamReader(KsStream stream)
         }
     }
 
+    public ulong UInt(long position, int size)
+    {
+        ulong value = 0;
+        for (var i = size - 1; i >= 0; i--) value = (value << 8) | this[position + i];
+        return value;
+    }
+
     public string Preview(long position, long length)
     {
         var bytes = new byte[Math.Min(length, KsyDescriptions.BytesLimit)];
