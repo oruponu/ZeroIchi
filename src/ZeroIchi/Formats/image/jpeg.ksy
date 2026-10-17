@@ -23,6 +23,7 @@ meta:
   imports:
     - exif
   endian: be
+  ks-opaque-types: true
 doc: |
   JPEG File Interchange Format, or JFIF, or, more colloquially known
   as just "JPEG" or "JPG", is a popular 2D bitmap image file format,
@@ -54,10 +55,10 @@ types:
         enum: marker_enum
       - id: length
         type: u2
-        if: marker != marker_enum::soi and marker != marker_enum::eoi
+        if: marker != marker_enum::soi and marker != marker_enum::eoi and (marker.to_i < 0xd0 or marker.to_i > 0xd7)
       - id: data
         size: length - 2
-        if: marker != marker_enum::soi and marker != marker_enum::eoi
+        if: marker != marker_enum::soi and marker != marker_enum::eoi and (marker.to_i < 0xd0 or marker.to_i > 0xd7)
         type:
           switch-on: marker
           cases:
@@ -66,8 +67,8 @@ types:
             'marker_enum::sof0': segment_sof0
             'marker_enum::sos': segment_sos
       - id: image_data
-        size-eos: true
-        if: marker == marker_enum::sos
+        type: jpeg_entropy_data
+        if: marker == marker_enum::sos or (marker.to_i >= 0xd0 and marker.to_i <= 0xd7)
     enums:
       marker_enum:
         0x01: tem
@@ -79,6 +80,14 @@ types:
         0xc5: sof5 # start of frame 5
         0xc6: sof6 # start of frame 6
         0xc7: sof7 # start of frame 7
+        0xd0: rst0
+        0xd1: rst1
+        0xd2: rst2
+        0xd3: rst3
+        0xd4: rst4
+        0xd5: rst5
+        0xd6: rst6
+        0xd7: rst7
         0xd8: soi # start of image
         0xd9: eoi # end of image
         0xda: sos # start of scan

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
+using ZeroIchi.Models.FileStructure.Ksy.Natives;
 
 namespace ZeroIchi.Models.FileStructure.Ksy;
 
@@ -18,7 +19,12 @@ internal static class KsyBuiltinFormats
         "media/wav",
     ];
 
-    internal static KsyNativeTypeRegistry CreateNativeTypes() => new();
+    internal static KsyNativeTypeRegistry CreateNativeTypes()
+    {
+        var natives = new KsyNativeTypeRegistry();
+        natives.Register(new JpegEntropyData());
+        return natives;
+    }
 
     internal static IKsyImportSource CreateSource() =>
         new KsyResourceImportSource(typeof(KsyBuiltinFormats).Assembly, ResourcePrefix);
