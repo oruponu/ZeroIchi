@@ -13,6 +13,8 @@ internal sealed class KsStreamReader(KsStream stream)
 
     public long Size => stream.Size;
 
+    public long FileOffset(long position) => stream.FileOffset(position);
+
     public byte this[long position]
     {
         get
@@ -20,6 +22,14 @@ internal sealed class KsStreamReader(KsStream stream)
             if (position < _windowStart || position >= _windowStart + _windowLength) Fill(position);
             return _window[position - _windowStart];
         }
+    }
+
+    public string Preview(long position, long length)
+    {
+        var bytes = new byte[Math.Min(length, KsyDescriptions.BytesLimit)];
+        for (var i = 0; i < bytes.Length; i++) bytes[i] = this[position + i];
+        var text = KsyDescriptions.Hex(bytes);
+        return length > KsyDescriptions.BytesLimit ? $"{text} ..." : text;
     }
 
     private void Fill(long position)
