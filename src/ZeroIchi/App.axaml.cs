@@ -6,7 +6,9 @@ using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using ZeroIchi.Infrastructure;
+using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
@@ -24,6 +26,7 @@ public sealed partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        _ = Task.Run(KsyFormatRegistry.Default.Preload);
         Resources["DefaultFontFamily"] = CreateDefaultFontFamily();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
