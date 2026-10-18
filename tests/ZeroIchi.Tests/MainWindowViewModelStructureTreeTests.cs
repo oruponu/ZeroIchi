@@ -42,6 +42,7 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
             KsyFormats = registry,
         };
         await vm.OpenFileAsync(path);
+        await vm.StructureUpdate;
         return vm;
     }
 
@@ -51,10 +52,15 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
     public async Task OpenFile_MatchingKsyDefinition_BuildsTheTreeWithTheInterpreter()
     {
         var vm = await OpenAsync("a.bin", "ZI\u0005"u8.ToArray(), MagicYaml);
-        using var _ = vm.Document;
-
-        Assert.Equal("magic,len,doubled", Names(vm));
-        Assert.NotNull(vm.StructureColors);
+        try
+        {
+            Assert.Equal("magic,len,doubled", Names(vm));
+            Assert.NotNull(vm.StructureColors);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
@@ -63,9 +69,14 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         const string yaml = "meta:\n  id: ext\n  file-extension: zz\nseq:\n  - id: first\n    type: u1\n";
 
         var vm = await OpenAsync("a.zz", [7, 8], yaml);
-        using var _ = vm.Document;
-
-        Assert.Equal("first", Names(vm));
+        try
+        {
+            Assert.Equal("first", Names(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
@@ -74,10 +85,15 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
         var vm = await OpenAsync("a.png", png, MagicYaml);
-        using var _ = vm.Document;
-
-        Assert.Empty(vm.StructureTreeItems);
-        Assert.Null(vm.StructureColors);
+        try
+        {
+            Assert.Empty(vm.StructureTreeItems);
+            Assert.Null(vm.StructureColors);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
@@ -94,21 +110,33 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService());
 
         await vm.OpenFileAsync(path);
-        using var _ = vm.Document;
-
-        Assert.Equal("magic,ihdr_len,ihdr_type,ihdr,ihdr_crc,chunks", Names(vm));
+        await vm.StructureUpdate;
+        try
+        {
+            Assert.Equal("magic,ihdr_len,ihdr_type,ihdr,ihdr_crc,chunks", Names(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task SelectingANodeWithoutRange_KeepsTheCursorAndSelection()
     {
         var vm = await OpenAsync("a.bin", "ZI\u0005"u8.ToArray(), MagicYaml);
-        using var _ = vm.Document;
-        vm.SelectedStructureItem = vm.StructureTreeItems.Single(i => i.Name == "len");
+        try
+        {
+            vm.SelectedStructureItem = vm.StructureTreeItems.Single(i => i.Name == "len");
 
-        vm.SelectedStructureItem = vm.StructureTreeItems.Single(i => i.Name == "doubled");
+            vm.SelectedStructureItem = vm.StructureTreeItems.Single(i => i.Name == "doubled");
 
-        Assert.Equal((2L, 2L, 1L), (vm.CursorPosition, vm.SelectionStart, vm.SelectionLength));
+            Assert.Equal((2L, 2L, 1L), (vm.CursorPosition, vm.SelectionStart, vm.SelectionLength));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     private sealed class StubDialogService : IDialogService

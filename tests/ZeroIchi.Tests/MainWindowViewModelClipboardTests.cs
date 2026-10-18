@@ -75,65 +75,89 @@ public sealed class MainWindowViewModelClipboardTests : IDisposable
     public async Task Copy_WritesSelectedBytesAndHexText()
     {
         var (vm, clipboard) = await OpenAsync([0x00, 0x10, 0x20, 0xFF]);
-        using var _ = vm.Document;
-        vm.SelectionStart = 1;
-        vm.SelectionLength = 3;
+        try
+        {
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 3;
 
-        await vm.CopyCommand.ExecuteAsync(null);
+            await vm.CopyCommand.ExecuteAsync(null);
 
-        Assert.Equal([0x10, 0x20, 0xFF], clipboard.Bytes);
-        Assert.Equal("10 20 FF", clipboard.Text);
+            Assert.Equal([0x10, 0x20, 0xFF], clipboard.Bytes);
+            Assert.Equal("10 20 FF", clipboard.Text);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task Cut_WritesBytesAndRemovesSelection()
     {
         var (vm, clipboard) = await OpenAsync([0x00, 0x10, 0x20, 0xFF]);
-        using var _ = vm.Document;
-        vm.SelectionStart = 1;
-        vm.SelectionLength = 2;
+        try
+        {
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 2;
 
-        await vm.CutCommand.ExecuteAsync(null);
+            await vm.CutCommand.ExecuteAsync(null);
 
-        Assert.Equal([0x10, 0x20], clipboard.Bytes);
-        Assert.Equal([0x00, 0xFF], ReadAll(vm));
+            Assert.Equal([0x10, 0x20], clipboard.Bytes);
+            Assert.Equal([0x00, 0xFF], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task Cut_DeletesCopiedRange_WhenSelectionChangesDuringClipboardWrite()
     {
         var (vm, clipboard) = await OpenAsync([0x00, 0x10, 0x20, 0xFF]);
-        using var _ = vm.Document;
-        vm.SelectionStart = 1;
-        vm.SelectionLength = 2;
-        clipboard.PendingWrite = new TaskCompletionSource();
+        try
+        {
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 2;
+            clipboard.PendingWrite = new TaskCompletionSource();
 
-        var cut = vm.CutCommand.ExecuteAsync(null);
-        vm.SelectionStart = 3;
-        vm.SelectionLength = 1;
-        clipboard.PendingWrite.SetResult();
-        await cut;
+            var cut = vm.CutCommand.ExecuteAsync(null);
+            vm.SelectionStart = 3;
+            vm.SelectionLength = 1;
+            clipboard.PendingWrite.SetResult();
+            await cut;
 
-        Assert.Equal([0x10, 0x20], clipboard.Bytes);
-        Assert.Equal([0x00, 0xFF], ReadAll(vm));
+            Assert.Equal([0x10, 0x20], clipboard.Bytes);
+            Assert.Equal([0x00, 0xFF], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task Cut_KeepsData_WhenDataChangesDuringClipboardWrite()
     {
         var (vm, clipboard) = await OpenAsync([0x00, 0x10, 0x20, 0xFF]);
-        using var _ = vm.Document;
-        vm.SelectionStart = 1;
-        vm.SelectionLength = 2;
-        clipboard.PendingWrite = new TaskCompletionSource();
+        try
+        {
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 2;
+            clipboard.PendingWrite = new TaskCompletionSource();
 
-        var cut = vm.CutCommand.ExecuteAsync(null);
-        vm.OnByteModified(3, 0xEE, cursorPositionAfter: 4);
-        clipboard.PendingWrite.SetResult();
-        await cut;
+            var cut = vm.CutCommand.ExecuteAsync(null);
+            vm.OnByteModified(3, 0xEE, cursorPositionAfter: 4);
+            clipboard.PendingWrite.SetResult();
+            await cut;
 
-        Assert.Equal([0x10, 0x20], clipboard.Bytes);
-        Assert.Equal([0x00, 0x10, 0x20, 0xEE], ReadAll(vm));
+            Assert.Equal([0x10, 0x20], clipboard.Bytes);
+            Assert.Equal([0x00, 0x10, 0x20, 0xEE], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
@@ -149,12 +173,18 @@ public sealed class MainWindowViewModelClipboardTests : IDisposable
         var otherPath = Path.Combine(_tempDir, "other.bin");
         File.WriteAllBytes(otherPath, [0xA0, 0xA1, 0xA2, 0xA3]);
         await vm.OpenFileAsync(otherPath);
-        using var _ = vm.Document;
-        clipboard.PendingWrite.SetResult();
-        await cut;
+        try
+        {
+            clipboard.PendingWrite.SetResult();
+            await cut;
 
-        Assert.NotSame(original, vm.Document);
-        Assert.Equal([0xA0, 0xA1, 0xA2, 0xA3], ReadAll(vm));
+            Assert.NotSame(original, vm.Document);
+            Assert.Equal([0xA0, 0xA1, 0xA2, 0xA3], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
@@ -173,51 +203,75 @@ public sealed class MainWindowViewModelClipboardTests : IDisposable
     public async Task Paste_PrefersBytesOverText()
     {
         var (vm, clipboard) = await OpenAsync([0xAA]);
-        using var _ = vm.Document;
-        await clipboard.SetBytesAsync([0x01, 0x02], "FF");
+        try
+        {
+            await clipboard.SetBytesAsync([0x01, 0x02], "FF");
 
-        await vm.PasteCommand.ExecuteAsync(null);
+            await vm.PasteCommand.ExecuteAsync(null);
 
-        Assert.Equal([0x01, 0x02, 0xAA], ReadAll(vm));
+            Assert.Equal([0x01, 0x02, 0xAA], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task Paste_FallsBackToHexText_WhenNoBytes()
     {
         var (vm, clipboard) = await OpenAsync([0xAA]);
-        using var _ = vm.Document;
-        clipboard.SetTextFromOtherApp("10 20");
+        try
+        {
+            clipboard.SetTextFromOtherApp("10 20");
 
-        await vm.PasteCommand.ExecuteAsync(null);
+            await vm.PasteCommand.ExecuteAsync(null);
 
-        Assert.Equal([0x10, 0x20, 0xAA], ReadAll(vm));
+            Assert.Equal([0x10, 0x20, 0xAA], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task Paste_DoesNothing_WhenTextIsNotHex()
     {
         var (vm, clipboard) = await OpenAsync([0xAA]);
-        using var _ = vm.Document;
-        clipboard.SetTextFromOtherApp("hello");
+        try
+        {
+            clipboard.SetTextFromOtherApp("hello");
 
-        await vm.PasteCommand.ExecuteAsync(null);
+            await vm.PasteCommand.ExecuteAsync(null);
 
-        Assert.Equal([0xAA], ReadAll(vm));
+            Assert.Equal([0xAA], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]
     public async Task CopyThenPaste_InsertsCopiedBytes_EvenIfOtherAppLeftHexText()
     {
         var (vm, clipboard) = await OpenAsync([0x01, 0x02, 0x03]);
-        using var _ = vm.Document;
-        clipboard.SetTextFromOtherApp("ff");
-        vm.SelectionStart = 1;
-        vm.SelectionLength = 2;
-        await vm.CopyCommand.ExecuteAsync(null);
-        vm.CursorPosition = 0;
+        try
+        {
+            clipboard.SetTextFromOtherApp("ff");
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 2;
+            await vm.CopyCommand.ExecuteAsync(null);
+            vm.CursorPosition = 0;
 
-        await vm.PasteCommand.ExecuteAsync(null);
+            await vm.PasteCommand.ExecuteAsync(null);
 
-        Assert.Equal([0x02, 0x03, 0x01, 0x02, 0x03], ReadAll(vm));
+            Assert.Equal([0x02, 0x03, 0x01, 0x02, 0x03], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 }

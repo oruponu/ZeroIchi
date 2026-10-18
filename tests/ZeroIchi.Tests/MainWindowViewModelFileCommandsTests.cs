@@ -82,7 +82,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -105,7 +105,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -122,7 +122,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -144,7 +144,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
         Assert.Equal([0xFF, 2, 3], await File.ReadAllBytesAsync(path));
     }
@@ -167,7 +167,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -193,7 +193,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -218,7 +218,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
         Assert.Equal([0xFF, 2, 3], await File.ReadAllBytesAsync(path));
     }
@@ -245,7 +245,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -270,7 +270,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -299,7 +299,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -325,7 +325,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 }

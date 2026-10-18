@@ -53,7 +53,7 @@ public sealed class HexViewControlNibbleStateTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     });
 
@@ -72,7 +72,7 @@ public sealed class HexViewControlNibbleStateTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     });
 
@@ -90,7 +90,7 @@ public sealed class HexViewControlNibbleStateTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     });
 

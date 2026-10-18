@@ -46,7 +46,7 @@ public sealed class MainWindowViewModelDocumentChangedTests : IDisposable
     }
 
     [Fact]
-    public void InitialDocument_EditedDirectly_UpdatesViewModelState()
+    public async Task InitialDocument_EditedDirectly_UpdatesViewModelState()
     {
         var vm = CreateViewModel();
         var document = vm.Document!;
@@ -62,7 +62,7 @@ public sealed class MainWindowViewModelDocumentChangedTests : IDisposable
         }
         finally
         {
-            document.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -84,7 +84,7 @@ public sealed class MainWindowViewModelDocumentChangedTests : IDisposable
         }
         finally
         {
-            document.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -107,7 +107,7 @@ public sealed class MainWindowViewModelDocumentChangedTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -128,7 +128,7 @@ public sealed class MainWindowViewModelDocumentChangedTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 }

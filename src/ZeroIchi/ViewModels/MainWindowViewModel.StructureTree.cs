@@ -1,25 +1,38 @@
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using ZeroIchi.Models;
-using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure;
 using ZeroIchi.Models.FileStructure.Ksy;
-using ZeroIchi.Models.FileStructure.Ksy.Runtime;
 
 namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
+    private CancellationTokenSource? _structureCts;
+    private Task _parseTail = Task.CompletedTask;
+    private int _structurePauseCount;
+    private bool _structureUpdatePending;
+    private HashSet<(string name, int depth)> _expandedHint = [];
+
     internal KsyFormatRegistry KsyFormats { get; init; } = KsyFormatRegistry.Default;
+
+    internal TimeSpan StructureDebounce { get; init; } = TimeSpan.FromMilliseconds(250);
+
+    internal Task StructureUpdate { get; private set; } = Task.CompletedTask;
 
     partial void OnSelectedStructureItemChanged(StructureTreeItem? value)
     {
         if (_isSyncingSelection) return;
-        if (value is null || Document?.Buffer is null || !value.Node.HasRange) return;
+        if (value is null || Document?.Buffer is not { } buffer || !value.Node.HasRange) return;
+        var length = buffer.Length;
+        var offset = Math.Min(value.Node.Offset, length);
         _isSyncingSelection = true;
-        CursorPosition = value.Node.Offset;
-        SelectionStart = value.Node.Offset;
-        SelectionLength = value.Node.Length;
+        CursorPosition = offset;
+        SelectionStart = offset;
+        SelectionLength = Math.Min(value.Node.Length, length - offset);
         _isSyncingSelection = false;
     }
 
@@ -51,7 +64,87 @@ public partial class MainWindowViewModel
 
     partial void OnIsInspectorBigEndianChanged(bool value) => UpdateInspector();
 
-    private void UpdateStructureTree(ByteBuffer buffer)
+    private void ScheduleStructureUpdate(bool immediate)
+    {
+        _structureCts?.Cancel();
+        _structureCts = null;
+
+        if (Document is not { Buffer.Length: > 0 } document)
+        {
+            ClearStructure();
+            StructureUpdate = Task.CompletedTask;
+            return;
+        }
+
+        if (_structurePauseCount > 0)
+        {
+            _structureUpdatePending = true;
+            return;
+        }
+
+        _structureCts = new CancellationTokenSource();
+        StructureUpdate = UpdateStructureAsync(document, DataVersion, immediate, _structureCts.Token);
+    }
+
+    // Task.Run takes no token: cancelling before it starts would skip awaiting the previous parse
+    private async Task UpdateStructureAsync(BinaryDocument document, int version, bool immediate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!immediate) await Task.Delay(StructureDebounce, cancellationToken);
+            UpdateFileType(document.Buffer);
+            var snapshot = document.CreateSnapshot();
+            var formats = KsyFormats;
+            var filePath = document.FilePath;
+            var previous = _parseTail;
+            var parse = Task.Run(async () =>
+            {
+                await previous;
+                cancellationToken.ThrowIfCancellationRequested();
+                return StructureAnalysis.Analyze(formats, snapshot, filePath, cancellationToken);
+            });
+            _parseTail = parse.ContinueWith(static _ => { }, TaskScheduler.Default);
+            var analysis = await parse;
+            if (cancellationToken.IsCancellationRequested || Document != document || DataVersion != version) return;
+            ApplyStructure(analysis);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            if (!cancellationToken.IsCancellationRequested && Document == document) ApplyStructure(null);
+        }
+    }
+
+    private void ApplyStructure(StructureAnalysis? analysis)
+    {
+        var expanded = StructureTreeItems.Count > 0 ? CollectExpanded() : _expandedHint;
+        StructureTreeItems.Clear();
+        SelectedStructureItem = null;
+
+        if (analysis is null)
+        {
+            StructureColors = null;
+            return;
+        }
+
+        StructureColors = analysis.Colors;
+        foreach (var child in analysis.Root.Children)
+            AddTreeItem(child, 0, expanded);
+        SyncStructureTreeSelection(CursorPosition);
+    }
+
+    private void ClearStructure()
+    {
+        if (StructureTreeItems.Count > 0) _expandedHint = CollectExpanded();
+        StructureTreeItems.Clear();
+        StructureColors = null;
+        SelectedStructureItem = null;
+    }
+
+    private HashSet<(string name, int depth)> CollectExpanded()
     {
         var expanded = new HashSet<(string name, int depth)>();
         foreach (var item in StructureTreeItems)
@@ -59,20 +152,25 @@ public partial class MainWindowViewModel
             if (item.HasChildren && item.IsExpanded)
                 expanded.Add((item.Name, item.Depth));
         }
+        return expanded;
+    }
 
-        StructureTreeItems.Clear();
-        SelectedStructureItem = null;
+    internal async Task PauseStructureUpdatesAsync()
+    {
+        _structurePauseCount++;
+        if (!StructureUpdate.IsCompleted) _structureUpdatePending = true;
+        _structureCts?.Cancel();
+        _structureCts = null;
+        await _parseTail;
+    }
 
-        if (KsyFormats.Detect(buffer, Document?.FilePath) is not { } format)
-        {
-            StructureColors = null;
-            return;
-        }
+    internal void ResumeStructureUpdates()
+    {
+        _structurePauseCount--;
+        if (_structurePauseCount > 0 || !_structureUpdatePending) return;
 
-        var root = KsyInterpreter.Parse(format, buffer);
-        StructureColors = StructureColorMap.Build(root);
-        foreach (var child in root.Children)
-            AddTreeItem(child, 0, expanded);
+        _structureUpdatePending = false;
+        ScheduleStructureUpdate(immediate: true);
     }
 
     private void AddTreeItem(FileStructureNode node, int depth, HashSet<(string name, int depth)> expanded)

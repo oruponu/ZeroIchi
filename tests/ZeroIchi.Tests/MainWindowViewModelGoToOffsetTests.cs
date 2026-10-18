@@ -42,7 +42,7 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -61,7 +61,7 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -83,7 +83,7 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 

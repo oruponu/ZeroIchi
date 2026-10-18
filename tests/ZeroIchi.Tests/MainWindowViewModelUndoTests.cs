@@ -80,7 +80,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -109,7 +109,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -132,7 +132,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -159,7 +159,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -184,7 +184,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -210,7 +210,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -236,7 +236,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -262,7 +262,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -290,7 +290,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 }

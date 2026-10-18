@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime;
+using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure;
@@ -166,18 +167,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (newValue is not null)
             newValue.Changed += OnDocumentContentChanged;
 
-        if (newValue?.Buffer is { Length: > 0 } buffer)
-        {
-            UpdateFileType(buffer);
-            UpdateStructureTree(buffer);
-        }
-        else
-        {
+        if (newValue?.Buffer is not { Length: > 0 })
             StatusBarFileTypeText = "";
-            StructureTreeItems.Clear();
-            StructureColors = null;
-            SelectedStructureItem = null;
-        }
+        ClearStructure();
+        ScheduleStructureUpdate(immediate: true);
         UpdateStatusBar();
         UpdateInspector();
     }
@@ -192,18 +185,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     partial void OnDataVersionChanged(int value)
     {
-        if (Document?.Buffer is { Length: > 0 } buffer)
-        {
-            UpdateFileType(buffer);
-            UpdateStructureTree(buffer);
-        }
-        else
-        {
-            StructureTreeItems.Clear();
-            StructureColors = null;
-            SelectedStructureItem = null;
-        }
-
+        ScheduleStructureUpdate(immediate: false);
         UpdateStatusBar();
         UpdateInspector();
     }
@@ -242,20 +224,28 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     // Avalonia bindings cache the old Document, so release Data explicitly
-    private void ReplaceDocument(BinaryDocument newDocument)
+    private async Task ReplaceDocumentAsync(BinaryDocument newDocument)
     {
-        var oldDocument = Document;
-        Document = newDocument;
-        oldDocument?.Dispose();
+        await PauseStructureUpdatesAsync();
+        try
+        {
+            var oldDocument = Document;
+            Document = newDocument;
+            oldDocument?.Dispose();
 
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
 
-        CursorPosition = 0;
-        SelectionStart = 0;
-        SelectionLength = 0;
-        UpdateUndoRedoState();
-        UpdateTitle();
-        ClearSearchResults();
+            CursorPosition = 0;
+            SelectionStart = 0;
+            SelectionLength = 0;
+            UpdateUndoRedoState();
+            UpdateTitle();
+            ClearSearchResults();
+        }
+        finally
+        {
+            ResumeStructureUpdates();
+        }
     }
 }

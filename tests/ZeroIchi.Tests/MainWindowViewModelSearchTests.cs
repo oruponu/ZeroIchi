@@ -64,7 +64,7 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 
@@ -86,7 +86,7 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
         }
         finally
         {
-            vm.Document?.Dispose();
+            await vm.DisposeDocumentAsync();
         }
     }
 }

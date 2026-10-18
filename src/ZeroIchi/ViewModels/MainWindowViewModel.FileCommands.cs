@@ -47,7 +47,7 @@ public partial class MainWindowViewModel
         if (newDocument is null)
             return false;
 
-        ReplaceDocument(newDocument);
+        await ReplaceDocumentAsync(newDocument);
         return true;
     }
 
@@ -63,7 +63,7 @@ public partial class MainWindowViewModel
             var detail = ex.Message;
             if (Document is { IsUsable: false })
             {
-                DetachUnusableDocument();
+                await DetachUnusableDocumentAsync();
                 detail = $"{ex.Message}\n\n{UnusableDocumentNotice}";
             }
 
@@ -72,7 +72,7 @@ public partial class MainWindowViewModel
         }
     }
 
-    private void DetachUnusableDocument() => ReplaceDocument(BinaryDocument.CreateNew());
+    private Task DetachUnusableDocumentAsync() => ReplaceDocumentAsync(BinaryDocument.CreateNew());
 
     [RelayCommand]
     private async Task SaveFileAsync()
