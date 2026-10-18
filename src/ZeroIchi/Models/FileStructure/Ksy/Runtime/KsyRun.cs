@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Runtime;
 
-internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyParseOptions options)
+internal sealed partial class KsyRun(
+    KsyFormat format, ByteBuffer buffer, KsyParseOptions options, CancellationToken cancellationToken = default)
 {
     private readonly Dictionary<KsyType, KsyTypeLayout> _layouts = [];
     private readonly List<KsObject> _objects = [];
@@ -18,7 +20,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
 
     public FileStructureNode Run()
     {
-        var stream = KsStream.FromBuffer(buffer);
+        var stream = KsStream.FromBuffer(buffer, cancellationToken);
         var root = new KsyNode(format.Id, null, stream, 0);
         try
         {
@@ -26,7 +28,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
             Parsed = true;
             EvaluateForDisplay();
         }
-        catch (Exception e) when (e is not OutOfMemoryException)
+        catch (Exception e) when (e is not OutOfMemoryException and not OperationCanceledException)
         {
             Failure = e;
         }
@@ -61,6 +63,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
 
     private KsyNode NewNode(string name, string? fieldId, KsStream? stream, long start)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (_nodeCount >= options.NodeBudget)
         {
             throw new KsyParseException(
@@ -111,6 +114,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
 
     private bool Observe(KsyNode node, Exception e)
     {
+        if (e is OperationCanceledException) return false;
         if (!ReferenceEquals(_observed, e))
         {
             _observed = e;
@@ -219,6 +223,7 @@ internal sealed partial class KsyRun(KsyFormat format, ByteBuffer buffer, KsyPar
         pending.Push(top);
         while (pending.TryPop(out var node))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             order.Add(node);
             foreach (var child in node.Children) pending.Push(child);
             foreach (var instance in node.Instances)

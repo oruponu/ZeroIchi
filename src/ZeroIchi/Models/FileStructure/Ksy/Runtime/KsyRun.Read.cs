@@ -343,7 +343,7 @@ internal sealed partial class KsyRun
         {
             result = native.Native.Read(io, args);
         }
-        catch (Exception e) when (e is not KsyParseException and not OutOfMemoryException)
+        catch (Exception e) when (e is not KsyParseException and not OutOfMemoryException and not OperationCanceledException)
         {
             throw NativeError(name, e.Message, $"{attribute.Path}: Native type '{name}' failed: {e.Message}");
         }
@@ -388,7 +388,7 @@ internal sealed partial class KsyRun
         new(new FileStructureError(FileStructureErrorKind.Native, [name, detail], message));
 
     private static KsStream Window(KsStream io, KsRange range, byte[]? processed) =>
-        processed is null ? io.Substream(range.Start, range.Length) : KsStream.FromBytes(processed);
+        processed is null ? io.Substream(range.Start, range.Length) : KsStream.FromBytes(processed, io.CancellationToken);
 
     private static KsRange ReadRange(KsyAttribute attribute, KsStream io, IKsEvalScope scope)
     {

@@ -45,6 +45,7 @@ internal sealed partial class KsyRun
 
     private static bool MarkFailed(KsObject obj, int index, Exception e)
     {
+        if (e is OperationCanceledException) return false;
         ref var state = ref obj.Instance(index);
         state.Status = KsyInstanceStatus.Failed;
         state.Error = ErrorOf(e);
@@ -109,7 +110,7 @@ internal sealed partial class KsyRun
                 {
                     GetInstance(obj, j);
                 }
-                catch (Exception e) when (e is not OutOfMemoryException && !IsLimit(e))
+                catch (Exception e) when (e is not OutOfMemoryException and not OperationCanceledException && !IsLimit(e))
                 {
                     if (obj.Node.Instances[j] is null)
                     {

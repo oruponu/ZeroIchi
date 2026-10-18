@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using System.Threading;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
@@ -14,17 +15,20 @@ public sealed partial class KsStream : IKsStream
     private ulong _bits;
     private int _bitsLeft;
 
-    private KsStream(ByteBuffer? buffer, byte[]? array, long @base, long size)
+    private KsStream(ByteBuffer? buffer, byte[]? array, long @base, long size, CancellationToken cancellationToken)
     {
         _buffer = buffer;
         _array = array;
         _base = @base;
         Size = size;
+        CancellationToken = cancellationToken;
     }
 
-    public static KsStream FromBuffer(ByteBuffer buffer) => new(buffer, null, 0, buffer.Length);
+    public static KsStream FromBuffer(ByteBuffer buffer, CancellationToken cancellationToken = default) =>
+        new(buffer, null, 0, buffer.Length, cancellationToken);
 
-    public static KsStream FromBytes(byte[] data) => new(null, data, 0, data.Length);
+    public static KsStream FromBytes(byte[] data, CancellationToken cancellationToken = default) =>
+        new(null, data, 0, data.Length, cancellationToken);
 
     public long Size { get; }
     public long Position { get; private set; }
@@ -33,9 +37,12 @@ public sealed partial class KsStream : IKsStream
 
     internal long BitStart => _bitsLeft > 0 ? Position - 1 : Position;
 
+    internal CancellationToken CancellationToken { get; }
+
     public long FileOffset(long position) => _base + position;
 
-    public KsStream Substream(long start, long length) => new(_buffer, _array, _base + start, length);
+    public KsStream Substream(long start, long length) =>
+        new(_buffer, _array, _base + start, length, CancellationToken);
 
     public void Seek(long position)
     {
@@ -145,6 +152,7 @@ public sealed partial class KsStream : IKsStream
 
     internal void CopyTo(long position, byte[] destination, int offset, int count)
     {
+        CancellationToken.ThrowIfCancellationRequested();
         if (_array is not null)
             Array.Copy(_array, _base + position, destination, offset, count);
         else
