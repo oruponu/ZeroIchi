@@ -2,7 +2,6 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.PieceTables;
@@ -10,7 +9,7 @@ namespace ZeroIchi.Models.PieceTables;
 public sealed class PieceTable
 {
     private readonly ByteBuffer _original;
-    private readonly List<byte> _addBuffer = [];
+    private readonly AddBuffer _addBuffer = new();
     private readonly List<Piece> _pieces = [];
 
     private int _cachedPieceIndex;
@@ -32,14 +31,10 @@ public sealed class PieceTable
 
     public IReadOnlyList<Piece> Pieces => _pieces;
 
-    public int AddBufferLength => _addBuffer.Count;
+    public int AddBufferLength => _addBuffer.Length;
 
-    public void ReadAddBuffer(long offset, byte[] buffer, int bufferOffset, int count)
-    {
-        CollectionsMarshal.AsSpan(_addBuffer)
-            .Slice((int)offset, count)
-            .CopyTo(buffer.AsSpan(bufferOffset, count));
-    }
+    public void ReadAddBuffer(long offset, byte[] buffer, int bufferOffset, int count) =>
+        _addBuffer.CopyTo(offset, buffer.AsSpan(bufferOffset, count));
 
     public byte[] ReadPieces(IReadOnlyList<Piece> pieces)
     {
@@ -58,9 +53,7 @@ public sealed class PieceTable
             }
             else
             {
-                CollectionsMarshal.AsSpan(_addBuffer)
-                    .Slice((int)piece.Offset, length)
-                    .CopyTo(result.AsSpan(destOffset, length));
+                _addBuffer.CopyTo(piece.Offset, result.AsSpan(destOffset, length));
             }
             destOffset += length;
         }
@@ -73,7 +66,7 @@ public sealed class PieceTable
         var piece = _pieces[pieceIdx];
         return piece.Source == PieceSource.Original
             ? _original.ReadByte(piece.Offset + offsetInPiece)
-            : _addBuffer[(int)(piece.Offset + offsetInPiece)];
+            : _addBuffer[piece.Offset + offsetInPiece];
     }
 
     public void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count)
@@ -94,10 +87,7 @@ public sealed class PieceTable
             }
             else
             {
-                var srcOffset = (int)(piece.Offset + offsetInPiece);
-                CollectionsMarshal.AsSpan(_addBuffer)
-                    .Slice(srcOffset, availableInPiece)
-                    .CopyTo(buffer.AsSpan(destOffset, availableInPiece));
+                _addBuffer.CopyTo(piece.Offset + offsetInPiece, buffer.AsSpan(destOffset, availableInPiece));
             }
 
             remaining -= availableInPiece;
@@ -112,8 +102,8 @@ public sealed class PieceTable
         var (pieceIdx, offsetInPiece) = FindPiece(index);
         var piece = _pieces[pieceIdx];
 
-        var addOffset = _addBuffer.Count;
-        _addBuffer.Add(value);
+        var addOffset = _addBuffer.Length;
+        _addBuffer.Append(value);
         var newPiece = new Piece(PieceSource.Add, addOffset, 1);
 
         Piece[] oldPieces = [piece];
@@ -154,8 +144,8 @@ public sealed class PieceTable
 
     public PieceTableEdit InsertBytes(long index, byte[] bytes)
     {
-        var addOffset = _addBuffer.Count;
-        _addBuffer.AddRange(bytes);
+        var addOffset = _addBuffer.Length;
+        _addBuffer.Append(bytes);
         var insertPiece = new Piece(PieceSource.Add, addOffset, bytes.Length);
 
         int pieceIdx;
@@ -254,8 +244,8 @@ public sealed class PieceTable
 
     public PieceTableEdit AppendByte(byte value)
     {
-        var addOffset = _addBuffer.Count;
-        _addBuffer.Add(value);
+        var addOffset = _addBuffer.Length;
+        _addBuffer.Append(value);
 
         int pieceIdx;
         Piece[] oldPieces;
@@ -338,6 +328,8 @@ public sealed class PieceTable
         return _pieces[pieceIdx].Source == PieceSource.Add;
     }
 
+    public ByteBuffer CreateSnapshot() => new PieceTableSnapshot(_original, _pieces.ToArray(), _addBuffer.View());
+
     public void WriteTo(Stream stream)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(81920);
@@ -356,9 +348,7 @@ public sealed class PieceTable
                     }
                     else
                     {
-                        CollectionsMarshal.AsSpan(_addBuffer)
-                            .Slice((int)srcOffset, chunk)
-                            .CopyTo(buffer.AsSpan(0, chunk));
+                        _addBuffer.CopyTo(srcOffset, buffer.AsSpan(0, chunk));
                     }
                     stream.Write(buffer, 0, chunk);
                     srcOffset += chunk;

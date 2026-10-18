@@ -103,6 +103,8 @@ public sealed class BinaryDocument : IDisposable
 
     public bool IsByteModified(long index) => _pieceTable.IsModified(index);
 
+    public ByteBuffer CreateSnapshot() => _pieceTable.CreateSnapshot();
+
     public void Save()
     {
         if (!IsModified || IsNew) return;
