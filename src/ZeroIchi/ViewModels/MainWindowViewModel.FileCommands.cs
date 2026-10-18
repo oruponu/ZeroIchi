@@ -86,11 +86,20 @@ public partial class MainWindowViewModel
         }
 
         var document = Document;
-        await TryFileOperationAsync("保存できませんでした", () =>
+        await PauseStructureUpdatesAsync();
+        try
         {
-            document.Save();
-            return Task.CompletedTask;
-        });
+            if (Document != document) return;
+            await TryFileOperationAsync("保存できませんでした", () =>
+            {
+                document.Save();
+                return Task.CompletedTask;
+            });
+        }
+        finally
+        {
+            ResumeStructureUpdates();
+        }
     }
 
     [RelayCommand]
@@ -102,7 +111,16 @@ public partial class MainWindowViewModel
         if (path is null) return;
 
         var document = Document;
-        await TryFileOperationAsync("保存できませんでした", () => document.SaveAsAsync(path));
+        await PauseStructureUpdatesAsync();
+        try
+        {
+            if (Document != document) return;
+            await TryFileOperationAsync("保存できませんでした", () => document.SaveAsAsync(path));
+        }
+        finally
+        {
+            ResumeStructureUpdates();
+        }
     }
 
     [RelayCommand]
