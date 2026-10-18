@@ -69,14 +69,15 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
     }
 
     [Fact]
-    public async Task OpenFile_NoKsyMatch_FallsBackToTheJsonDefinitions()
+    public async Task OpenFile_NoKsyMatch_LeavesTheTreeEmpty()
     {
         byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
         var vm = await OpenAsync("a.png", png, MagicYaml);
         using var _ = vm.Document;
 
-        Assert.Equal("Signature", vm.StructureTreeItems[0].Name);
+        Assert.Empty(vm.StructureTreeItems);
+        Assert.Null(vm.StructureColors);
     }
 
     [Fact]

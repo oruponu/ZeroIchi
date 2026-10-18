@@ -63,21 +63,13 @@ public partial class MainWindowViewModel
         StructureTreeItems.Clear();
         SelectedStructureItem = null;
 
-        FileStructureNode root;
-        if (KsyFormats.Detect(buffer, Document?.FilePath) is { } format)
-        {
-            root = KsyInterpreter.Parse(format, buffer);
-        }
-        else if (DefinitionRegistry.TryMatch(buffer) is { } definition)
-        {
-            root = StructureParser.Parse(definition, buffer);
-        }
-        else
+        if (KsyFormats.Detect(buffer, Document?.FilePath) is not { } format)
         {
             StructureColors = null;
             return;
         }
 
+        var root = KsyInterpreter.Parse(format, buffer);
         StructureColors = StructureColorMap.Build(root);
         foreach (var child in root.Children)
             AddTreeItem(child, 0, expanded);
