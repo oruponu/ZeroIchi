@@ -126,4 +126,16 @@ public sealed class KsyFormatRegistryTests
         Assert.Null(registry.Detect(Bytes(8), null));
         Assert.Equal(1, loads);
     }
+
+    [Fact]
+    public void Preload_LoadsTheFormatsOnlyOnce()
+    {
+        var loads = 0;
+        var registry = new KsyFormatRegistry(() => { loads++; return []; });
+
+        registry.Preload();
+        registry.Detect(Bytes(1, 2), "a.bin");
+
+        Assert.Equal(1, loads);
+    }
 }

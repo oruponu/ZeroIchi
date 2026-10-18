@@ -21,6 +21,8 @@ public sealed class KsyFormatRegistry
 
     internal void Register(KsyFormat format) => _formats.Value.Add(format);
 
+    public void Preload() => _ = _formats.Value;
+
     public KsyFormat? Detect(ByteBuffer buffer, string? filePath)
     {
         KsyFormat? best = null;
