@@ -43,8 +43,8 @@ internal sealed class KsStreamReader(KsStream stream)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(position);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(position, stream.Size);
-        _windowStart = position;
-        _windowLength = (int)Math.Min(WindowSize, stream.Size - position);
-        stream.CopyTo(position, _window, 0, _windowLength);
+        _windowStart = position < _windowStart ? Math.Max(0, position - WindowSize / 2) : position;
+        _windowLength = (int)Math.Min(WindowSize, stream.Size - _windowStart);
+        stream.CopyTo(_windowStart, _window, 0, _windowLength);
     }
 }
