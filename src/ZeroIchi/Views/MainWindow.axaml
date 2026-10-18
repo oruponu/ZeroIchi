@@ -267,6 +267,12 @@
                         <DockPanel>
                             <DockPanel Margin="8,6" DockPanel.Dock="Top">
                                 <TextBlock VerticalAlignment="Center"
+                                           DockPanel.Dock="Right"
+                                           FontSize="11"
+                                           Foreground="#9D9D9D"
+                                           IsVisible="{Binding IsStructureParsing}"
+                                           Text="解析中"/>
+                                <TextBlock VerticalAlignment="Center"
                                            FontSize="12"
                                            Foreground="#D4D4D4"
                                            Text="ファイル構造"/>

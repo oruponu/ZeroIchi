@@ -307,6 +307,58 @@ public sealed class MainWindowViewModelStructureUpdateTests : IDisposable
         }
     });
 
+    [Fact]
+    public Task SlowParse_ShowsTheBusyIndicatorUntilItEnds() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var gate = new GateNative();
+        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService())
+        {
+            KsyFormats = Registry(gate, GateYaml),
+            StructureBusyDelay = TimeSpan.Zero,
+        };
+        await vm.OpenFileAsync(Write("a.bin", "ZI\u0005"u8.ToArray()));
+        try
+        {
+            await WaitUntil(() => vm.IsStructureParsing);
+
+            gate.Release.Set();
+            await vm.StructureUpdate;
+
+            Assert.False(vm.IsStructureParsing);
+        }
+        finally
+        {
+            gate.Release.Set();
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task FastParse_NeverShowsTheBusyIndicator() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var gate = new GateNative();
+        gate.Release.Set();
+        var vm = Create(Registry(gate, GateYaml), TimeSpan.Zero);
+        var shown = false;
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.IsStructureParsing) && vm.IsStructureParsing) shown = true;
+        };
+        await vm.OpenFileAsync(Write("a.bin", "ZI\u0005"u8.ToArray()));
+        try
+        {
+            await vm.StructureUpdate;
+            vm.OnByteModified(2, 9, cursorPositionAfter: 2);
+            await vm.StructureUpdate;
+
+            Assert.False(shown);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
     internal sealed class StubDialogService : IDialogService
     {
         public string? SavePath { get; set; }

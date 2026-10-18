@@ -16,10 +16,14 @@ public partial class MainWindowViewModel
     private int _structurePauseCount;
     private bool _structureUpdatePending;
     private HashSet<(string name, int depth)> _expandedHint = [];
+    private int _busySequence;
+    private int _busyOwner;
 
     internal KsyFormatRegistry KsyFormats { get; init; } = KsyFormatRegistry.Default;
 
     internal TimeSpan StructureDebounce { get; init; } = TimeSpan.FromMilliseconds(250);
+
+    internal TimeSpan StructureBusyDelay { get; init; } = TimeSpan.FromMilliseconds(300);
 
     internal Task StructureUpdate { get; private set; } = Task.CompletedTask;
 
@@ -90,6 +94,7 @@ public partial class MainWindowViewModel
     private async Task UpdateStructureAsync(BinaryDocument document, int version, bool immediate,
         CancellationToken cancellationToken)
     {
+        var busyId = 0;
         try
         {
             if (!immediate) await Task.Delay(StructureDebounce, cancellationToken);
@@ -105,6 +110,13 @@ public partial class MainWindowViewModel
                 return StructureAnalysis.Analyze(formats, snapshot, filePath, cancellationToken);
             });
             _parseTail = parse.ContinueWith(static _ => { }, TaskScheduler.Default);
+            if (await Task.WhenAny(parse, Task.Delay(StructureBusyDelay, cancellationToken)) != parse
+                && !parse.IsCompleted && !cancellationToken.IsCancellationRequested)
+            {
+                busyId = ++_busySequence;
+                _busyOwner = busyId;
+                IsStructureParsing = true;
+            }
             var analysis = await parse;
             if (cancellationToken.IsCancellationRequested || Document != document || DataVersion != version) return;
             ApplyStructure(analysis);
@@ -115,6 +127,10 @@ public partial class MainWindowViewModel
         catch (Exception e) when (e is not OutOfMemoryException)
         {
             if (!cancellationToken.IsCancellationRequested && Document == document) ApplyStructure(null);
+        }
+        finally
+        {
+            if (busyId != 0 && _busyOwner == busyId) IsStructureParsing = false;
         }
     }
 

@@ -126,6 +126,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial StructureColorMap? StructureColors { get; set; }
 
     [ObservableProperty]
+    public partial bool IsStructureParsing { get; set; }
+
+    [ObservableProperty]
     public partial StructureTreeItem? SelectedStructureItem { get; set; }
 
     [ObservableProperty]
