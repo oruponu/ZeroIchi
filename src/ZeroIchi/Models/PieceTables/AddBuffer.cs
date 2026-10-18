@@ -2,7 +2,7 @@ using System;
 
 namespace ZeroIchi.Models.PieceTables;
 
-internal sealed class AddBuffer
+internal sealed class AddBuffer(int maxLength = int.MaxValue)
 {
     internal const int ChunkSize = 64 * 1024;
 
@@ -15,6 +15,7 @@ internal sealed class AddBuffer
 
     public void Append(byte value)
     {
+        EnsureCapacity(1);
         EnsureSpace();
         _chunks[Length / ChunkSize][Length % ChunkSize] = value;
         Length++;
@@ -22,6 +23,7 @@ internal sealed class AddBuffer
 
     public void Append(ReadOnlySpan<byte> bytes)
     {
+        EnsureCapacity(bytes.Length);
         while (bytes.Length > 0)
         {
             EnsureSpace();
@@ -36,6 +38,12 @@ internal sealed class AddBuffer
     public void CopyTo(long offset, Span<byte> destination) => View().CopyTo(offset, destination);
 
     public AddBufferView View() => new(_chunks, Length);
+
+    private void EnsureCapacity(int count)
+    {
+        if (count > maxLength - Length)
+            throw new OutOfMemoryException($"The add buffer cannot grow beyond {maxLength} bytes");
+    }
 
     private void EnsureSpace()
     {
