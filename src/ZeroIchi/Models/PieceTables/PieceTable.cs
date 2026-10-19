@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.PieceTables;
@@ -11,9 +12,8 @@ public sealed class PieceTable
     private readonly ByteBuffer _original;
     private readonly AddBuffer _addBuffer = new();
     private readonly List<Piece> _pieces = [];
+    private readonly List<long> _starts = [];
 
-    private int _cachedPieceIndex;
-    private long _cachedLogicalOffset;
     private long _nextStateId = 1;
     private long _stateId;
 
@@ -22,7 +22,10 @@ public sealed class PieceTable
         _original = original;
         Length = original.Length;
         if (original.Length > 0)
+        {
             _pieces.Add(new Piece(PieceSource.Original, 0, original.Length));
+            _starts.Add(0);
+        }
     }
 
     public long Length { get; private set; }
@@ -112,33 +115,25 @@ public sealed class PieceTable
         if (piece.Length == 1)
         {
             newPieces = [newPiece];
-            _pieces[pieceIdx] = newPiece;
         }
         else if (offsetInPiece == 0)
         {
             var right = piece with { Offset = piece.Offset + 1, Length = piece.Length - 1 };
             newPieces = [newPiece, right];
-            _pieces[pieceIdx] = newPiece;
-            _pieces.Insert(pieceIdx + 1, right);
         }
         else if (offsetInPiece == piece.Length - 1)
         {
             var left = piece with { Length = piece.Length - 1 };
             newPieces = [left, newPiece];
-            _pieces[pieceIdx] = left;
-            _pieces.Insert(pieceIdx + 1, newPiece);
         }
         else
         {
             var left = piece with { Length = offsetInPiece };
             var right = piece with { Offset = piece.Offset + offsetInPiece + 1, Length = piece.Length - offsetInPiece - 1 };
             newPieces = [left, newPiece, right];
-            _pieces[pieceIdx] = left;
-            _pieces.Insert(pieceIdx + 1, newPiece);
-            _pieces.Insert(pieceIdx + 2, right);
         }
 
-        InvalidateCache();
+        ReplacePieces(pieceIdx, oldPieces.Length, newPieces, 0);
         return CreateEdit(pieceIdx, oldPieces, newPieces, 0);
     }
 
@@ -157,7 +152,6 @@ public sealed class PieceTable
             pieceIdx = _pieces.Count;
             oldPieces = [];
             newPieces = [insertPiece];
-            _pieces.Add(insertPiece);
         }
         else
         {
@@ -169,7 +163,6 @@ public sealed class PieceTable
             {
                 oldPieces = [];
                 newPieces = [insertPiece];
-                _pieces.Insert(pieceIdx, insertPiece);
             }
             else
             {
@@ -177,14 +170,10 @@ public sealed class PieceTable
                 var right = piece with { Offset = piece.Offset + offsetInPiece, Length = piece.Length - offsetInPiece };
                 oldPieces = [piece];
                 newPieces = [left, insertPiece, right];
-                _pieces[pieceIdx] = left;
-                _pieces.Insert(pieceIdx + 1, insertPiece);
-                _pieces.Insert(pieceIdx + 2, right);
             }
         }
 
-        Length += bytes.Length;
-        InvalidateCache();
+        ReplacePieces(pieceIdx, oldPieces.Length, newPieces, bytes.Length);
         return CreateEdit(pieceIdx, oldPieces, newPieces, bytes.Length);
     }
 
@@ -233,12 +222,7 @@ public sealed class PieceTable
             newPieces[idx] = last with { Offset = last.Offset + endOffsetInPiece, Length = last.Length - endOffsetInPiece };
         }
 
-        _pieces.RemoveRange(startPi, oldPieceCount);
-        for (var i = 0; i < newPieces.Length; i++)
-            _pieces.Insert(startPi + i, newPieces[i]);
-
-        Length -= count;
-        InvalidateCache();
+        ReplacePieces(startPi, oldPieceCount, newPieces, -count);
         return CreateEdit(startPi, oldPieces, newPieces, -count, removedPieces);
     }
 
@@ -257,7 +241,6 @@ public sealed class PieceTable
             oldPieces = [last];
             var extended = last with { Length = last.Length + 1 };
             newPieces = [extended];
-            _pieces[^1] = extended;
         }
         else
         {
@@ -265,11 +248,9 @@ public sealed class PieceTable
             oldPieces = [];
             var np = new Piece(PieceSource.Add, addOffset, 1);
             newPieces = [np];
-            _pieces.Add(np);
         }
 
-        Length++;
-        InvalidateCache();
+        ReplacePieces(pieceIdx, oldPieces.Length, newPieces, 1);
         return CreateEdit(pieceIdx, oldPieces, newPieces, 1);
     }
 
@@ -298,12 +279,8 @@ public sealed class PieceTable
         if (edit.StateAfter != _stateId)
             throw new InvalidOperationException();
 
-        _pieces.RemoveRange(edit.PieceIndex, edit.NewPieces.Length);
-        for (var i = 0; i < edit.OldPieces.Length; i++)
-            _pieces.Insert(edit.PieceIndex + i, edit.OldPieces[i]);
-        Length -= edit.LengthDelta;
+        ReplacePieces(edit.PieceIndex, edit.NewPieces.Length, edit.OldPieces, -edit.LengthDelta);
         _stateId = edit.StateBefore;
-        InvalidateCache();
     }
 
     public void RedoEdit(PieceTableEdit edit)
@@ -313,12 +290,8 @@ public sealed class PieceTable
         if (edit.StateBefore != _stateId)
             throw new InvalidOperationException();
 
-        _pieces.RemoveRange(edit.PieceIndex, edit.OldPieces.Length);
-        for (var i = 0; i < edit.NewPieces.Length; i++)
-            _pieces.Insert(edit.PieceIndex + i, edit.NewPieces[i]);
-        Length += edit.LengthDelta;
+        ReplacePieces(edit.PieceIndex, edit.OldPieces.Length, edit.NewPieces, edit.LengthDelta);
         _stateId = edit.StateAfter;
-        InvalidateCache();
     }
 
     public bool IsModified(long index)
@@ -362,48 +335,43 @@ public sealed class PieceTable
         }
     }
 
-    private (int pieceIndex, long offsetInPiece) FindPiece(long logicalIndex)
+    private void ReplacePieces(int index, int removeCount, Piece[] newPieces, long lengthDelta)
     {
-        if (_cachedPieceIndex < _pieces.Count)
+        var start = index < _starts.Count ? _starts[index] : Length;
+        _pieces.RemoveRange(index, removeCount);
+        _starts.RemoveRange(index, removeCount);
+        _pieces.InsertRange(index, newPieces);
+        for (var i = 0; i < newPieces.Length; i++)
         {
-            var cachedStart = _cachedLogicalOffset;
-            var cachedPiece = _pieces[_cachedPieceIndex];
-            if (logicalIndex >= cachedStart && logicalIndex < cachedStart + cachedPiece.Length)
-                return (_cachedPieceIndex, logicalIndex - cachedStart);
-
-            var nextIdx = _cachedPieceIndex + 1;
-            if (nextIdx < _pieces.Count)
-            {
-                var nextStart = cachedStart + cachedPiece.Length;
-                var nextPiece = _pieces[nextIdx];
-                if (logicalIndex >= nextStart && logicalIndex < nextStart + nextPiece.Length)
-                {
-                    _cachedPieceIndex = nextIdx;
-                    _cachedLogicalOffset = nextStart;
-                    return (nextIdx, logicalIndex - nextStart);
-                }
-            }
+            _starts.Insert(index + i, start);
+            start += newPieces[i].Length;
         }
 
-        long offset = 0;
-        for (var i = 0; i < _pieces.Count; i++)
+        if (lengthDelta != 0)
         {
-            var piece = _pieces[i];
-            if (logicalIndex < offset + piece.Length)
-            {
-                _cachedPieceIndex = i;
-                _cachedLogicalOffset = offset;
-                return (i, logicalIndex - offset);
-            }
-            offset += piece.Length;
+            var starts = CollectionsMarshal.AsSpan(_starts);
+            for (var i = index + newPieces.Length; i < starts.Length; i++)
+                starts[i] += lengthDelta;
         }
-
-        throw new ArgumentOutOfRangeException(nameof(logicalIndex));
+        Length += lengthDelta;
     }
 
-    private void InvalidateCache()
+    private (int pieceIndex, long offsetInPiece) FindPiece(long logicalIndex)
     {
-        _cachedPieceIndex = 0;
-        _cachedLogicalOffset = 0;
+        ArgumentOutOfRangeException.ThrowIfNegative(logicalIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(logicalIndex, Length);
+
+        var starts = CollectionsMarshal.AsSpan(_starts);
+        var lo = 0;
+        var hi = starts.Length;
+        while (lo < hi)
+        {
+            var mid = lo + (hi - lo) / 2;
+            if (starts[mid] <= logicalIndex)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        return (lo - 1, logicalIndex - starts[lo - 1]);
     }
 }
