@@ -284,6 +284,12 @@ public sealed class KsyInterpreterTests
     }
 
     [Fact]
+    public void DefaultNodeBudgetIs500000()
+    {
+        Assert.Equal(500_000, KsyParseOptions.Default.NodeBudget);
+    }
+
+    [Fact]
     public void Parse_SizeofOfAFieldIsTheLengthItTook()
     {
         var root = Parse("""
