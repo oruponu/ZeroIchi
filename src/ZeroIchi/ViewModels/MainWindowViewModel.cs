@@ -226,6 +226,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         StatusBarFileTypeText = match.Length > 0 ? match[0].Extension : "";
     }
 
+    internal static void WarmUpFileTypeDetection() => Inspector.Inspect(new byte[1024]).ByFileExtension();
+
     // Avalonia bindings cache the old Document, so release Data explicitly
     private async Task ReplaceDocumentAsync(BinaryDocument newDocument)
     {

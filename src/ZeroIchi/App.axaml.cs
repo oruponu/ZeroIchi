@@ -27,6 +27,7 @@ public sealed partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         _ = Task.Run(KsyFormatRegistry.Default.Preload);
+        _ = Task.Run(MainWindowViewModel.WarmUpFileTypeDetection);
         Resources["DefaultFontFamily"] = CreateDefaultFontFamily();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
