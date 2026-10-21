@@ -192,8 +192,14 @@ public partial class HexViewControl
     private void UpdateSelection(long anchor, long current)
     {
         CursorPosition = current;
-        SelectionStart = Math.Min(anchor, current);
-        SelectionLength = Math.Abs(current - anchor) + 1;
+        (SelectionStart, SelectionLength) = GetSelectionRange(anchor, current, Buffer?.Length ?? 0);
+    }
+
+    internal static (long Start, long Length) GetSelectionRange(long anchor, long current, long dataLength)
+    {
+        var start = Math.Min(anchor, current);
+        var end = Math.Min(Math.Max(anchor, current), dataLength - 1);
+        return (start, Math.Max(0, end - start + 1));
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
