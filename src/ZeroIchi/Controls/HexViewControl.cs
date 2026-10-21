@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using System;
 using System.Buffers;
 using ZeroIchi.Models;
@@ -72,7 +73,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private static readonly IBrush NumericTextBrush = new SolidColorBrush(Color.Parse("#B5CEA8")).ToImmutable();
     private static readonly IBrush AsciiTextBrush = new SolidColorBrush(Color.Parse("#CE9178")).ToImmutable();
     private static readonly IBrush ZeroByteBrush = new SolidColorBrush(Color.Parse("#606060")).ToImmutable();
-    private static readonly Pen HeaderSeparatorPen = new(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)).ToImmutable());
+    private static readonly ImmutablePen HeaderSeparatorPen = new(new SolidColorBrush(Color.FromRgb(0x40, 0x40, 0x40)).ToImmutable());
     private static readonly string HeaderHexText = BuildHeaderHexText();
 
     static HexViewControl()
