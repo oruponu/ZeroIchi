@@ -342,16 +342,31 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     {
         EnsureMetrics();
 
+        var x = _scrollOffset.X;
+        var y = _scrollOffset.Y;
+
         var cursorLine = CursorPosition / BytesPerLine;
         var cursorY = cursorLine * _rowHeight;
-        var viewTop = _scrollOffset.Y;
         var viewHeight = _scrollViewport.Height - _dataTop;
-        var viewBottom = viewTop + viewHeight;
 
-        if (cursorY < viewTop)
-            ((IScrollable)this).Offset = new Vector(_scrollOffset.X, cursorY);
-        else if (cursorY + _rowHeight > viewBottom)
-            ((IScrollable)this).Offset = new Vector(_scrollOffset.X, cursorY + _rowHeight - viewHeight);
+        if (cursorY < y)
+            y = cursorY;
+        else if (cursorY + _rowHeight > y + viewHeight)
+            y = cursorY + _rowHeight - viewHeight;
+
+        var column = (int)(CursorPosition % BytesPerLine);
+        var hexRect = HexCellRect(column, 0);
+        var asciiLeft = AsciiCellX(column);
+        var viewLeft = x + ContentLeft;
+        var viewRight = x + _scrollViewport.Width;
+
+        bool IsVisible(double left, double right) => left >= viewLeft && right <= viewRight;
+
+        if (!IsVisible(hexRect.Left, hexRect.Right) && !IsVisible(asciiLeft, asciiLeft + _asciiCellWidth))
+            x = hexRect.Left < viewLeft ? hexRect.Left - ContentLeft : hexRect.Right - _scrollViewport.Width;
+
+        if (x != _scrollOffset.X || y != _scrollOffset.Y)
+            ((IScrollable)this).Offset = new Vector(x, y);
     }
 
     public event EventHandler? ScrollInvalidated;

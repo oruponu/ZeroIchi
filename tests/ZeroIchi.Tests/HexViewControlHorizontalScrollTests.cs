@@ -62,6 +62,12 @@ public sealed class HexViewControlHorizontalScrollTests : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
+    private static void Press(MainWindow window, Key key)
+    {
+        window.KeyPress(key, RawInputModifiers.None, PhysicalKey.None, null);
+        Dispatcher.UIThread.RunJobs();
+    }
+
     [Fact]
     public Task Click_WhileScrolledHorizontally_HitsTheCellUnderThePointer() => HeadlessTestApp.RunAsync(async () =>
     {
@@ -96,6 +102,48 @@ public sealed class HexViewControlHorizontalScrollTests : IDisposable
             Click(window, 10);
 
             Assert.Equal(cursor, window.HexView.CursorPosition);
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
+
+    [Fact]
+    public Task KeyMove_ToAHiddenColumn_ScrollsItIntoView() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync(800);
+        try
+        {
+            Click(window, 150);
+            var scrollable = (IScrollable)window.HexView;
+
+            Press(window, Key.End);
+            Assert.True(scrollable.Offset.X > 0);
+
+            Press(window, Key.Home);
+            Assert.Equal(0, scrollable.Offset.X);
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
+
+    [Fact]
+    public Task CursorMove_WhileItsAsciiCellIsVisible_DoesNotScroll() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync(800);
+        try
+        {
+            var scrollable = (IScrollable)window.HexView;
+            var scrollX = ScrollHorizontally(window, scrollable.Extent.Width);
+            Assert.True(scrollX > 0);
+
+            Click(window, scrollable.Viewport.Width - 3);
+
+            Assert.Equal(15, window.HexView.CursorPosition % 16);
+            Assert.Equal(scrollX, scrollable.Offset.X);
         }
         finally
         {
