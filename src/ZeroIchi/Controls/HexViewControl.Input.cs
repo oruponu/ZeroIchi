@@ -159,10 +159,21 @@ public partial class HexViewControl
 
         if (!_isDragging) return;
 
-        StopAutoScroll();
-        _isDragging = false;
+        EndDrag();
         e.Pointer.Capture(null);
         e.Handled = true;
+    }
+
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        EndDrag();
+    }
+
+    private void EndDrag()
+    {
+        StopAutoScroll();
+        _isDragging = false;
     }
 
     private long SelectionAnchor => GetSelectionAnchor(CursorPosition, SelectionStart, SelectionLength);
