@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Text;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Search;
@@ -9,11 +10,17 @@ public partial class MainWindowViewModel
 {
     private const int MaxSearchMatches = 100_000;
 
+    public event EventHandler? GoToOffsetFocusRequested;
+
+    public event EventHandler? SearchFocusRequested;
+
     [RelayCommand]
     private void OpenGoToOffset()
     {
+        if (IsSearchVisible) CloseSearch();
         IsGoToOffsetVisible = true;
         GoToOffsetError = "";
+        GoToOffsetFocusRequested?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
@@ -57,7 +64,9 @@ public partial class MainWindowViewModel
     [RelayCommand]
     private void OpenSearch()
     {
+        if (IsGoToOffsetVisible) CloseGoToOffset();
         IsSearchVisible = true;
+        SearchFocusRequested?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
