@@ -21,6 +21,9 @@ public partial class HexViewControl
         return -1;
     }
 
+    // The address column stays in place over the horizontally scrolled content
+    private double ToContentX(double x) => x < ContentLeft ? 0 : x + _scrollOffset.X;
+
     private long HitTestByte(Point point)
     {
         EnsureMetrics();
@@ -31,7 +34,7 @@ public partial class HexViewControl
         var line = (long)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         if (line < 0 || line >= TotalLines) return -1;
 
-        var byteInLine = HitTestColumn(point.X);
+        var byteInLine = HitTestColumn(ToContentX(point.X));
         if (byteInLine < 0) return -1;
 
         return Math.Min(line * BytesPerLine + byteInLine, buffer.Length);
@@ -47,9 +50,10 @@ public partial class HexViewControl
         var line = (long)((point.Y - _dataTop + _scrollOffset.Y) / _rowHeight);
         line = Math.Clamp(line, 0, TotalLines - 1);
 
-        var byteInLine = HitTestColumn(point.X);
+        var x = ToContentX(point.X);
+        var byteInLine = HitTestColumn(x);
         if (byteInLine < 0)
-            byteInLine = point.X < _hexStartX ? 0 : BytesPerLine - 1;
+            byteInLine = x < _hexStartX ? 0 : BytesPerLine - 1;
 
         return Math.Min(line * BytesPerLine + byteInLine, buffer.Length);
     }

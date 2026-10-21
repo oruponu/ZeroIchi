@@ -239,6 +239,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
 
     private long TotalLines => Buffer is { } b ? b.Length / BytesPerLine + 1 : 0;
 
+    private double ContentLeft => _hexStartX - CellPaddingX;
     private double AsciiCellX(int i) => _asciiStartX + i * _asciiCellWidth;
     private double TotalWidth => AsciiCellX(BytesPerLine);
 
@@ -280,7 +281,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         var selStart = SelectionStart;
         var selEnd = selStart + SelectionLength;
 
-        var contentLeft = _hexStartX - CellPaddingX;
+        var contentLeft = ContentLeft;
         using (context.PushClip(new Rect(contentLeft, 0, Bounds.Width - contentLeft, Bounds.Height)))
         using (context.PushTransform(Matrix.CreateTranslation(-_scrollOffset.X, 0)))
         {
