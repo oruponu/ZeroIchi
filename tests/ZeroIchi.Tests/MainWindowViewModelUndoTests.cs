@@ -293,4 +293,79 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
             await vm.DisposeDocumentAsync();
         }
     }
+
+    [Fact]
+    public async Task UndoAndRedo_SelectTheByteAtTheCursor()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+            vm.CursorPosition = 1;
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 1;
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal(0, vm.CursorPosition);
+            Assert.Equal(0, vm.SelectionStart);
+            Assert.Equal(1, vm.SelectionLength);
+
+            vm.RedoCommand.Execute(null);
+            Assert.Equal(1, vm.CursorPosition);
+            Assert.Equal(1, vm.SelectionStart);
+            Assert.Equal(1, vm.SelectionLength);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Undo_AtTheEnd_SelectsNothing()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 3;
+            vm.OnByteModified(3, 0xA0, cursorPositionAfter: 3);
+            vm.SelectionStart = 0;
+            vm.SelectionLength = 2;
+
+            vm.UndoCommand.Execute(null);
+
+            Assert.Equal(3, vm.CursorPosition);
+            Assert.Equal(3, vm.SelectionStart);
+            Assert.Equal(0, vm.SelectionLength);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Copy_AfterUndo_CopiesTheByteAtTheCursor()
+    {
+        var clipboard = new StubClipboardService();
+        var vm = new MainWindowViewModel(new StubDialogService(), clipboard, new StubWindowService());
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.CursorPosition = 1;
+            vm.OnByteModified(1, 0xFF, cursorPositionAfter: 2);
+            vm.CursorPosition = 2;
+
+            vm.UndoCommand.Execute(null);
+            await vm.CopyCommand.ExecuteAsync(null);
+
+            Assert.Equal([2], await clipboard.TryGetBytesAsync());
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
 }

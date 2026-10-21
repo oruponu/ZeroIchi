@@ -41,7 +41,7 @@ public partial class MainWindowViewModel
         if (command is null) return;
 
         CursorPosition = command.CursorPositionBefore;
-        SelectionLength = 0;
+        SelectByteAtCursor();
     }
 
     [RelayCommand]
@@ -53,7 +53,13 @@ public partial class MainWindowViewModel
         if (command is null) return;
 
         CursorPosition = command.CursorPositionAfter;
-        SelectionLength = 0;
+        SelectByteAtCursor();
+    }
+
+    private void SelectByteAtCursor()
+    {
+        SelectionStart = CursorPosition;
+        SelectionLength = Document is { } document && CursorPosition < document.Buffer.Length ? 1 : 0;
     }
 
     private void UpdateUndoRedoState()
@@ -106,8 +112,7 @@ public partial class MainWindowViewModel
         document.ExecuteCommand(command);
 
         CursorPosition = start;
-        SelectionStart = start;
-        SelectionLength = start < document.Buffer.Length ? 1 : 0;
+        SelectByteAtCursor();
     }
 
     [RelayCommand]
@@ -127,8 +132,7 @@ public partial class MainWindowViewModel
         Document.ExecuteCommand(insertCommand);
 
         CursorPosition = cursorPositionAfter;
-        SelectionStart = CursorPosition;
-        SelectionLength = CursorPosition < Document.Buffer.Length ? 1 : 0;
+        SelectByteAtCursor();
     }
 
     [RelayCommand]
