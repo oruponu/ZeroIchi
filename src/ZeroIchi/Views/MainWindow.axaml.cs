@@ -53,8 +53,12 @@ public sealed partial class MainWindow : Window, IShellWindow
         base.OnDataContextChanged(e);
 
         _viewModel?.PropertyChanged -= OnViewModelPropertyChanged;
+        _viewModel?.SearchFocusRequested -= OnSearchFocusRequested;
+        _viewModel?.GoToOffsetFocusRequested -= OnGoToOffsetFocusRequested;
         _viewModel = DataContext as MainWindowViewModel;
         _viewModel?.PropertyChanged += OnViewModelPropertyChanged;
+        _viewModel?.SearchFocusRequested += OnSearchFocusRequested;
+        _viewModel?.GoToOffsetFocusRequested += OnGoToOffsetFocusRequested;
     }
 
     public void SetModalOverlayVisible(bool visible) => ModalOverlay.IsVisible = visible;
@@ -65,20 +69,18 @@ public sealed partial class MainWindow : Window, IShellWindow
 
         switch (e.PropertyName)
         {
-            case nameof(MainWindowViewModel.IsSearchVisible):
-                if (_viewModel.IsSearchVisible)
-                    Dispatcher.UIThread.Post(() => { SearchTextBox.Focus(); SearchTextBox.SelectAll(); });
-                else
-                    Dispatcher.UIThread.Post(() => HexView.Focus());
-                break;
-            case nameof(MainWindowViewModel.IsGoToOffsetVisible):
-                if (_viewModel.IsGoToOffsetVisible)
-                    Dispatcher.UIThread.Post(() => { GoToOffsetTextBox.Focus(); GoToOffsetTextBox.SelectAll(); });
-                else
-                    Dispatcher.UIThread.Post(() => HexView.Focus());
+            case nameof(MainWindowViewModel.IsSearchVisible) when !_viewModel.IsSearchVisible:
+            case nameof(MainWindowViewModel.IsGoToOffsetVisible) when !_viewModel.IsGoToOffsetVisible:
+                Dispatcher.UIThread.Post(() => HexView.Focus());
                 break;
         }
     }
+
+    private void OnSearchFocusRequested(object? sender, EventArgs e)
+        => Dispatcher.UIThread.Post(() => { SearchTextBox.Focus(); SearchTextBox.SelectAll(); });
+
+    private void OnGoToOffsetFocusRequested(object? sender, EventArgs e)
+        => Dispatcher.UIThread.Post(() => { GoToOffsetTextBox.Focus(); GoToOffsetTextBox.SelectAll(); });
 
     protected override async void OnClosing(WindowClosingEventArgs e)
     {
