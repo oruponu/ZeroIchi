@@ -5,4 +5,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/ZeroIchi.Tests/ZeroIchi.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/MimeRuleGenerator/MimeRuleGenerator.csproj" />
+  </Folder>
 </Solution>
