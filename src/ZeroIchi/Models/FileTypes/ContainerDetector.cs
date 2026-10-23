@@ -11,7 +11,9 @@ internal static class ContainerDetector
         new("application/vnd.ms-appx", "application/zip", ["appx"], []),
     ];
 
-    public static string? Detect(ByteBuffer buffer, Func<string, bool> isKnown) => ZipContainer.Detect(buffer, isKnown);
+    public static string? Detect(ByteBuffer buffer, Func<string, bool> isKnown) =>
+        ZipContainer.Detect(buffer, isKnown)
+        ?? CfbContainer.Detect(buffer);
 
     internal static byte[]? Read(ByteBuffer buffer, long offset, int count)
     {
