@@ -111,10 +111,6 @@ public sealed class FileTypeDetectorTests
         { "application/java-vm", Bytes(0xCA, 0xFE, 0xBA, 0xBE, 0, 0, 0, 0x34) },
         { "application/x-sqlite3", Bytes("SQLite format 3", 0, 0x10, 0) },
         { "application/x-rpm", Bytes(0xED, 0xAB, 0xEE, 0xDB, 3, 0) },
-    };
-
-    public static TheoryData<string, byte[]> RegexOnlyFormats() => new()
-    {
         { "application/x-bzip2", Bytes("BZh91AY&SY") },
         { "audio/x-aac", At(400, (0, Bytes(0xFF, 0xF1, 0x50, 0x80)), (200, Bytes(0xFF, 0xF1, 0x50, 0x80))) },
     };
@@ -127,13 +123,6 @@ public sealed class FileTypeDetectorTests
 
         Assert.NotNull(detected);
         Assert.True(FileTypeDetector.Default.IsA(detected, expected), $"{detected} is not {expected}");
-    }
-
-    [Theory(Skip = "Regex rules are evaluated from Task 4")]
-    [MemberData(nameof(RegexOnlyFormats))]
-    public void RegexOnlyFormat_IsDetectedFromContent(string expected, byte[] data)
-    {
-        RequiredFormat_IsDetectedFromContent(expected, data);
     }
 
     private static byte[] Bytes(params object[] parts)

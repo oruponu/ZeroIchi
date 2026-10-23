@@ -1,4 +1,8 @@
 using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.RegularExpressions;
 using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.FileTypes;
@@ -10,9 +14,17 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
 
     private const int ReadChunk = 4 * 1024;
 
+    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(2);
+    private static readonly long Budget = Stopwatch.Frequency * 5 / 1000;
+    private static readonly ConditionalWeakTable<MagicMatch, Regex> Regexes = new();
+
     private readonly int _available = (int)Math.Min(buffer.Length, MagicReadLimit);
     private byte[] _data = [];
     private int _loaded;
+    private string _text = "";
+    private long _elapsed;
+
+    public int RegexAttempts { get; private set; }
 
     public bool Matches(MagicMatch match)
     {
@@ -44,6 +56,7 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
     {
         MagicMatchKind.Bytes => MatchesBytes(match, ignoreCase: false),
         MagicMatchKind.BytesIgnoreCase => MatchesBytes(match, ignoreCase: true),
+        MagicMatchKind.Regex => MatchesRegex(match),
         _ => false,
     };
 
@@ -73,6 +86,37 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
         }
         return false;
     }
+
+    private bool MatchesRegex(MagicMatch match)
+    {
+        if (match.OffsetStart >= _available) return false;
+        var last = (int)Math.Min(match.OffsetEnd, _available - 1);
+        Load((int)Math.Min(_available, (long)last + RegexWindow));
+        if (_text.Length < _loaded) _text = Encoding.Latin1.GetString(_data, 0, _loaded);
+
+        var regex = Regexes.GetValue(match, Compile);
+        for (var start = match.OffsetStart; start <= last; start++)
+        {
+            if (_elapsed >= Budget) return false;
+            RegexAttempts++;
+            var begin = Stopwatch.GetTimestamp();
+            try
+            {
+                if (regex.Match(_text, start, Math.Min(RegexWindow, _loaded - start)).Success) return true;
+            }
+            catch (RegexMatchTimeoutException)
+            {
+            }
+            finally
+            {
+                _elapsed += Stopwatch.GetTimestamp() - begin;
+            }
+        }
+        return false;
+    }
+
+    private static Regex Compile(MagicMatch match) =>
+        new($"^(?:{match.Regex})", RegexOptions.CultureInvariant, MatchTimeout);
 
     private void Load(int end)
     {
