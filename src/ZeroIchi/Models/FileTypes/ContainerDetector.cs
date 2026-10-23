@@ -13,7 +13,8 @@ internal static class ContainerDetector
 
     public static string? Detect(ByteBuffer buffer, Func<string, bool> isKnown) =>
         ZipContainer.Detect(buffer, isKnown)
-        ?? CfbContainer.Detect(buffer);
+        ?? CfbContainer.Detect(buffer)
+        ?? EbmlContainer.Detect(buffer);
 
     internal static byte[]? Read(ByteBuffer buffer, long offset, int count)
     {
