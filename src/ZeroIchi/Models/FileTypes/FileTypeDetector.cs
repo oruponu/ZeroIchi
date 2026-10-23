@@ -9,7 +9,8 @@ internal sealed record DetectedFileType(string MimeType, string Extension);
 
 internal sealed class FileTypeDetector
 {
-    private static readonly Lazy<FileTypeDetector> LazyDefault = new(() => new FileTypeDetector(TikaMimeRules.Create()));
+    private static readonly Lazy<FileTypeDetector> LazyDefault =
+        new(() => new FileTypeDetector([.. TikaMimeRules.Create(), .. ContainerDetector.ExtraTypes]));
 
     private readonly Dictionary<string, MimeTypeEntry> _types;
     private readonly (string Name, MimeMagic Magic)[] _magics;
@@ -31,6 +32,12 @@ internal sealed class FileTypeDetector
     internal (DetectedFileType? Result, int RegexAttempts) DetectWithStatistics(ByteBuffer buffer)
     {
         if (buffer.Length == 0) return (null, 0);
+
+        var container = ContainerDetector.Detect(buffer, _types.ContainsKey);
+        if (container is not null && _types.ContainsKey(container))
+        {
+            return (new DetectedFileType(container, Extension(container)), 0);
+        }
 
         var evaluator = new MagicEvaluator(buffer);
         var candidates = new List<string>();
