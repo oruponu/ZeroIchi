@@ -26,9 +26,11 @@ internal sealed class FileTypeDetector
 
     public static FileTypeDetector Default => LazyDefault.Value;
 
-    public DetectedFileType? Detect(ByteBuffer buffer)
+    public DetectedFileType? Detect(ByteBuffer buffer) => DetectWithStatistics(buffer).Result;
+
+    internal (DetectedFileType? Result, int RegexAttempts) DetectWithStatistics(ByteBuffer buffer)
     {
-        if (buffer.Length == 0) return null;
+        if (buffer.Length == 0) return (null, 0);
 
         var evaluator = new MagicEvaluator(buffer);
         var candidates = new List<string>();
@@ -47,7 +49,7 @@ internal sealed class FileTypeDetector
             if (candidates.Any(other => other != candidate && IsA(other, candidate))) continue;
             if (best is null || string.CompareOrdinal(candidate, best) > 0) best = candidate;
         }
-        return best is null ? null : new DetectedFileType(best, Extension(best));
+        return (best is null ? null : new DetectedFileType(best, Extension(best)), evaluator.RegexAttempts);
     }
 
     public string Extension(string mimeType)
