@@ -1,8 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MimeDetective;
-using MimeDetective.Definitions;
-using MimeDetective.Definitions.Licensing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,20 +8,13 @@ using System.Threading.Tasks;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure;
+using ZeroIchi.Models.FileTypes;
 using ZeroIchi.Services;
 
 namespace ZeroIchi.ViewModels;
 
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
-    private static readonly IContentInspector Inspector = new ContentInspectorBuilder
-    {
-        Definitions = new CondensedBuilder
-        {
-            UsageType = UsageType.PersonalNonCommercial,
-        }.Build(),
-    }.Build();
-
     private const int ClipboardTextMaxBytes = 16 * 1024 * 1024;
 
     private readonly IDialogService _dialog;
@@ -217,16 +207,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         StatusBarSizeText = FileSizeText.Format(buffer.Length);
     }
 
-    private void UpdateFileType(ByteBuffer buffer)
-    {
-        var length = (int)Math.Min(buffer.Length, 1024);
-        var header = buffer.SliceToArray(0, length);
-        var results = Inspector.Inspect(header);
-        var match = results.ByFileExtension();
-        StatusBarFileTypeText = match.Length > 0 ? match[0].Extension : "";
-    }
+    private void UpdateFileType(ByteBuffer buffer) =>
+        StatusBarFileTypeText = FileTypeDetector.Default.Detect(buffer)?.Extension ?? "";
 
-    internal static void WarmUpFileTypeDetection() => Inspector.Inspect(new byte[1024]).ByFileExtension();
+    internal static void WarmUpFileTypeDetection() => FileTypeDetector.Default.Detect(new ArrayByteBuffer(new byte[1024]));
 
     // Avalonia bindings cache the old Document, so release Data explicitly
     private async Task ReplaceDocumentAsync(BinaryDocument newDocument)
