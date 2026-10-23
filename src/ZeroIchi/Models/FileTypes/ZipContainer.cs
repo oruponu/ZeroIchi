@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using ZeroIchi.Models.Buffers;
+using static ZeroIchi.Models.FileTypes.ContainerDetector;
 
 namespace ZeroIchi.Models.FileTypes;
 
@@ -157,11 +158,5 @@ internal static class ZipContainer
             total += read;
         }
         return total > MaxExpandedLength ? null : expanded[..total];
-    }
-
-    private static byte[]? Read(ByteBuffer buffer, long offset, int count)
-    {
-        if (offset < 0 || count < 0 || offset + count > buffer.Length) return null;
-        return buffer.SliceToArray(offset, count);
     }
 }

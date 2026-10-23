@@ -12,4 +12,10 @@ internal static class ContainerDetector
     ];
 
     public static string? Detect(ByteBuffer buffer, Func<string, bool> isKnown) => ZipContainer.Detect(buffer, isKnown);
+
+    internal static byte[]? Read(ByteBuffer buffer, long offset, int count)
+    {
+        if (offset < 0 || count < 0 || offset + count > buffer.Length) return null;
+        return buffer.SliceToArray(offset, count);
+    }
 }
