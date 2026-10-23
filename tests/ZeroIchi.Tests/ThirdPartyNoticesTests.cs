@@ -79,4 +79,46 @@ public sealed class ThirdPartyNoticesTests
     {
         Assert.Contains("- This software is based in part on the work of the Independent JPEG Group.", Notices());
     }
+
+    private static string TikaFile(string name) =>
+        File.ReadAllText(Path.Combine(Root, "tools", "MimeRuleGenerator", "tika", name)).ReplaceLineEndings("\n").Trim('\n');
+
+    private static string Section(string title)
+    {
+        var notices = Notices();
+        var start = notices.IndexOf($"\n## {title}\n", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"## {title} was not found.");
+        var end = notices.IndexOf("\n## ", start + 1, StringComparison.Ordinal);
+        return end < 0 ? notices[start..] : notices[start..end];
+    }
+
+    [Fact]
+    public void Notices_IncludeTheApacheLicenseOfTika()
+    {
+        const string end = "END OF TERMS AND CONDITIONS";
+        var license = TikaFile("LICENSE.txt");
+
+        Assert.Contains(license[..(license.IndexOf(end, StringComparison.Ordinal) + end.Length)], Section("Apache Tika"));
+    }
+
+    [Fact]
+    public void Notices_ReproduceThePronomNotice()
+    {
+        var notice = TikaFile("NOTICE.txt");
+        var pronom = notice[notice.IndexOf("Tika-mimetypes.xml includes mimetype definitions", StringComparison.Ordinal)..];
+
+        var section = Section("Apache Tika");
+
+        Assert.Contains(pronom, section);
+        Assert.Contains("Open Government Licence v3.0", section);
+    }
+
+    [Fact]
+    public void Notices_RecordTheImportedTikaVersion()
+    {
+        var section = Section("Apache Tika");
+
+        Assert.Contains("4.1.0", section);
+        Assert.Contains("c5348700b3f58e5559a50c8e1156d7e2806f42f9", section);
+    }
 }
