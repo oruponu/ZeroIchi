@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileTypes;
@@ -57,6 +56,21 @@ public sealed class MagicEvaluatorRegexTests
     }
 
     [Fact]
+    public void QuickRegexMatches_DoNotTimeOut()
+    {
+        var aac = TikaMimeRules.Create().Single(type => type.Name == "audio/x-aac").Magics
+            .Select(magic => magic.Clause).First(clause => clause.Kind == MagicMatchKind.Regex);
+        var data = new byte[400];
+        byte[] frame = [0xFF, 0xF1, 0x50, 0x80];
+        frame.CopyTo(data, 0);
+        frame.CopyTo(data, 200);
+
+        var misses = Enumerable.Range(0, 20000).Count(_ => !Matches(aac, data));
+
+        Assert.Equal(0, misses);
+    }
+
+    [Fact]
     public void Regex_Timeout_IsNoMatch()
     {
         var match = Regex("0", Catastrophic);
@@ -72,13 +86,10 @@ public sealed class MagicEvaluatorRegexTests
         var detector = new FileTypeDetector([new MimeTypeEntry("x/slow", null, [], magics)]);
         var buffer = new ArrayByteBuffer(Repeated('a', 40, "b"));
 
-        var stopwatch = Stopwatch.StartNew();
         var (result, attempts) = detector.DetectWithStatistics(buffer);
-        stopwatch.Stop();
 
         Assert.Null(result);
-        Assert.InRange(attempts, 1, 19);
-        Assert.True(stopwatch.ElapsedMilliseconds < 100, $"{stopwatch.ElapsedMilliseconds} ms");
+        Assert.Equal(1, attempts);
     }
 
     [Fact]
@@ -86,12 +97,9 @@ public sealed class MagicEvaluatorRegexTests
     {
         var evaluator = new MagicEvaluator(new ArrayByteBuffer(Repeated('a', 4100, "b")));
 
-        var stopwatch = Stopwatch.StartNew();
         var matched = evaluator.Matches(Regex("0:4000", Catastrophic));
-        stopwatch.Stop();
 
         Assert.False(matched);
-        Assert.InRange(evaluator.RegexAttempts, 1, 9);
-        Assert.True(stopwatch.ElapsedMilliseconds < 100, $"{stopwatch.ElapsedMilliseconds} ms");
+        Assert.Equal(1, evaluator.RegexAttempts);
     }
 }

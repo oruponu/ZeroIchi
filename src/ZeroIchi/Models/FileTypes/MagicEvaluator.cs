@@ -14,7 +14,7 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
 
     private const int ReadChunk = 4 * 1024;
 
-    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(2);
+    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(50);
     private static readonly long Budget = Stopwatch.Frequency * 5 / 1000;
     private static readonly ConditionalWeakTable<MagicMatch, Regex> Regexes = new();
 
