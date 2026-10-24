@@ -12,12 +12,6 @@
         WindowDecorations="None"
         WindowStartupLocation="CenterOwner">
 
-    <Window.Resources>
-        <StaticResource x:Key="HyperlinkButtonForegroundVisited" ResourceKey="HyperlinkButtonForeground"/>
-        <StaticResource x:Key="HyperlinkButtonForegroundVisitedPointerOver" ResourceKey="HyperlinkButtonForegroundPointerOver"/>
-        <StaticResource x:Key="HyperlinkButtonForegroundVisitedPressed" ResourceKey="HyperlinkButtonForegroundPressed"/>
-    </Window.Resources>
-
     <Window.Styles>
         <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
     </Window.Styles>
@@ -46,8 +40,7 @@
                 <HyperlinkButton x:Name="RepositoryLink"
                                  Margin="0,8,0,0"
                                  Padding="0"
-                                 Content="github.com/oruponu/ZeroIchi"
-                                 NavigateUri="https://github.com/oruponu/ZeroIchi"/>
+                                 Content="github.com/oruponu/ZeroIchi"/>
             </StackPanel>
 
             <Border Padding="24,16"

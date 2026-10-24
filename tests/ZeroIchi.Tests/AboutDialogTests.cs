@@ -33,11 +33,17 @@ public sealed class AboutDialogTests
     });
 
     [Fact]
-    public Task RepositoryLink_PointsToTheRepository() => HeadlessTestApp.RunAsync(() =>
+    public void RepositoryUri_PointsToTheRepository()
+    {
+        Assert.Equal(new Uri("https://github.com/oruponu/ZeroIchi"), AboutDialog.RepositoryUri);
+    }
+
+    [Fact]
+    public Task RepositoryLink_LeavesNavigationToTheDialog() => HeadlessTestApp.RunAsync(() =>
     {
         var (dialog, _) = Show();
 
-        Assert.Equal(new Uri("https://github.com/oruponu/ZeroIchi"), dialog.RepositoryLink.NavigateUri);
+        Assert.Null(dialog.RepositoryLink.NavigateUri);
 
         dialog.Close();
         return Task.CompletedTask;
