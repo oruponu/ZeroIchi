@@ -1,0 +1,74 @@
+<Window x:Class="ZeroIchi.Views.AboutDialog"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="バージョン情報"
+        MinWidth="400"
+        MaxWidth="500"
+        Background="Transparent"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <StaticResource x:Key="HyperlinkButtonForegroundVisited" ResourceKey="HyperlinkButtonForeground"/>
+        <StaticResource x:Key="HyperlinkButtonForegroundVisitedPointerOver" ResourceKey="HyperlinkButtonForegroundPointerOver"/>
+        <StaticResource x:Key="HyperlinkButtonForegroundVisitedPressed" ResourceKey="HyperlinkButtonForegroundPressed"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
+    </Window.Styles>
+
+    <Border Margin="16"
+            Background="#1E1E1E"
+            BorderBrush="#404040"
+            BorderThickness="1"
+            BoxShadow="0 8 32 0 #60000000"
+            ClipToBounds="True"
+            CornerRadius="8">
+        <DockPanel>
+            <StackPanel Margin="24,20" DockPanel.Dock="Top">
+                <TextBlock Margin="0,0,0,12"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Text="ZeroIchi"/>
+                <TextBlock x:Name="VersionText"/>
+                <TextBlock Margin="0,8,0,0"
+                           FontSize="12"
+                           Foreground="#B0B0B0"
+                           Text="Copyright © 2026 oruponu"/>
+                <TextBlock FontSize="12"
+                           Foreground="#B0B0B0"
+                           Text="MIT License のもとで公開されています。"/>
+                <HyperlinkButton x:Name="RepositoryLink"
+                                 Margin="0,8,0,0"
+                                 Padding="0"
+                                 Content="github.com/oruponu/ZeroIchi"
+                                 NavigateUri="https://github.com/oruponu/ZeroIchi"/>
+            </StackPanel>
+
+            <Border Padding="24,16"
+                    BorderBrush="#333333"
+                    BorderThickness="0,1,0,0"
+                    DockPanel.Dock="Bottom">
+                <StackPanel HorizontalAlignment="Right"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                    <Button x:Name="LicensesButton"
+                            HorizontalContentAlignment="Center"
+                            Classes="secondary"
+                            Content="ライセンス"/>
+                    <Button x:Name="OkButton"
+                            MinWidth="120"
+                            HorizontalContentAlignment="Center"
+                            Classes="accent"
+                            Content="OK"
+                            IsDefault="True"/>
+                </StackPanel>
+            </Border>
+        </DockPanel>
+    </Border>
+</Window>
