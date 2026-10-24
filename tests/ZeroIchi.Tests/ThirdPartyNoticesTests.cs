@@ -8,7 +8,7 @@ public sealed class ThirdPartyNoticesTests
 {
     private static readonly string Root = FindRoot();
 
-    private static string FindRoot()
+    internal static string FindRoot()
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null;
              directory = directory.Parent)
