@@ -33,7 +33,7 @@ public sealed class BinaryDocumentSymlinkTests : IDisposable
     [Fact]
     public async Task Save_AppendViaSymlink_KeepsTargetContent()
     {
-        var doc = BinaryDocument.Open(_linkPath);
+        using var doc = BinaryDocument.Open(_linkPath);
         doc.AppendByte(0xFF);
         doc.Save();
         doc.Dispose();
@@ -45,7 +45,7 @@ public sealed class BinaryDocumentSymlinkTests : IDisposable
     [Fact]
     public async Task Save_InsertViaSymlink_UpdatesTargetAndKeepsLink()
     {
-        var doc = BinaryDocument.Open(_linkPath);
+        using var doc = BinaryDocument.Open(_linkPath);
         doc.InsertBytes(0, [0xAA]);
         doc.Save();
         doc.Dispose();

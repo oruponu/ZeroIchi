@@ -21,7 +21,7 @@ public sealed class BinaryDocumentLifetimeTests : IDisposable
     [Fact]
     public void Dispose_LeavesEmptyReadableBuffer()
     {
-        var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
 
         doc.Dispose();
 
@@ -31,7 +31,7 @@ public sealed class BinaryDocumentLifetimeTests : IDisposable
     [Fact]
     public void Dispose_Twice_DoesNotThrow()
     {
-        var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         doc.Dispose();
 
         Assert.Null(Record.Exception(doc.Dispose));
@@ -41,7 +41,7 @@ public sealed class BinaryDocumentLifetimeTests : IDisposable
     public void Dispose_ReleasesFileForDeletion()
     {
         var path = CreateTestFile([1, 2, 3]);
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
 
         doc.Dispose();
         File.Delete(path);
@@ -52,8 +52,8 @@ public sealed class BinaryDocumentLifetimeTests : IDisposable
     [Fact]
     public void IsUsable_OpenedNewAndDisposed_True()
     {
-        var opened = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
-        var created = BinaryDocument.CreateNew();
+        using var opened = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        using var created = BinaryDocument.CreateNew();
 
         Assert.True(opened.IsUsable);
         Assert.True(created.IsUsable);
@@ -65,7 +65,7 @@ public sealed class BinaryDocumentLifetimeTests : IDisposable
     [Fact]
     public void IsUsable_OriginalMappingReleased_False()
     {
-        var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
 
         ((MappedByteBuffer)doc.Original).ReleaseMapping();
 

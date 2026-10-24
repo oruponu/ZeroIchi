@@ -150,7 +150,7 @@ public sealed class BinaryDocumentChangedTests : IDisposable
     [Fact]
     public void Dispose_DoesNotRaiseChanged()
     {
-        var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         WriteByte(doc, 1, 0xFF);
         var count = 0;
         doc.Changed += (_, _) => count++;

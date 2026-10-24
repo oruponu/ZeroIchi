@@ -31,7 +31,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(256);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
         doc.WriteByte(100, 0xAA);
         doc.WriteByte(255, 0xBB);
@@ -54,7 +54,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xDE, 0xAD, 0xBE, 0xEF]);
         doc.Save();
         doc.Dispose();
@@ -78,7 +78,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(50);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.InsertBytes(0, [0xAA, 0xBB]);
         doc.Save();
         doc.Dispose();
@@ -97,7 +97,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(10);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.AppendByte(0xFF);
         doc.Save();
         doc.Dispose();
@@ -115,7 +115,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(20, 10);
         doc.Save();
         doc.Dispose();
@@ -135,7 +135,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(90, 10);
         doc.Save();
         doc.Dispose();
@@ -152,7 +152,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(0, 50);
 
         Assert.True(doc.IsModified);
@@ -171,7 +171,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.InsertBytes(20, [0xAA, 0xBB, 0xCC]);
         doc.DeleteBytes(60, 10);
         doc.Save();
@@ -196,7 +196,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(10, 20);
         doc.InsertBytes(50, [0x11, 0x22, 0x33, 0x44, 0x55]);
         doc.Save();
@@ -222,7 +222,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var path = CreateTestFile(MakeSequential(50));
         var journalPath = path + ".journal";
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
         doc.Save();
         doc.Dispose();
@@ -237,7 +237,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var path = CreateTestFile(original);
         Directory.CreateDirectory(path + ".zitmp");
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xAA]);
 
         Assert.Throws<UnauthorizedAccessException>(() => doc.Save());
@@ -256,7 +256,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.InsertBytes(50, [0xAA]);
 
         using (var blocker = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -279,7 +279,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.WriteByte(50, 0xAA);
 
         using (var blocker = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -301,7 +301,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var newContent = MakeSequential(80);
         File.WriteAllBytes(path + ".zitmp", newContent);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.Dispose();
 
         Assert.False(File.Exists(path + ".zitmp"));
@@ -314,7 +314,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var path = CreateTestFile(MakeSequential(10));
         File.WriteAllBytes(path + ".zitmp", [1, 2, 3]);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.Dispose();
 
         Assert.False(File.Exists(path + ".zitmp"));
@@ -325,7 +325,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
     {
         var path = CreateTestFile(MakeSequential(50));
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.InsertBytes(10, [0xAA]);
         doc.Save();
         doc.Dispose();
@@ -340,7 +340,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var path = CreateTestFile(MakeSequential(50));
         var journalPath = path + ".journal";
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.Save();
         doc.Dispose();
 
@@ -354,7 +354,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(size);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xFF);
         doc.WriteByte(size / 2, 0xAA);
         doc.WriteByte(size - 1, 0xBB);
@@ -375,7 +375,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(size);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         var insertData = new byte[1000];
         Array.Fill(insertData, (byte)0xCC);
         doc.InsertBytes(100_000, insertData);
@@ -399,20 +399,23 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
-        doc.WriteByte(0, 0x11);
-        doc.Save();
-        doc.Dispose();
+        using (var doc = BinaryDocument.Open(path))
+        {
+            doc.WriteByte(0, 0x11);
+            doc.Save();
+        }
 
-        doc = BinaryDocument.Open(path);
-        doc.WriteByte(1, 0x22);
-        doc.Save();
-        doc.Dispose();
+        using (var doc = BinaryDocument.Open(path))
+        {
+            doc.WriteByte(1, 0x22);
+            doc.Save();
+        }
 
-        doc = BinaryDocument.Open(path);
-        doc.InsertBytes(50, [0xAA, 0xBB]);
-        doc.Save();
-        doc.Dispose();
+        using (var doc = BinaryDocument.Open(path))
+        {
+            doc.InsertBytes(50, [0xAA, 0xBB]);
+            doc.Save();
+        }
 
         var saved = await File.ReadAllBytesAsync(path);
         Assert.Equal(102, saved.Length);
@@ -429,7 +432,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var sourcePath = CreateTestFile(original);
         var targetPath = CreateTestFile([9, 9, 9]);
 
-        var doc = BinaryDocument.Open(sourcePath);
+        using var doc = BinaryDocument.Open(sourcePath);
         doc.InsertBytes(50, [0xAA]);
         await doc.SaveAsAsync(targetPath);
 
@@ -448,7 +451,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.WriteByte(10, 0xAA);
         await doc.SaveAsAsync(path.ToUpperInvariant());
 
@@ -466,7 +469,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var original = MakeSequential(100);
         var path = CreateTestFile(original);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         await doc.SaveAsAsync(path);
 
         Assert.Equal(path, doc.FilePath);
@@ -483,7 +486,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var targetPath = CreateTestFile(targetContent);
         Directory.CreateDirectory(targetPath + ".zitmp");
 
-        var doc = BinaryDocument.Open(sourcePath);
+        using var doc = BinaryDocument.Open(sourcePath);
         doc.InsertBytes(50, [0xAA]);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => doc.SaveAsAsync(targetPath));
@@ -503,7 +506,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         byte[] targetContent = [9, 9, 9];
         var targetPath = CreateTestFile(targetContent);
 
-        var doc = BinaryDocument.Open(sourcePath);
+        using var doc = BinaryDocument.Open(sourcePath);
         doc.InsertBytes(50, [0xAA]);
 
         using (new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -524,7 +527,7 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         var path = CreateTestFile(MakeSequential(10));
         var targetPath = Path.Combine(_tempDir, "missing", "target.bin");
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.WriteByte(0, 0xAA);
 
         await Assert.ThrowsAsync<DirectoryNotFoundException>(() => doc.SaveAsAsync(targetPath));

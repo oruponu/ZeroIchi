@@ -176,7 +176,7 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
     [Fact]
     public void Dispose_ClearsHistory()
     {
-        var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));
         doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0xFF, cursorPositionBefore: 0, cursorPositionAfter: 0));
 
         doc.Dispose();

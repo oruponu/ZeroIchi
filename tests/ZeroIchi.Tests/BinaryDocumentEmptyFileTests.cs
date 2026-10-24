@@ -39,7 +39,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
     {
         var path = CreateFile([]);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
 
         Assert.Equal(0, doc.FileSize);
         Assert.False(doc.IsModified);
@@ -51,7 +51,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
     {
         var path = CreateFile([]);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.AppendByte(0xAB);
         doc.Save();
         doc.Dispose();
@@ -64,7 +64,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
     {
         var path = Path.Combine(_tempDir, "saveas.bin");
 
-        var doc = BinaryDocument.CreateNew();
+        using var doc = BinaryDocument.CreateNew();
         await doc.SaveAsAsync(path);
 
         Assert.Equal(0, new FileInfo(path).Length);
@@ -82,7 +82,7 @@ public sealed class BinaryDocumentEmptyFileTests : IDisposable
     {
         var path = CreateFile([1, 2, 3, 4]);
 
-        var doc = BinaryDocument.Open(path);
+        using var doc = BinaryDocument.Open(path);
         doc.DeleteBytes(0, 4);
         doc.Save();
 
