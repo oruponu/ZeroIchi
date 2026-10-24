@@ -115,7 +115,6 @@ public sealed class TikaMagicParserTests
 
         Assert.Equal(MagicMatchKind.Regex, match.Kind);
         Assert.Equal("BZh[1-9]", match.Regex);
-        Assert.False(match.RegexNeedsBacktracking);
     }
 
     [Fact]
@@ -125,12 +124,9 @@ public sealed class TikaMagicParserTests
     }
 
     [Fact]
-    public void Regex_WithLookbehind_NeedsBacktracking()
+    public void Regex_WithLookbehind_IsSupported()
     {
-        var match = Parse("regex", "0", "(?<=a)b");
-
-        Assert.Equal(MagicMatchKind.Regex, match.Kind);
-        Assert.True(match.RegexNeedsBacktracking);
+        Assert.Equal(MagicMatchKind.Regex, Parse("regex", "0", "(?<=a)b").Kind);
     }
 
     [Fact]

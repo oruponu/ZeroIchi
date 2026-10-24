@@ -179,14 +179,14 @@ static string Generate(List<MimeTypeEntry> entries, List<string> unsupported)
 
     Line();
     Line("    private static MagicMatch M(MagicMatchKind kind, int start, int end, byte[] pattern, byte[]? mask,");
-    Line("        string? regex, bool needsBacktracking, int minShouldMatch, MagicMatch[] children)");
+    Line("        string? regex, int minShouldMatch, MagicMatch[] children)");
     Line("    {");
     Line("        if (mask is null)");
     Line("        {");
     Line("            mask = new byte[pattern.Length];");
     Line("            System.Array.Fill(mask, (byte)0xFF);");
     Line("        }");
-    Line("        return new MagicMatch(kind, start, end, pattern, mask, regex, needsBacktracking, minShouldMatch, children);");
+    Line("        return new MagicMatch(kind, start, end, pattern, mask, regex, minShouldMatch, children);");
     Line("    }");
     Line("}");
     return code.ToString();
@@ -197,8 +197,7 @@ static string Match(MagicMatch match)
     var mask = match.Mask.All(b => b == 0xFF) ? "null" : Bytes(match.Mask);
     var children = string.Join(", ", match.Children.Select(Match));
     return $"M(MagicMatchKind.{match.Kind}, {match.OffsetStart}, {match.OffsetEnd}, {Bytes(match.Pattern)}, {mask}, "
-           + $"{(match.Regex is null ? "null" : Literal(match.Regex))}, {(match.RegexNeedsBacktracking ? "true" : "false")}, "
-           + $"{match.MinShouldMatch}, [{children}])";
+           + $"{(match.Regex is null ? "null" : Literal(match.Regex))}, {match.MinShouldMatch}, [{children}])";
 }
 
 static string Bytes(byte[] bytes) => "[" + string.Join(", ", bytes.Select(b => $"0x{b:X2}")) + "]";

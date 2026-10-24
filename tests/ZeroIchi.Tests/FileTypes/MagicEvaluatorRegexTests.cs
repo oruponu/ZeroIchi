@@ -75,7 +75,6 @@ public sealed class MagicEvaluatorRegexTests
     {
         var match = Regex("0", Catastrophic);
 
-        Assert.True(match.RegexNeedsBacktracking);
         Assert.False(Matches(match, Repeated('a', 40, "b")));
     }
 
