@@ -84,6 +84,18 @@ public sealed class TikaMimeRulesTests
     }
 
     [Fact]
+    public void EveryRegex_CanBeCreated()
+    {
+        static IEnumerable<MagicMatch> Flatten(MagicMatch match) => match.Children.SelectMany(Flatten).Prepend(match);
+
+        var regexes = Types.SelectMany(type => type.Magics).SelectMany(magic => Flatten(magic.Clause))
+            .Where(match => match.Kind == MagicMatchKind.Regex).Select(match => match.Regex!).ToArray();
+
+        Assert.NotEmpty(regexes);
+        Assert.All(regexes, regex => MagicRegex.Create(regex));
+    }
+
+    [Fact]
     public void GeneratedFile_StartsWithTheNotice()
     {
         var path = Path.Combine(FindRoot(), "src", "ZeroIchi", "Models", "FileTypes", "TikaMimeRules.g.cs");
