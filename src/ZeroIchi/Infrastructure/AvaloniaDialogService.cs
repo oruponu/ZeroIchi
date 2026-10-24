@@ -57,4 +57,17 @@ public sealed class AvaloniaDialogService(Window window, IShellWindow shell) : I
             shell.SetModalOverlayVisible(false);
         }
     }
+
+    public async Task ShowAboutAsync()
+    {
+        shell.SetModalOverlayVisible(true);
+        try
+        {
+            await AboutDialog.ShowAsync(window);
+        }
+        finally
+        {
+            shell.SetModalOverlayVisible(false);
+        }
+    }
 }

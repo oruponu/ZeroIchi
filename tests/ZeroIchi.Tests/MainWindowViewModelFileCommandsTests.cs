@@ -49,6 +49,8 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
             ErrorCount++;
             return Task.CompletedTask;
         }
+
+        public Task ShowAboutAsync() => Task.CompletedTask;
     }
 
     private sealed class StubClipboardService : IClipboardService

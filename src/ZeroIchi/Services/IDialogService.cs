@@ -10,4 +10,5 @@ public interface IDialogService
     Task<string?> PickSaveFileAsync(string title, string? suggestedFileName);
     Task<SaveChangesResult> ShowSaveChangesDialogAsync();
     Task ShowErrorAsync(string message, string detail);
+    Task ShowAboutAsync();
 }

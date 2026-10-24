@@ -193,6 +193,9 @@
                                   IsChecked="{Binding IsInspectorVisible, Mode=OneWay}"
                                   ToggleType="CheckBox"/>
                     </MenuItem>
+                    <MenuItem Header="ヘルプ(_H)">
+                        <MenuItem Command="{Binding ShowAboutCommand}" Header="バージョン情報(_A)..."/>
+                    </MenuItem>
                 </Menu>
 
                 <TextBlock Grid.Column="1"

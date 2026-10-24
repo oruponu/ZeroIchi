@@ -142,6 +142,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IsInspectorVisible = !IsInspectorVisible;
     }
 
+    [RelayCommand]
+    private Task ShowAboutAsync() => _dialog.ShowAboutAsync();
+
     partial void OnCursorPositionChanged(long value)
     {
         UpdateStatusBar();
