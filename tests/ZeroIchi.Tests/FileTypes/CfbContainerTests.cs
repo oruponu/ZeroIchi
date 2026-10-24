@@ -11,11 +11,19 @@ public sealed class CfbContainerTests
     private const uint EndOfChain = 0xFFFFFFFE;
     private const uint FreeSector = 0xFFFFFFFF;
     private const uint FatSector = 0xFFFFFFFD;
+    private const uint NoStream = 0xFFFFFFFF;
 
     private static readonly byte[] MsiClsid =
         [0x84, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46];
 
+    private sealed record Node(string Name, byte Type, uint Left = NoStream, uint Right = NoStream,
+        uint Child = NoStream);
+
     private static byte[] Cfb(string stream, byte[]? rootClsid = null, uint directoryNext = EndOfChain,
+        uint directoryStart = 1) =>
+        Cfb([new Node(stream, 2)], rootClsid, directoryNext, directoryStart);
+
+    private static byte[] Cfb(Node[] nodes, byte[]? rootClsid = null, uint directoryNext = EndOfChain,
         uint directoryStart = 1)
     {
         var data = new byte[512 * 3];
@@ -42,17 +50,23 @@ public sealed class CfbContainerTests
         BinaryPrimitives.WriteUInt32LittleEndian(fat[4..], directoryNext);
 
         var directory = data.AsSpan(1024, 512);
-        WriteEntry(directory[..128], "Root Entry", 5, rootClsid);
-        WriteEntry(directory[128..256], stream, 2, null);
+        WriteEntry(directory[..128], new Node("Root Entry", 5, Child: 1), rootClsid);
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            WriteEntry(directory.Slice((i + 1) * 128, 128), nodes[i], null);
+        }
         return data;
     }
 
-    private static void WriteEntry(Span<byte> entry, string name, byte type, byte[]? clsid)
+    private static void WriteEntry(Span<byte> entry, Node node, byte[]? clsid)
     {
-        var nameBytes = Encoding.Unicode.GetBytes(name);
+        var nameBytes = Encoding.Unicode.GetBytes(node.Name);
         nameBytes.CopyTo(entry);
         BinaryPrimitives.WriteUInt16LittleEndian(entry[0x40..], (ushort)(nameBytes.Length + 2));
-        entry[0x42] = type;
+        entry[0x42] = node.Type;
+        BinaryPrimitives.WriteUInt32LittleEndian(entry[0x44..], node.Left);
+        BinaryPrimitives.WriteUInt32LittleEndian(entry[0x48..], node.Right);
+        BinaryPrimitives.WriteUInt32LittleEndian(entry[0x4C..], node.Child);
         clsid?.CopyTo(entry[0x50..]);
     }
 
@@ -87,6 +101,14 @@ public sealed class CfbContainerTests
 
         Assert.Equal("application/x-tika-msoffice", detected?.MimeType);
         Assert.Equal("", detected?.Extension);
+    }
+
+    [Fact]
+    public void StreamsInsideAStorage_DoNotDecideTheType()
+    {
+        var data = Cfb([new Node("Workbook", 2, Right: 2), new Node("MBD0001", 1, Child: 3), new Node("WordDocument", 2)]);
+
+        Assert.Equal("application/vnd.ms-excel", Detect(data));
     }
 
     [Fact]
