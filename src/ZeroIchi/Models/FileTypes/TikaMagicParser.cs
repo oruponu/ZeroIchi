@@ -53,8 +53,8 @@ internal static class TikaMagicParser
         bool needsBacktracking;
         try
         {
+            _ = MagicRegex.Create(regex);
             needsBacktracking = !CanCompile(regex, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
-            if (needsBacktracking) _ = new Regex(regex, RegexOptions.CultureInvariant);
         }
         catch (ArgumentException e)
         {

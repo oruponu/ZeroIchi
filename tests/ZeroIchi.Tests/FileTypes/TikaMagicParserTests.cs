@@ -143,6 +143,15 @@ public sealed class TikaMagicParserTests
     }
 
     [Fact]
+    public void Regex_ThatBreaksWhenAnchored_IsUnsupported()
+    {
+        var match = TikaMagicParser.Parse("regex", "0", "(?x)a#", null, null, [], out var reason);
+
+        Assert.Equal(MagicMatchKind.Unsupported, match.Kind);
+        Assert.NotNull(reason);
+    }
+
+    [Fact]
     public void UnknownType_Throws()
     {
         Assert.Throws<FormatException>(() => Parse("unicodeBE", "0", "a"));
