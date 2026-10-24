@@ -2,6 +2,7 @@
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:models="using:ZeroIchi.Models"
+        xmlns:views="using:ZeroIchi.Views"
         Title="ライセンス"
         Width="800"
         Height="560"
@@ -56,7 +57,18 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="models:ThirdPartyNotice">
                                 <StackPanel>
-                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                                    <ItemsControl ItemsSource="{Binding Name, Converter={x:Static views:NoticeNameConverters.SplitIntoWords}}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <TextBlock Text="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                     <TextBlock FontSize="11"
                                                Foreground="#909090"
                                                IsVisible="{Binding License, Converter={x:Static ObjectConverters.IsNotNull}}"
