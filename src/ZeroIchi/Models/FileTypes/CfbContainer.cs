@@ -21,7 +21,7 @@ internal static class CfbContainer
     private static readonly byte[] MsiClsid =
         [0x84, 0x10, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46];
 
-    private sealed record Entry(string Name, byte[] Clsid);
+    private sealed record Entry(string Name, byte[] Clsid, uint Left, uint Right, uint Child);
 
     public static string? Detect(ByteBuffer buffer)
     {
@@ -29,21 +29,38 @@ internal static class CfbContainer
         if (header is null || !header.AsSpan(0, Signature.Length).SequenceEqual(Signature)) return null;
 
         var entries = ReadDirectory(buffer, header);
-        if (entries is null || entries.Count == 0) return null;
+        if (entries is null || entries.Count == 0 || entries[0] is not { } root) return null;
 
-        if (entries[0].Clsid.AsSpan().SequenceEqual(MsiClsid)) return "application/x-ms-installer";
-        if (entries.Exists(entry => entry.Name.StartsWith("__substg1.0_", StringComparison.Ordinal)
-                || entry.Name == "__properties_version1.0"))
+        if (root.Clsid.AsSpan().SequenceEqual(MsiClsid)) return "application/x-ms-installer";
+        var names = RootChildNames(entries, root);
+        if (names.Exists(name => name.StartsWith("__substg1.0_", StringComparison.Ordinal)
+                || name == "__properties_version1.0"))
         {
             return "application/vnd.ms-outlook";
         }
-        if (entries.Exists(entry => entry.Name == "WordDocument")) return "application/msword";
-        if (entries.Exists(entry => entry.Name is "Workbook" or "Book")) return "application/vnd.ms-excel";
-        if (entries.Exists(entry => entry.Name == "PowerPoint Document")) return "application/vnd.ms-powerpoint";
+        if (names.Contains("WordDocument")) return "application/msword";
+        if (names.Exists(name => name is "Workbook" or "Book")) return "application/vnd.ms-excel";
+        if (names.Contains("PowerPoint Document")) return "application/vnd.ms-powerpoint";
         return null;
     }
 
-    private static List<Entry>? ReadDirectory(ByteBuffer buffer, byte[] header)
+    private static List<string> RootChildNames(List<Entry?> entries, Entry root)
+    {
+        var names = new List<string>();
+        var visited = new HashSet<uint> { 0 };
+        var pending = new Stack<uint>();
+        pending.Push(root.Child);
+        while (pending.TryPop(out var id))
+        {
+            if (id >= entries.Count || entries[(int)id] is not { } entry || !visited.Add(id)) continue;
+            names.Add(entry.Name);
+            pending.Push(entry.Left);
+            pending.Push(entry.Right);
+        }
+        return names;
+    }
+
+    private static List<Entry?>? ReadDirectory(ByteBuffer buffer, byte[] header)
     {
         var shift = BinaryPrimitives.ReadUInt16LittleEndian(header.AsSpan(0x1E));
         if (shift is not (9 or 12)) return null;
@@ -52,7 +69,7 @@ internal static class CfbContainer
 
         var fatSectors = new Dictionary<uint, byte[]>();
         var visited = new HashSet<uint>();
-        var entries = new List<Entry>();
+        var entries = new List<Entry?>();
         var sectorsRead = 0;
 
         byte[]? ReadSector(uint sector)
@@ -71,10 +88,17 @@ internal static class CfbContainer
                  offset += EntryLength)
             {
                 var entry = directory.AsSpan(offset, EntryLength);
-                if (entry[0x42] == 0) continue;
+                if (entry[0x42] == 0)
+                {
+                    entries.Add(null);
+                    continue;
+                }
                 var nameLength = Math.Min(BinaryPrimitives.ReadUInt16LittleEndian(entry[0x40..]), (ushort)64);
                 var name = Encoding.Unicode.GetString(entry[..Math.Max(nameLength - 2, 0)]);
-                entries.Add(new Entry(name, entry.Slice(0x50, 16).ToArray()));
+                entries.Add(new Entry(name, entry.Slice(0x50, 16).ToArray(),
+                    BinaryPrimitives.ReadUInt32LittleEndian(entry[0x44..]),
+                    BinaryPrimitives.ReadUInt32LittleEndian(entry[0x48..]),
+                    BinaryPrimitives.ReadUInt32LittleEndian(entry[0x4C..])));
             }
 
             var perFatSector = (uint)(sectorLength / 4);
