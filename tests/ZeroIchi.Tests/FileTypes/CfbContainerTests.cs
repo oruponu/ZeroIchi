@@ -112,6 +112,22 @@ public sealed class CfbContainerTests
     }
 
     [Fact]
+    public void DirectoryLongerThanTheSectorLimit_DecidesFromTheEntriesRead()
+    {
+        const int directorySectors = 80;
+        var data = Cfb("WordDocument");
+        Array.Resize(ref data, 512 * (2 + directorySectors));
+        var fat = data.AsSpan(512, 512);
+        for (var sector = 1; sector < directorySectors; sector++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(fat[(sector * 4)..], (uint)sector + 1);
+        }
+        BinaryPrimitives.WriteUInt32LittleEndian(fat[(directorySectors * 4)..], EndOfChain);
+
+        Assert.Equal("application/msword", Detect(data));
+    }
+
+    [Fact]
     public void CyclicFatChain_StopsWithinTheLimit()
     {
         var data = Cfb("WordDocument", directoryNext: 1);

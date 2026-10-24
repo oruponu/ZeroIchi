@@ -82,7 +82,7 @@ internal static class CfbContainer
         while (sector < MaxRegularSector && visited.Add(sector) && entries.Count < MaxEntries)
         {
             var directory = ReadSector(sector);
-            if (directory is null) return null;
+            if (directory is null) break;
             for (var offset = 0;
                  offset + EntryLength <= sectorLength && entries.Count < MaxEntries;
                  offset += EntryLength)
