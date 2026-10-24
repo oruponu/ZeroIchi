@@ -7,7 +7,7 @@
         Width="800"
         Height="560"
         Background="Transparent"
-        CanResize="True"
+        CanResize="False"
         ShowInTaskbar="False"
         TransparencyLevelHint="Transparent"
         WindowDecorations="None"
