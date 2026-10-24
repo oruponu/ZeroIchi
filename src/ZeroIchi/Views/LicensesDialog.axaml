@@ -1,0 +1,89 @@
+<Window x:Class="ZeroIchi.Views.LicensesDialog"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="using:ZeroIchi.Models"
+        Title="ライセンス"
+        Width="800"
+        Height="560"
+        Background="Transparent"
+        CanResize="True"
+        ShowInTaskbar="False"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
+    </Window.Styles>
+
+    <Border Margin="16"
+            Background="#1E1E1E"
+            BorderBrush="#404040"
+            BorderThickness="1"
+            BoxShadow="0 8 32 0 #60000000"
+            ClipToBounds="True"
+            CornerRadius="8">
+        <DockPanel>
+            <StackPanel Margin="24,20,24,16" DockPanel.Dock="Top">
+                <TextBlock Margin="0,0,0,8"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Text="ライセンス"/>
+                <TextBlock x:Name="PreambleText"
+                           FontSize="12"
+                           Foreground="#B0B0B0"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <Border Padding="24,16"
+                    BorderBrush="#333333"
+                    BorderThickness="0,1,0,0"
+                    DockPanel.Dock="Bottom">
+                <Button x:Name="CloseButton"
+                        MinWidth="120"
+                        HorizontalAlignment="Right"
+                        HorizontalContentAlignment="Center"
+                        Classes="accent"
+                        Content="閉じる"
+                        IsDefault="True"/>
+            </Border>
+
+            <Grid ColumnDefinitions="220,*">
+                <Border Grid.Column="0"
+                        BorderBrush="#333333"
+                        BorderThickness="0,1,1,0">
+                    <ListBox x:Name="NoticeList" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:ThirdPartyNotice">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                                    <TextBlock FontSize="11"
+                                               Foreground="#909090"
+                                               IsVisible="{Binding License, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                               Text="{Binding License}"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <Border Grid.Column="1"
+                        Background="#171717"
+                        BorderBrush="#333333"
+                        BorderThickness="0,1,0,0">
+                    <TextBox x:Name="BodyText"
+                             AcceptsReturn="True"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             FontFamily="fonts:App#Roboto Mono"
+                             FontSize="12"
+                             IsReadOnly="True"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             TextWrapping="NoWrap"/>
+                </Border>
+            </Grid>
+        </DockPanel>
+    </Border>
+</Window>
