@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace ZeroIchi.Models.FileTypes;
 
@@ -18,7 +17,7 @@ internal static class TikaMagicParser
             var min = int.Parse(minShouldMatch, CultureInfo.InvariantCulture);
             if (min <= 0 || min > children.Length)
                 throw new FormatException($"Invalid minShouldMatch: {minShouldMatch} for {children.Length} clauses");
-            return new MagicMatch(MagicMatchKind.MinShouldMatch, 0, 0, [], [], null, false, min, children);
+            return new MagicMatch(MagicMatchKind.MinShouldMatch, 0, 0, [], [], null, min, children);
         }
 
         type ??= "string";
@@ -47,35 +46,20 @@ internal static class TikaMagicParser
         }
 
         if (kind != MagicMatchKind.Regex)
-            return new MagicMatch(kind, start, end, pattern, fullMask, null, false, 0, children);
+            return new MagicMatch(kind, start, end, pattern, fullMask, null, 0, children);
 
         var regex = Encoding.UTF8.GetString(pattern);
-        bool needsBacktracking;
         try
         {
             _ = MagicRegex.Create(regex);
-            needsBacktracking = !CanCompile(regex, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         }
         catch (ArgumentException e)
         {
             unsupportedReason = $"regex '{regex}' is rejected by .NET: {e.Message}";
-            return new MagicMatch(MagicMatchKind.Unsupported, start, end, pattern, fullMask, regex, false, 0, children);
+            return new MagicMatch(MagicMatchKind.Unsupported, start, end, pattern, fullMask, regex, 0, children);
         }
 
-        return new MagicMatch(kind, start, end, pattern, fullMask, regex, needsBacktracking, 0, children);
-    }
-
-    private static bool CanCompile(string regex, RegexOptions options)
-    {
-        try
-        {
-            _ = new Regex(regex, options);
-            return true;
-        }
-        catch (NotSupportedException)
-        {
-            return false;
-        }
+        return new MagicMatch(kind, start, end, pattern, fullMask, regex, 0, children);
     }
 
     private static (int Start, int End) ParseOffset(string? offset)

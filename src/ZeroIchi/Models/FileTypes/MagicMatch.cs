@@ -16,6 +16,5 @@ internal sealed record MagicMatch(
     byte[] Pattern,
     byte[] Mask,
     string? Regex,
-    bool RegexNeedsBacktracking,
     int MinShouldMatch,
     MagicMatch[] Children);
