@@ -41,10 +41,7 @@ public sealed class ThirdPartyNoticesTests
         var project = XDocument.Load(Path.Combine(Root, "src", "ZeroIchi", "ZeroIchi.csproj"));
         var data = new TheoryData<string>();
         foreach (var reference in project.Descendants("PackageReference"))
-        {
-            var name = reference.Attribute("Include")!.Value;
-            if (name != "Avalonia.Diagnostics") data.Add(name);
-        }
+            data.Add(reference.Attribute("Include")!.Value);
         return data;
     }
 
