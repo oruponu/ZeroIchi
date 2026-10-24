@@ -1,6 +1,10 @@
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ZeroIchi.Models;
 using ZeroIchi.Views;
 
@@ -16,6 +20,34 @@ public sealed class LicensesDialogTests
         Dispatcher.UIThread.RunJobs();
         return dialog;
     }
+
+    [Fact]
+    public Task Selecting_AnotherNotice_ScrollsTheBodyBackToTheStart() => HeadlessTestApp.RunAsync(() =>
+    {
+        var theme = new FluentTheme();
+        Application.Current!.Styles.Add(theme);
+        try
+        {
+            var dialog = Show();
+            var scrollViewer = dialog.BodyText.GetVisualDescendants().OfType<ScrollViewer>().First();
+            dialog.NoticeList.SelectedIndex = dialog.NoticeList.ItemCount - 1;
+            Dispatcher.UIThread.RunJobs();
+            scrollViewer.Offset = new Vector(50, 20000);
+            Dispatcher.UIThread.RunJobs();
+            Assert.NotEqual(default, scrollViewer.Offset);
+
+            dialog.NoticeList.SelectedIndex = 1;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(default, scrollViewer.Offset);
+            dialog.Close();
+        }
+        finally
+        {
+            Application.Current!.Styles.Remove(theme);
+        }
+        return Task.CompletedTask;
+    });
 
     [Fact]
     public Task Opens_WithEveryNoticeListedAndTheFirstSelected() => HeadlessTestApp.RunAsync(() =>

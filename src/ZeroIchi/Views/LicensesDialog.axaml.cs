@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using System.Threading.Tasks;
 using ZeroIchi.Models;
 
@@ -17,6 +18,8 @@ public sealed partial class LicensesDialog : Window
         {
             BodyText.Text = (NoticeList.SelectedItem as ThirdPartyNotice)?.Body;
             BodyText.CaretIndex = 0;
+            if (BodyText.FindDescendantOfType<ScrollViewer>() is { } scrollViewer)
+                scrollViewer.Offset = default;
         };
         NoticeList.ItemsSource = document.Notices;
         NoticeList.SelectedIndex = 0;
