@@ -14,7 +14,6 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
 
     private const int ReadChunk = 4 * 1024;
 
-    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(50);
     private static readonly long Budget = Stopwatch.Frequency * 5 / 1000;
     private static readonly ConditionalWeakTable<MagicMatch, Regex> Regexes = new();
 
@@ -115,8 +114,7 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
         return false;
     }
 
-    private static Regex Compile(MagicMatch match) =>
-        new($"^(?:{match.Regex})", RegexOptions.CultureInvariant, MatchTimeout);
+    private static Regex Compile(MagicMatch match) => MagicRegex.Create(match.Regex!);
 
     private void Load(int end)
     {
