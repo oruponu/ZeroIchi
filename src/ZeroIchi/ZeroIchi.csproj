@@ -13,7 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
     <EmbeddedResource Include="Formats\**\*.ksy" />
     <EmbeddedResource Include="..\..\THIRD-PARTY-NOTICES.md" LogicalName="ZeroIchi.THIRD-PARTY-NOTICES.md" />
