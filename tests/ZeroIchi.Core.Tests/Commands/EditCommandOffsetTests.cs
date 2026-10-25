@@ -1,7 +1,7 @@
 using ZeroIchi.Models;
 using ZeroIchi.Models.Commands;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.Commands;
 
 public sealed class EditCommandOffsetTests
 {

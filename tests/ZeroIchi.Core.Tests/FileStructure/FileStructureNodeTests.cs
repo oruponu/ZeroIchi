@@ -1,6 +1,6 @@
 using ZeroIchi.Models.FileStructure;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.FileStructure;
 
 public sealed class FileStructureNodeTests
 {

@@ -3,7 +3,7 @@ using ZeroIchi.Models.FileStructure;
 using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Tests.Ksy.Model;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.FileStructure;
 
 public sealed class StructureAnalysisTests
 {

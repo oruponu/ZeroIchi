@@ -1,6 +1,6 @@
 using ZeroIchi.Models.Buffers;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.Buffers;
 
 public sealed class MappedByteBufferTests : IDisposable
 {

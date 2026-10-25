@@ -1,7 +1,7 @@
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Search;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.Search;
 
 public sealed class ByteSearcherTests
 {

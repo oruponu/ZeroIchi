@@ -1,6 +1,6 @@
 using ZeroIchi.Models.PieceTables;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.PieceTables;
 
 public sealed class AddBufferTests
 {

@@ -2,7 +2,7 @@ using System.Diagnostics;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.PieceTables;
 
-namespace ZeroIchi.Tests;
+namespace ZeroIchi.Tests.PieceTables;
 
 public sealed class PieceTableLookupTests
 {
