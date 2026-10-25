@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <EmbeddedResource Include="Formats\**\*.ksy" />
     <EmbeddedResource Include="..\..\THIRD-PARTY-NOTICES.md" LogicalName="ZeroIchi.THIRD-PARTY-NOTICES.md" />
     <None Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
@@ -24,6 +23,9 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.6" />
-    <PackageReference Include="YamlDotNet" Version="18.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZeroIchi.Core\ZeroIchi.Core.csproj" />
   </ItemGroup>
 </Project>

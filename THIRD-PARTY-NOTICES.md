@@ -247,7 +247,7 @@ SOFTWARE.
 - Source: https://github.com/apache/tika
 - Version: 4.1.0 (commit c5348700b3f58e5559a50c8e1156d7e2806f42f9)
 - License: Apache License, Version 2.0 (below)
-- Files: `src/ZeroIchi/Models/FileTypes/TikaMimeRules.g.cs` is generated from `tika-mimetypes.xml` of Apache Tika and has been modified. The original file is in `tools/MimeRuleGenerator/tika/`.
+- Files: `src/ZeroIchi.Core/Models/FileTypes/TikaMimeRules.g.cs` is generated from `tika-mimetypes.xml` of Apache Tika and has been modified. The original file is in `tools/MimeRuleGenerator/tika/`.
 - Contains public sector information licensed under the Open Government Licence v3.0 (http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 
 ```
@@ -446,7 +446,7 @@ under the Open Government License 3.0 (http://www.nationalarchives.gov.uk/doc/op
 - Source: https://github.com/kaitai-io/kaitai_struct_formats
 - Commit: c35300d0049440570230aaed4219b1f794dd3843
 - License: CC0-1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
-- Files: the .ksy files under `src/ZeroIchi/Formats/` except `media/wav.ksy`, `media/mp3.ksy` and `media/id3v2_2.ksy`, which are part of ZeroIchi. Some of the files have been modified.
+- Files: the .ksy files under `src/ZeroIchi.Core/Formats/` except `media/wav.ksy`, `media/mp3.ksy` and `media/id3v2_2.ksy`, which are part of ZeroIchi. Some of the files have been modified.
 
 ## Inter
 

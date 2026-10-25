@@ -5,9 +5,9 @@ using ZeroIchi.Models.Buffers;
 
 namespace ZeroIchi.Models.FileTypes;
 
-internal sealed record DetectedFileType(string MimeType, string Extension);
+public sealed record DetectedFileType(string MimeType, string Extension);
 
-internal sealed class FileTypeDetector
+public sealed class FileTypeDetector
 {
     private static readonly Lazy<FileTypeDetector> LazyDefault =
         new(() => new FileTypeDetector([.. TikaMimeRules.Create(), .. ContainerDetector.ExtraTypes]));
@@ -15,7 +15,7 @@ internal sealed class FileTypeDetector
     private readonly Dictionary<string, MimeTypeEntry> _types;
     private readonly (string Name, MimeMagic Magic)[] _magics;
 
-    public FileTypeDetector(IReadOnlyList<MimeTypeEntry> types)
+    internal FileTypeDetector(IReadOnlyList<MimeTypeEntry> types)
     {
         _types = types.ToDictionary(type => type.Name, StringComparer.Ordinal);
         _magics = types

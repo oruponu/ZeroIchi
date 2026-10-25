@@ -17,7 +17,7 @@ These files are licensed under the Apache License, Version 2.0. Do not modify th
 3. Regenerate the rules from the repository root:
 
    ```
-   dotnet run --project tools/MimeRuleGenerator -- tools/MimeRuleGenerator/tika/tika-mimetypes.xml src/ZeroIchi/Models/FileTypes/TikaMimeRules.g.cs
+   dotnet run --project tools/MimeRuleGenerator -- tools/MimeRuleGenerator/tika/tika-mimetypes.xml src/ZeroIchi.Core/Models/FileTypes/TikaMimeRules.g.cs
    ```
 
 4. Update the Apache Tika section of `THIRD-PARTY-NOTICES.md`.

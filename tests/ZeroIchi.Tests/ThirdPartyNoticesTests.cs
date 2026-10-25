@@ -38,10 +38,13 @@ public sealed class ThirdPartyNoticesTests
 
     public static TheoryData<string> PackageReferences()
     {
-        var project = XDocument.Load(Path.Combine(Root, "src", "ZeroIchi", "ZeroIchi.csproj"));
         var data = new TheoryData<string>();
-        foreach (var reference in project.Descendants("PackageReference"))
-            data.Add(reference.Attribute("Include")!.Value);
+        foreach (var name in new[] { "ZeroIchi", "ZeroIchi.Core" })
+        {
+            var project = XDocument.Load(Path.Combine(Root, "src", name, name + ".csproj"));
+            foreach (var reference in project.Descendants("PackageReference"))
+                data.Add(reference.Attribute("Include")!.Value);
+        }
         return data;
     }
 

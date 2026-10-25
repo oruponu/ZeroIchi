@@ -98,7 +98,7 @@ public sealed class TikaMimeRulesTests
     [Fact]
     public void GeneratedFile_StartsWithTheNotice()
     {
-        var path = Path.Combine(FindRoot(), "src", "ZeroIchi", "Models", "FileTypes", "TikaMimeRules.g.cs");
+        var path = Path.Combine(FindRoot(), "src", "ZeroIchi.Core", "Models", "FileTypes", "TikaMimeRules.g.cs");
         var header = string.Join("\n", File.ReadLines(path).Take(8));
 
         Assert.Contains("Apache License, Version 2.0", header);

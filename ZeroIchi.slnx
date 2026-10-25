@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/ZeroIchi/ZeroIchi.csproj" />
+    <Project Path="src/ZeroIchi.Core/ZeroIchi.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ZeroIchi.Tests/ZeroIchi.Tests.csproj" />
