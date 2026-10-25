@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\src\ZeroIchi.Core\Models\FileTypes\MagicMatch.cs;..\..\src\ZeroIchi.Core\Models\FileTypes\MagicRegex.cs;..\..\src\ZeroIchi.Core\Models\FileTypes\MimeTypeEntry.cs;..\..\src\ZeroIchi.Core\Models\FileTypes\TikaMagicParser.cs" />
+    <ProjectReference Include="..\..\src\ZeroIchi.Core\ZeroIchi.Core.csproj" />
   </ItemGroup>
 
 </Project>
