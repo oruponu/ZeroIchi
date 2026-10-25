@@ -5,10 +5,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\ZeroIchi.Core.Tests\ZipBuilder.cs" Link="ZipBuilder.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\ZeroIchi\ZeroIchi.csproj" />
   </ItemGroup>
 
