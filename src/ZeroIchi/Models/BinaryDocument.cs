@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Commands;
@@ -14,6 +15,9 @@ public sealed class BinaryDocument : IDisposable
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);
     private readonly record struct OverwrittenRange(long Offset, byte[] Bytes);
     private readonly record struct HistorySavePlan(IEditCommand? DiscardThrough, Dictionary<IEditCommand, byte[]> RetainedBytes);
+
+    private const int ReplaceAttempts = 4;
+    private static readonly TimeSpan ReplaceRetryDelay = TimeSpan.FromMilliseconds(50);
 
     private ByteBuffer _original;
     private PieceTable _pieceTable;
@@ -33,6 +37,7 @@ public sealed class BinaryDocument : IDisposable
     public bool CanRedo => _undoRedoManager.CanRedo;
     internal ByteBuffer Original => _original;
     internal Func<Stream, Stream>? InPlaceStreamWrapper { get; set; }
+    internal Action? ReplaceRetrying { get; set; }
     internal long UndoRetentionLimit { get; set; } = 64L * 1024 * 1024;
     internal PieceTable CurrentPieceTable => _pieceTable;
 
@@ -224,7 +229,7 @@ public sealed class BinaryDocument : IDisposable
 
         try
         {
-            File.Replace(tempPath, FilePath, destinationBackupFileName: null);
+            ReplaceFile(tempPath, FilePath);
         }
         catch
         {
@@ -237,6 +242,24 @@ public sealed class BinaryDocument : IDisposable
                 (_original as MappedByteBuffer)?.RestoreMapping();
                 TryDeleteTempFile(tempPath);
                 throw;
+            }
+        }
+    }
+
+    // Antivirus and sync software may briefly open a file that was just written, so retry while the destination is intact
+    private void ReplaceFile(string source, string destination)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Replace(source, destination, destinationBackupFileName: null);
+                return;
+            }
+            catch (IOException) when (attempt < ReplaceAttempts && File.Exists(source) && File.Exists(destination))
+            {
+                ReplaceRetrying?.Invoke();
+                Thread.Sleep(ReplaceRetryDelay * attempt);
             }
         }
     }
@@ -277,7 +300,7 @@ public sealed class BinaryDocument : IDisposable
         try
         {
             if (File.Exists(path))
-                File.Replace(tempPath, path, destinationBackupFileName: null);
+                ReplaceFile(tempPath, path);
             else
                 File.Move(tempPath, path);
         }

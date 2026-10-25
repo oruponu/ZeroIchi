@@ -274,6 +274,25 @@ public sealed class BinaryDocumentSaveTests : IDisposable
     }
 
     [Fact]
+    public async Task Save_ReplaceBlockedBriefly_SavesAfterRetry()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(50, [0xAA]);
+        using var blocker = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        doc.ReplaceRetrying = blocker.Dispose;
+
+        doc.Save();
+        doc.Dispose();
+
+        byte[] expected = [.. original[..50], 0xAA, .. original[50..]];
+        Assert.Equal(expected, await File.ReadAllBytesAsync(path));
+        Assert.False(File.Exists(path + ".zitmp"));
+    }
+
+    [Fact]
     public async Task Save_InPlaceBlocked_RestoresMappingAndKeepsFileIntact()
     {
         var original = MakeSequential(100);
@@ -519,6 +538,26 @@ public sealed class BinaryDocumentSaveTests : IDisposable
         Assert.False(File.Exists(targetPath + ".zitmp"));
         doc.Dispose();
         Assert.Equal(targetContent, await File.ReadAllBytesAsync(targetPath));
+    }
+
+    [Fact]
+    public async Task SaveAs_ReplaceBlockedBriefly_SavesAfterRetry()
+    {
+        var original = MakeSequential(100);
+        var sourcePath = CreateTestFile(original);
+        var targetPath = CreateTestFile([9, 9, 9]);
+
+        using var doc = BinaryDocument.Open(sourcePath);
+        doc.InsertBytes(50, [0xAA]);
+        using var blocker = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        doc.ReplaceRetrying = blocker.Dispose;
+
+        await doc.SaveAsAsync(targetPath);
+        doc.Dispose();
+
+        byte[] expected = [.. original[..50], 0xAA, .. original[50..]];
+        Assert.Equal(expected, await File.ReadAllBytesAsync(targetPath));
+        Assert.False(File.Exists(targetPath + ".zitmp"));
     }
 
     [Fact]
