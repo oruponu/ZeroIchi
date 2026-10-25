@@ -1,4 +1,4 @@
-﻿using Avalonia.Input;
+using Avalonia.Input;
 using ZeroIchi.Controls;
 
 namespace ZeroIchi.Tests;
