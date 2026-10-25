@@ -31,16 +31,4 @@ public sealed class MainWindowViewModelAboutTests
             return Task.CompletedTask;
         }
     }
-
-    private sealed class StubClipboardService : IClipboardService
-    {
-        public Task SetBytesAsync(byte[] bytes, string? text) => Task.CompletedTask;
-        public Task<byte[]?> TryGetBytesAsync() => Task.FromResult<byte[]?>(null);
-        public Task<string?> GetTextAsync() => Task.FromResult<string?>(null);
-    }
-
-    private sealed class StubWindowService : IWindowService
-    {
-        public void Close() { }
-    }
 }

@@ -53,18 +53,6 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         public Task ShowAboutAsync() => Task.CompletedTask;
     }
 
-    private sealed class StubClipboardService : IClipboardService
-    {
-        public Task SetBytesAsync(byte[] bytes, string? text) => Task.CompletedTask;
-        public Task<byte[]?> TryGetBytesAsync() => Task.FromResult<byte[]?>(null);
-        public Task<string?> GetTextAsync() => Task.FromResult<string?>(null);
-    }
-
-    private sealed class StubWindowService : IWindowService
-    {
-        public void Close() { }
-    }
-
     [Fact]
     public async Task OpenFile_WhenModifiedAndCancelled_KeepsDocument()
     {

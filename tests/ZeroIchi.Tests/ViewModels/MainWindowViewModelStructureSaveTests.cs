@@ -156,7 +156,7 @@ public sealed class MainWindowViewModelStructureSaveTests : IDisposable
     public Task SaveAs_WithANewExtension_RedetectsTheFormat() => HeadlessTestApp.RunAsync(async () =>
     {
         const string yaml = "meta:\n  id: ext\n  file-extension: zz\nseq:\n  - id: first\n    type: u1\n";
-        var dialog = new StubDialogService();
+        var dialog = new MainWindowViewModelStructureUpdateTests.StubDialogService();
         var vm = Create(Registry(null, yaml), TimeSpan.Zero, dialog);
         await vm.OpenFileAsync(Write("a.bin", [7, 8]));
         await vm.StructureUpdate;
