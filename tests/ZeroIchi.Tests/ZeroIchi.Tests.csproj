@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ZeroIchi\ZeroIchi.csproj" />
-    <ProjectReference Include="..\..\src\ZeroIchi.Core\ZeroIchi.Core.csproj" />
   </ItemGroup>
 
 </Project>
