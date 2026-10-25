@@ -10,7 +10,7 @@ public sealed class ThirdPartyNoticeParserTests
     public void Load_ParsesTheNoticesFileOfTheRepository()
     {
         var expected = ThirdPartyNotices.Parse(
-            File.ReadAllText(Path.Combine(ThirdPartyNoticesTests.FindRoot(), "THIRD-PARTY-NOTICES.md")));
+            File.ReadAllText(Path.Combine(RepositoryRoot.FullName, "THIRD-PARTY-NOTICES.md")));
 
         var loaded = ThirdPartyNotices.Load();
 

@@ -6,16 +6,6 @@ public sealed class TikaMimeRulesTests
 {
     private static readonly MimeTypeEntry[] Types = TikaMimeRules.Create();
 
-    private static string FindRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null;
-             directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "ZeroIchi.slnx"))) return directory.FullName;
-        }
-        throw new DirectoryNotFoundException("ZeroIchi.slnx was not found.");
-    }
-
     private static MimeTypeEntry Type(string name) => Types.Single(t => t.Name == name);
 
     [Fact]
@@ -98,7 +88,7 @@ public sealed class TikaMimeRulesTests
     [Fact]
     public void GeneratedFile_StartsWithTheNotice()
     {
-        var path = Path.Combine(FindRoot(), "src", "ZeroIchi.Core", "Models", "FileTypes", "TikaMimeRules.g.cs");
+        var path = Path.Combine(RepositoryRoot.FullName, "src", "ZeroIchi.Core", "Models", "FileTypes", "TikaMimeRules.g.cs");
         var header = string.Join("\n", File.ReadLines(path).Take(8));
 
         Assert.Contains("Apache License, Version 2.0", header);

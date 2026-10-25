@@ -6,17 +6,7 @@ namespace ZeroIchi.Tests;
 
 public sealed class ThirdPartyNoticesTests
 {
-    private static readonly string Root = FindRoot();
-
-    internal static string FindRoot()
-    {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null;
-             directory = directory.Parent)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "ZeroIchi.slnx"))) return directory.FullName;
-        }
-        throw new DirectoryNotFoundException("ZeroIchi.slnx was not found.");
-    }
+    private static readonly string Root = RepositoryRoot.FullName;
 
     private static string Notices() =>
         File.ReadAllText(Path.Combine(Root, "THIRD-PARTY-NOTICES.md")).ReplaceLineEndings("\n");

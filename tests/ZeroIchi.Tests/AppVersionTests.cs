@@ -9,7 +9,7 @@ public sealed class AppVersionTests
     [Fact]
     public void Current_MatchesTheProjectVersion()
     {
-        var project = XDocument.Load(Path.Combine(ThirdPartyNoticesTests.FindRoot(), "src", "ZeroIchi", "ZeroIchi.csproj"));
+        var project = XDocument.Load(Path.Combine(RepositoryRoot.FullName, "src", "ZeroIchi", "ZeroIchi.csproj"));
 
         Assert.Equal(project.Descendants("Version").Single().Value, AppVersion.Current);
     }
