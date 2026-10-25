@@ -25,7 +25,7 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
     private static (MainWindowViewModel Vm, StubDialogService Dialog) CreateViewModel()
     {
         var dialog = new StubDialogService();
-        return (new MainWindowViewModel(dialog, new StubClipboardService(), new StubWindowService()), dialog);
+        return (ViewModelTestFactory.CreateViewModel(dialog), dialog);
     }
 
     private sealed class StubDialogService : IDialogService

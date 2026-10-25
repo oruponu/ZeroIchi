@@ -3,6 +3,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using ZeroIchi.Controls;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.Controls;
 
@@ -22,7 +23,7 @@ public sealed class HexViewControlNibbleStateTests : IDisposable
         var path = Path.Combine(_tempDir, Guid.NewGuid().ToString("N") + ".bin");
         File.WriteAllBytes(path, content);
 
-        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService());
+        var vm = CreateViewModel();
         await vm.OpenFileAsync(path);
 
         var control = new HexViewControl();

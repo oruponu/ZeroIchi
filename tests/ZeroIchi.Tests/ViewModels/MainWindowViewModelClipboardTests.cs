@@ -1,6 +1,7 @@
 using System.Text;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.ViewModels;
 
@@ -20,7 +21,7 @@ public sealed class MainWindowViewModelClipboardTests : IDisposable
         File.WriteAllBytes(path, content);
 
         var clipboard = new FakeClipboardService();
-        var vm = new MainWindowViewModel(new StubDialogService(), clipboard, new StubWindowService());
+        var vm = CreateViewModel(clipboard: clipboard);
         await vm.OpenFileAsync(path);
         return (vm, clipboard);
     }

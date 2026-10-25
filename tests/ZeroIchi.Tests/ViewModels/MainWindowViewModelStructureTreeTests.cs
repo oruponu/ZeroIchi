@@ -2,6 +2,7 @@ using System.Text;
 using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.ViewModels;
 
@@ -106,7 +107,7 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         ];
         var path = Path.Combine(_tempDir, "a.png");
         File.WriteAllBytes(path, png);
-        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService());
+        var vm = CreateViewModel();
 
         await vm.OpenFileAsync(path);
         await vm.StructureUpdate;

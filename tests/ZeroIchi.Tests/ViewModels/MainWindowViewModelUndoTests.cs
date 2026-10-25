@@ -22,7 +22,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
     }
 
     private static MainWindowViewModel CreateViewModel()
-        => new(new StubDialogService(), new StubClipboardService(), new StubWindowService());
+        => ViewModelTestFactory.CreateViewModel(clipboard: new StubClipboardService());
 
     private sealed class StubClipboardService : IClipboardService
     {
@@ -337,7 +337,7 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
     public async Task Copy_AfterUndo_CopiesTheByteAtTheCursor()
     {
         var clipboard = new StubClipboardService();
-        var vm = new MainWindowViewModel(new StubDialogService(), clipboard, new StubWindowService());
+        var vm = ViewModelTestFactory.CreateViewModel(clipboard: clipboard);
         await vm.OpenFileAsync(CreateTestFile());
         try
         {

@@ -1,5 +1,6 @@
 using System.Text;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.ViewModels;
 
@@ -19,9 +20,6 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
         File.WriteAllBytes(path, new byte[length]);
         return path;
     }
-
-    private static MainWindowViewModel CreateViewModel()
-        => new(new StubDialogService(), new StubClipboardService(), new StubWindowService());
 
     [Fact]
     public async Task GoToOffset_TreatsInputAsHexByDefault()

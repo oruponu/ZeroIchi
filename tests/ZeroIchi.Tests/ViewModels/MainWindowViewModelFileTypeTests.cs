@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using ZeroIchi.Models.Commands;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.ViewModels;
 
@@ -27,7 +28,7 @@ public sealed class MainWindowViewModelFileTypeTests : IDisposable
     {
         var path = Path.Combine(_tempDir, fileName);
         File.WriteAllBytes(path, content);
-        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService());
+        var vm = CreateViewModel();
         await vm.OpenFileAsync(path);
         await vm.StructureUpdate;
         return vm;

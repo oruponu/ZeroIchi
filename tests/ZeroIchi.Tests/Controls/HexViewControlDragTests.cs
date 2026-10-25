@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.Controls;
 
@@ -25,7 +26,7 @@ public sealed class HexViewControlDragTests : IDisposable
         var path = Path.Combine(_tempDir, Guid.NewGuid().ToString("N") + ".bin");
         File.WriteAllBytes(path, new byte[0x10000]);
 
-        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService());
+        var vm = CreateViewModel();
         await vm.OpenFileAsync(path);
         var window = new MainWindow { DataContext = vm };
         window.Show();

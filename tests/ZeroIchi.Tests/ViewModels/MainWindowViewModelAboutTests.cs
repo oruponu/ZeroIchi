@@ -1,5 +1,6 @@
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.ViewModels;
 
@@ -9,7 +10,7 @@ public sealed class MainWindowViewModelAboutTests
     public async Task ShowAbout_OpensTheAboutDialog()
     {
         var dialog = new StubDialogService();
-        var vm = new MainWindowViewModel(dialog, new StubClipboardService(), new StubWindowService());
+        var vm = CreateViewModel(dialog);
 
         await vm.ShowAboutCommand.ExecuteAsync(null);
 

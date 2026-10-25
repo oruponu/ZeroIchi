@@ -1,5 +1,6 @@
 using System.Text;
 using ZeroIchi.ViewModels;
+using static ZeroIchi.Tests.ViewModelTestFactory;
 
 namespace ZeroIchi.Tests.ViewModels;
 
@@ -21,9 +22,6 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
         File.WriteAllBytes(path, bytes);
         return path;
     }
-
-    private static MainWindowViewModel CreateViewModel()
-        => new(new StubDialogService(), new StubClipboardService(), new StubWindowService());
 
     [Fact]
     public async Task Edit_AfterSearch_ClearsSearchResults()
