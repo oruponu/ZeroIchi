@@ -1,6 +1,6 @@
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
-namespace ZeroIchi.Tests.Ksy;
+namespace ZeroIchi.Tests.Ksy.Expressions;
 
 public sealed class KsEvaluatorCompareTests
 {

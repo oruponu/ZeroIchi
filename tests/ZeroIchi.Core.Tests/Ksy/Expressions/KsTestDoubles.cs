@@ -1,6 +1,6 @@
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
-namespace ZeroIchi.Tests.Ksy;
+namespace ZeroIchi.Tests.Ksy.Expressions;
 
 internal sealed class TestScope : IKsEvalScope
 {
@@ -72,26 +72,4 @@ internal sealed class ThrowingBytes : IKsBytes
 {
     public long Length => 1L << 40;
     public byte[] ToArray() => throw new KsExpressionException("too large", -1, 0);
-}
-
-internal static class SmallStack
-{
-    public static Exception? Run(Action action)
-    {
-        Exception? caught = null;
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception e)
-            {
-                caught = e;
-            }
-        }, 256 * 1024);
-        thread.Start();
-        thread.Join();
-        return caught;
-    }
 }

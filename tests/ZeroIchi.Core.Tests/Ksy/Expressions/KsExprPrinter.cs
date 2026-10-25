@@ -1,7 +1,7 @@
 using System.Globalization;
 using ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
-namespace ZeroIchi.Tests.Ksy;
+namespace ZeroIchi.Tests.Ksy.Expressions;
 
 internal static class KsExprPrinter
 {
