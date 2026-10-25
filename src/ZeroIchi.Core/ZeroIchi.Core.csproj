@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroIchi.Tests" />
+    <InternalsVisibleTo Include="ZeroIchi.Core.Tests" />
     <InternalsVisibleTo Include="MimeRuleGenerator" />
   </ItemGroup>
 
