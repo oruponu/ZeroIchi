@@ -4,6 +4,7 @@ using ZeroIchi.Models.FileTypes;
 
 namespace ZeroIchi.Tests.FileTypes;
 
+[Collection(RegexTimeoutCollection.Name)]
 public sealed class MagicEvaluatorRegexTests
 {
     private const string Catastrophic = "^(a+)+(?<=a)$";

@@ -4,6 +4,7 @@ using ZeroIchi.Models.FileTypes;
 
 namespace ZeroIchi.Tests.FileTypes;
 
+[Collection(RegexTimeoutCollection.Name)]
 public sealed class FileTypeDetectorTests
 {
     private static MimeTypeEntry Type(string name, string? parent, int priority, string value) =>
