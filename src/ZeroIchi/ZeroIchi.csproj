@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -28,4 +29,5 @@
   <ItemGroup>
     <ProjectReference Include="..\ZeroIchi.Core\ZeroIchi.Core.csproj" />
   </ItemGroup>
+
 </Project>
