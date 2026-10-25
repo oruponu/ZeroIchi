@@ -14,7 +14,7 @@ indent_size = 2
 trim_trailing_whitespace = false
 
 # Imported third-party files keep their original formatting
-[tests/ZeroIchi.Tests/KaitaiConformance/{formats,spec,src}/**]
+[tests/ZeroIchi.Core.Tests/KaitaiConformance/{formats,spec,src}/**]
 charset = unset
 indent_style = unset
 indent_size = unset

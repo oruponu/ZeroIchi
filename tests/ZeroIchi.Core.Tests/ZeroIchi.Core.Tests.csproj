@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Ksy\Model\Resources\**\*.ksy" />
+    <None Include="KaitaiConformance\**\*" Exclude="KaitaiConformance\**\*.cs" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\ZeroIchi.Core\ZeroIchi.Core.csproj" />
   </ItemGroup>
 
