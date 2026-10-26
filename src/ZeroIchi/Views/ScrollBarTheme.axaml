@@ -1,0 +1,245 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="ScrollViewerScrollBarsSeparatorBackground" Color="Transparent"/>
+
+    <ControlTheme x:Key="ScrollBarThumbTheme" TargetType="Thumb">
+        <Setter Property="Background" Value="#8BFFFFFF"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent">
+                    <Border Margin="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Transitions">
+            <Transitions>
+                <ThicknessTransition Easing="CubicEaseOut"
+                                     Property="Padding"
+                                     Duration="0:0:0.167"/>
+                <BrushTransition Property="Background" Duration="0:0:0.083"/>
+            </Transitions>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="#C5FFFFFF"/>
+        </Style>
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="#E6FFFFFF"/>
+        </Style>
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="#3FFFFFFF"/>
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="ScrollBarPageButtonTheme" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"/>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="ScrollBarLineButtonTheme" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#8BFFFFFF"/>
+        <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="8"/>
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                    <ContentPresenter x:Name="PART_ContentPresenter"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Content="{TemplateBinding Content}"
+                                      RenderTransformOrigin="50%,50%"
+                                      TextOptions.TextRenderingMode="Antialias"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.083"/>
+            </Transitions>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Foreground" Value="#C5FFFFFF"/>
+        </Style>
+        <Style Selector="^:pressed">
+            <Setter Property="Foreground" Value="#C5FFFFFF"/>
+        </Style>
+        <Style Selector="^:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="RenderTransform" Value="scale(0.875)"/>
+        </Style>
+        <Style Selector="^:disabled">
+            <Setter Property="Foreground" Value="#3FFFFFFF"/>
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
+        <Setter Property="MinWidth" Value="12"/>
+        <Setter Property="MinHeight" Value="12"/>
+        <Setter Property="Background" Value="Transparent"/>
+
+        <Style Selector="^:vertical">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="{TemplateBinding Background}" RowDefinitions="Auto,*,Auto">
+                        <Border x:Name="TrackRect"
+                                Grid.RowSpan="3"
+                                Background="#33000000"
+                                CornerRadius="6"
+                                Opacity="0">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.083"/>
+                                </Transitions>
+                            </Border.Transitions>
+                        </Border>
+
+                        <RepeatButton Name="PART_LineUpButton"
+                                      Grid.Row="0"
+                                      Height="12"
+                                      MinWidth="12"
+                                      Padding="0,4,0,0"
+                                      HorizontalAlignment="Center"
+                                      AutomationProperties.Name="Line up"
+                                      Focusable="False"
+                                      Theme="{StaticResource ScrollBarLineButtonTheme}">
+                            <TextBlock Text="&#xEDDB;"/>
+                        </RepeatButton>
+
+                        <Track Grid.Row="1"
+                               DeferThumbDrag="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}"
+                               IsDirectionReversed="True"
+                               Maximum="{TemplateBinding Maximum}"
+                               Minimum="{TemplateBinding Minimum}"
+                               Orientation="{TemplateBinding Orientation}"
+                               ViewportSize="{TemplateBinding ViewportSize}"
+                               Value="{TemplateBinding Value,
+                                                       Mode=TwoWay}">
+                            <Track.DecreaseButton>
+                                <RepeatButton Name="PART_PageUpButton"
+                                              AutomationProperties.Name="Page up"
+                                              Focusable="False"
+                                              Theme="{StaticResource ScrollBarPageButtonTheme}"/>
+                            </Track.DecreaseButton>
+                            <Track.IncreaseButton>
+                                <RepeatButton Name="PART_PageDownButton"
+                                              AutomationProperties.Name="Page down"
+                                              Focusable="False"
+                                              Theme="{StaticResource ScrollBarPageButtonTheme}"/>
+                            </Track.IncreaseButton>
+                            <Thumb Width="12"
+                                   MinHeight="30"
+                                   Padding="7,3,3,3"
+                                   AutomationProperties.Name="Position"
+                                   Theme="{StaticResource ScrollBarThumbTheme}"/>
+                        </Track>
+
+                        <RepeatButton Name="PART_LineDownButton"
+                                      Grid.Row="2"
+                                      Height="12"
+                                      MinWidth="12"
+                                      Padding="0,0,0,4"
+                                      HorizontalAlignment="Center"
+                                      AutomationProperties.Name="Line down"
+                                      Focusable="False"
+                                      Theme="{StaticResource ScrollBarLineButtonTheme}">
+                            <TextBlock Text="&#xEDDC;"/>
+                        </RepeatButton>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="^:horizontal">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid Background="{TemplateBinding Background}" ColumnDefinitions="Auto,*,Auto">
+                        <Border x:Name="TrackRect"
+                                Grid.ColumnSpan="3"
+                                Background="#33000000"
+                                CornerRadius="6"
+                                Opacity="0">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <DoubleTransition Property="Opacity" Duration="0:0:0.083"/>
+                                </Transitions>
+                            </Border.Transitions>
+                        </Border>
+
+                        <RepeatButton Name="PART_LineUpButton"
+                                      Grid.Column="0"
+                                      Width="12"
+                                      MinHeight="12"
+                                      Padding="4,0,0,0"
+                                      VerticalAlignment="Center"
+                                      AutomationProperties.Name="Column left"
+                                      Focusable="False"
+                                      Theme="{StaticResource ScrollBarLineButtonTheme}">
+                            <TextBlock Text="&#xEDD9;"/>
+                        </RepeatButton>
+
+                        <Track Grid.Column="1"
+                               DeferThumbDrag="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}"
+                               Maximum="{TemplateBinding Maximum}"
+                               Minimum="{TemplateBinding Minimum}"
+                               Orientation="{TemplateBinding Orientation}"
+                               ViewportSize="{TemplateBinding ViewportSize}"
+                               Value="{TemplateBinding Value,
+                                                       Mode=TwoWay}">
+                            <Track.DecreaseButton>
+                                <RepeatButton Name="PART_PageUpButton"
+                                              AutomationProperties.Name="Page left"
+                                              Focusable="False"
+                                              Theme="{StaticResource ScrollBarPageButtonTheme}"/>
+                            </Track.DecreaseButton>
+                            <Track.IncreaseButton>
+                                <RepeatButton Name="PART_PageDownButton"
+                                              AutomationProperties.Name="Page right"
+                                              Focusable="False"
+                                              Theme="{StaticResource ScrollBarPageButtonTheme}"/>
+                            </Track.IncreaseButton>
+                            <Thumb Height="12"
+                                   MinWidth="30"
+                                   Padding="3,7,3,3"
+                                   AutomationProperties.Name="Position"
+                                   Theme="{StaticResource ScrollBarThumbTheme}"/>
+                        </Track>
+
+                        <RepeatButton Name="PART_LineDownButton"
+                                      Grid.Column="2"
+                                      Width="12"
+                                      MinHeight="12"
+                                      Padding="0,0,4,0"
+                                      VerticalAlignment="Center"
+                                      AutomationProperties.Name="Column right"
+                                      Focusable="False"
+                                      Theme="{StaticResource ScrollBarLineButtonTheme}">
+                            <TextBlock Text="&#xEDDA;"/>
+                        </RepeatButton>
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <Style Selector="^[IsExpanded=true]">
+            <Style Selector="^ /template/ Border#TrackRect">
+                <Setter Property="Opacity" Value="1"/>
+            </Style>
+            <Style Selector="^ /template/ Thumb">
+                <Setter Property="Padding" Value="3"/>
+            </Style>
+            <Style Selector="^ /template/ RepeatButton">
+                <Setter Property="Opacity" Value="1"/>
+            </Style>
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>
