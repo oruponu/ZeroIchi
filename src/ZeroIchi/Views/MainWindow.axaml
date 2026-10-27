@@ -24,6 +24,8 @@
         mc:Ignorable="d">
 
     <Window.Styles>
+        <StyleInclude Source="avares://ZeroIchi/Views/MenuStyles.axaml"/>
+
         <Style Selector="Button.caption-button">
             <Setter Property="Width" Value="46"/>
             <Setter Property="Height" Value="32"/>
@@ -57,10 +59,6 @@
             <Setter Property="BoxShadow" Value="0 1 4 0 #20000000"/>
             <Setter Property="ClipToBounds" Value="True"/>
             <Setter Property="CornerRadius" Value="8"/>
-        </Style>
-
-        <Style Selector="MenuItem">
-            <Setter Property="CornerRadius" Value="4"/>
         </Style>
 
         <Style Selector="Button.search-button">

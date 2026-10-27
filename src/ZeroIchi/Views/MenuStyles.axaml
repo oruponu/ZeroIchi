@@ -1,0 +1,41 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Styles.Resources>
+        <CornerRadius x:Key="OverlayCornerRadius">8</CornerRadius>
+        <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#4D202020"/>
+        <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#33000000"/>
+        <Thickness x:Key="MenuFlyoutScrollerMargin">0,2</Thickness>
+        <Thickness x:Key="MenuFlyoutItemThemePaddingNarrow">11,4,11,5</Thickness>
+        <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#0FFFFFFF"/>
+        <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#0AFFFFFF"/>
+        <SolidColorBrush x:Key="MenuFlyoutItemForegroundDisabled" Color="#5DFFFFFF"/>
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" Color="#C5FFFFFF"/>
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" Color="#C5FFFFFF"/>
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="#C5FFFFFF"/>
+        <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" Color="#5DFFFFFF"/>
+
+        <ControlTheme x:Key="{x:Type Separator}" TargetType="Separator">
+            <Setter Property="Background" Value="#15FFFFFF"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"/>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <Style Selector="PopupRoot">
+        <Setter Property="TransparencyLevelHint" Value="AcrylicBlur"/>
+    </Style>
+    <Style Selector="MenuItem">
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    <Style Selector="MenuItem > MenuItem">
+        <Setter Property="Margin" Value="4,2"/>
+    </Style>
+    <Style Selector="MenuItem /template/ TextBlock#PART_InputGestureText">
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+</Styles>
