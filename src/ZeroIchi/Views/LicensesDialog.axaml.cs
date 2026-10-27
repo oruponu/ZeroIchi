@@ -25,6 +25,7 @@ public sealed partial class LicensesDialog : Window
         NoticeList.SelectedIndex = 0;
 
         CloseButton.Click += (_, _) => Close();
+        DefaultButtonAccent.Attach(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
