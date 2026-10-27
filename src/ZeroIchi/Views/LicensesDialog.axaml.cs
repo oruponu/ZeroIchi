@@ -25,7 +25,6 @@ public sealed partial class LicensesDialog : Window
         NoticeList.SelectedIndex = 0;
 
         CloseButton.Click += (_, _) => Close();
-        Opened += (_, _) => DialogAccent.ApplyButtonForeground(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

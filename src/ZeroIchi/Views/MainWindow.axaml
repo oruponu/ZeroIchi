@@ -465,7 +465,7 @@
             </Grid>
         </DockPanel>
         <Border x:Name="ModalOverlay"
-                Background="#40000000"
+                Background="#4D000000"
                 IsHitTestVisible="False"
                 IsVisible="False"/>
     </Panel>

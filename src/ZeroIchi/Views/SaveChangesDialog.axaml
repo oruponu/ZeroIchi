@@ -16,13 +16,7 @@
         <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
     </Window.Styles>
 
-    <Border Margin="16"
-            Background="#1E1E1E"
-            BorderBrush="#404040"
-            BorderThickness="1"
-            BoxShadow="0 8 32 0 #60000000"
-            ClipToBounds="True"
-            CornerRadius="8">
+    <Border Classes="dialog">
         <DockPanel>
             <StackPanel Margin="24,20" DockPanel.Dock="Top">
                 <TextBlock Margin="0,0,0,12"
@@ -32,10 +26,7 @@
                 <TextBlock Text="変更内容を保存しますか？" TextWrapping="Wrap"/>
             </StackPanel>
 
-            <Border Padding="24,16"
-                    BorderBrush="#333333"
-                    BorderThickness="0,1,0,0"
-                    DockPanel.Dock="Bottom">
+            <Border Classes="dialog-footer" DockPanel.Dock="Bottom">
                 <Grid ColumnDefinitions="*,8,*,8,*">
                     <Button x:Name="SaveButton"
                             Grid.Column="0"
@@ -48,13 +39,11 @@
                             Grid.Column="2"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Classes="secondary"
                             Content="保存しない"/>
                     <Button x:Name="CancelButton"
                             Grid.Column="4"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Classes="secondary"
                             Content="キャンセル"/>
                 </Grid>
             </Border>

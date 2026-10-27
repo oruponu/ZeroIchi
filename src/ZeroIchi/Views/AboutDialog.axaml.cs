@@ -19,7 +19,6 @@ public sealed partial class AboutDialog : Window
         RepositoryLink.Click += async (_, _) => await Launcher.TryLaunchUriAsync(RepositoryUri);
         LicensesButton.Click += async (_, _) => await LicensesDialog.ShowAsync(this);
         OkButton.Click += (_, _) => Close();
-        Opened += (_, _) => DialogAccent.ApplyButtonForeground(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

@@ -11,7 +11,6 @@ public sealed partial class ErrorDialog : Window
         InitializeComponent();
 
         OkButton.Click += (_, _) => Close();
-        Opened += (_, _) => DialogAccent.ApplyButtonForeground(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

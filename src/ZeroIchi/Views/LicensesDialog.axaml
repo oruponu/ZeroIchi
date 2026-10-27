@@ -13,17 +13,24 @@
         WindowDecorations="None"
         WindowStartupLocation="CenterOwner">
 
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://ZeroIchi/Views/StructureTreeTheme.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <ControlTheme x:Key="NoticeListItemTheme"
+                          BasedOn="{StaticResource StructureTreeItemTheme}"
+                          TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="10,6"/>
+            </ControlTheme>
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Window.Styles>
         <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
     </Window.Styles>
 
-    <Border Margin="16"
-            Background="#1E1E1E"
-            BorderBrush="#404040"
-            BorderThickness="1"
-            BoxShadow="0 8 32 0 #60000000"
-            ClipToBounds="True"
-            CornerRadius="8">
+    <Border Classes="dialog">
         <DockPanel>
             <StackPanel Margin="24,20,24,16" DockPanel.Dock="Top">
                 <TextBlock Margin="0,0,0,8"
@@ -32,14 +39,11 @@
                            Text="ライセンス"/>
                 <TextBlock x:Name="PreambleText"
                            FontSize="12"
-                           Foreground="#B0B0B0"
+                           Foreground="#C5FFFFFF"
                            TextWrapping="Wrap"/>
             </StackPanel>
 
-            <Border Padding="24,16"
-                    BorderBrush="#333333"
-                    BorderThickness="0,1,0,0"
-                    DockPanel.Dock="Bottom">
+            <Border Classes="dialog-footer" DockPanel.Dock="Bottom">
                 <Button x:Name="CloseButton"
                         MinWidth="120"
                         HorizontalAlignment="Right"
@@ -51,9 +55,11 @@
 
             <Grid ColumnDefinitions="220,*">
                 <Border Grid.Column="0"
-                        BorderBrush="#333333"
+                        BorderBrush="#15FFFFFF"
                         BorderThickness="0,1,1,0">
-                    <ListBox x:Name="NoticeList" Background="Transparent">
+                    <ListBox x:Name="NoticeList"
+                             Background="Transparent"
+                             ItemContainerTheme="{StaticResource NoticeListItemTheme}">
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="models:ThirdPartyNotice">
                                 <StackPanel>
@@ -70,7 +76,7 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <TextBlock FontSize="11"
-                                               Foreground="#909090"
+                                               Foreground="#C5FFFFFF"
                                                IsVisible="{Binding License, Converter={x:Static ObjectConverters.IsNotNull}}"
                                                Text="{Binding License}"
                                                TextWrapping="Wrap"/>
@@ -81,8 +87,8 @@
                 </Border>
 
                 <Border Grid.Column="1"
-                        Background="#171717"
-                        BorderBrush="#333333"
+                        Background="#1C1C1C"
+                        BorderBrush="#15FFFFFF"
                         BorderThickness="0,1,0,0">
                     <TextBox x:Name="BodyText"
                              AcceptsReturn="True"

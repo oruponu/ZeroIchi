@@ -16,13 +16,7 @@
         <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
     </Window.Styles>
 
-    <Border Margin="16"
-            Background="#1E1E1E"
-            BorderBrush="#404040"
-            BorderThickness="1"
-            BoxShadow="0 8 32 0 #60000000"
-            ClipToBounds="True"
-            CornerRadius="8">
+    <Border Classes="dialog">
         <DockPanel>
             <StackPanel Margin="24,20" DockPanel.Dock="Top">
                 <TextBlock Margin="0,0,0,12"
@@ -32,10 +26,10 @@
                 <TextBlock x:Name="VersionText"/>
                 <TextBlock Margin="0,8,0,0"
                            FontSize="12"
-                           Foreground="#B0B0B0"
+                           Foreground="#C5FFFFFF"
                            Text="Copyright © 2026 oruponu"/>
                 <TextBlock FontSize="12"
-                           Foreground="#B0B0B0"
+                           Foreground="#C5FFFFFF"
                            Text="MIT License のもとで公開されています。"/>
                 <HyperlinkButton x:Name="RepositoryLink"
                                  Margin="0,8,0,0"
@@ -43,16 +37,12 @@
                                  Content="github.com/oruponu/ZeroIchi"/>
             </StackPanel>
 
-            <Border Padding="24,16"
-                    BorderBrush="#333333"
-                    BorderThickness="0,1,0,0"
-                    DockPanel.Dock="Bottom">
+            <Border Classes="dialog-footer" DockPanel.Dock="Bottom">
                 <StackPanel HorizontalAlignment="Right"
                             Orientation="Horizontal"
                             Spacing="8">
                     <Button x:Name="LicensesButton"
                             HorizontalContentAlignment="Center"
-                            Classes="secondary"
                             Content="ライセンス"/>
                     <Button x:Name="OkButton"
                             MinWidth="120"
