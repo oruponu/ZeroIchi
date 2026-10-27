@@ -1,0 +1,91 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Styles.Resources>
+        <SolidColorBrush x:Key="TextControlBackground" Color="#0FFFFFFF"/>
+        <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#15FFFFFF"/>
+        <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#B31E1E1E"/>
+        <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#C5FFFFFF"/>
+        <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#C5FFFFFF"/>
+        <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#87FFFFFF"/>
+        <LinearGradientBrush x:Key="TextControlBorderBrush" Transform="scale(1,-1)" TransformOrigin="50%,50%" StartPoint="0,0" EndPoint="0,2">
+            <GradientStop Offset="1" Color="#8BFFFFFF"/>
+            <GradientStop Offset="1" Color="#12FFFFFF"/>
+        </LinearGradientBrush>
+        <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="TextControlBorderBrush"/>
+        <LinearGradientBrush x:Key="TextControlBorderBrushFocused" Transform="scale(1,-1)" TransformOrigin="50%,50%" StartPoint="0,0" EndPoint="0,2">
+            <GradientStop Offset="1" Color="{DynamicResource SystemAccentColorLight2}"/>
+            <GradientStop Offset="1" Color="#12FFFFFF"/>
+        </LinearGradientBrush>
+        <Thickness x:Key="TextControlBorderThemeThicknessFocused">1,1,1,2</Thickness>
+    </Styles.Resources>
+
+    <Style Selector="Border.search-bar">
+        <Setter Property="Margin" Value="0,4,20,0"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Background" Value="#2C2C2C"/>
+        <Setter Property="BorderBrush" Value="#33000000"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BoxShadow" Value="0 4 12 0 #50000000"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    <Style Selector="Border.search-bar TextBox">
+        <Setter Property="Width" Value="200"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="FontFamily" Value="fonts:App#Roboto Mono"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="#D4D4D4"/>
+    </Style>
+
+    <Style Selector="Border.search-mode-group">
+        <Setter Property="Background" Value="#0FFFFFFF"/>
+        <Setter Property="BorderBrush" Value="#12FFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+    <Style Selector="ToggleButton.search-mode">
+        <Setter Property="Height" Value="24"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#808080"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="ToggleButton.search-mode:checked /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#30FFFFFF"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="ToggleButton.search-mode:checked">
+        <Setter Property="Foreground" Value="#E0E0E0"/>
+    </Style>
+    <Style Selector="ToggleButton.search-mode:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#20FFFFFF"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+
+    <Style Selector="Button.search-button">
+        <Setter Property="Width" Value="28"/>
+        <Setter Property="Height" Value="28"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#D4D4D4"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.search-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#0FFFFFFF"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.search-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#0AFFFFFF"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+</Styles>
