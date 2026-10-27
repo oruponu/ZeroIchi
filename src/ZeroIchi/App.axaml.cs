@@ -28,7 +28,9 @@ public sealed partial class App : Application
     {
         _ = Task.Run(KsyFormatRegistry.Default.Preload);
         _ = Task.Run(MainWindowViewModel.WarmUpFileTypeDetection);
-        Resources["DefaultFontFamily"] = CreateDefaultFontFamily();
+        var fontFamily = CreateDefaultFontFamily();
+        Resources["DefaultFontFamily"] = fontFamily;
+        Resources["ContentControlThemeFontFamily"] = fontFamily;
         PopupCorners.Register();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
