@@ -30,12 +30,11 @@
     </Styles.Resources>
 
     <Style Selector="Border.dialog">
-        <Setter Property="Margin" Value="16"/>
+        <Setter Property="Margin" Value="48,80"/>
         <Setter Property="Background" Value="#2B2B2B"/>
         <Setter Property="BorderBrush" Value="#66757575"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BoxShadow" Value="0 8 32 0 #60000000"/>
-        <Setter Property="ClipToBounds" Value="True"/>
+        <Setter Property="BoxShadow" Value="0 1 15 3 #2A000000, 0 30 66 -3 #53000000"/>
         <Setter Property="CornerRadius" Value="8"/>
     </Style>
     <Style Selector="Border.dialog-footer">

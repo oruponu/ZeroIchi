@@ -4,11 +4,10 @@
         xmlns:models="using:ZeroIchi.Models"
         xmlns:views="using:ZeroIchi.Views"
         Title="ライセンス"
-        Width="800"
-        Height="560"
         Background="Transparent"
         CanResize="False"
         ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
         TransparencyLevelHint="Transparent"
         WindowDecorations="None"
         WindowStartupLocation="CenterOwner">
@@ -30,7 +29,9 @@
         <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
     </Window.Styles>
 
-    <Border Classes="dialog">
+    <Border Width="768"
+            Height="528"
+            Classes="dialog">
         <DockPanel>
             <StackPanel Margin="24,20,24,16" DockPanel.Dock="Top">
                 <TextBlock Margin="0,0,0,8"
