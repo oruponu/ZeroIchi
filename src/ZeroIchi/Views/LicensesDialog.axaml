@@ -99,7 +99,13 @@
                              IsReadOnly="True"
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                             TextWrapping="NoWrap"/>
+                             TextWrapping="NoWrap">
+                        <TextBox.Resources>
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent"/>
+                            <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                        </TextBox.Resources>
+                    </TextBox>
                 </Border>
             </Grid>
         </DockPanel>

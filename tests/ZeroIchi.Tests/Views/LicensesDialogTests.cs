@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Media.Immutable;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -40,6 +42,31 @@ public sealed class LicensesDialogTests
             Dispatcher.UIThread.RunJobs();
 
             Assert.Equal(default, scrollViewer.Offset);
+            dialog.Close();
+        }
+        finally
+        {
+            Application.Current!.Styles.Remove(theme);
+        }
+        return Task.CompletedTask;
+    });
+
+    [Fact]
+    public Task FocusingTheBody_KeepsItsBackgroundAndBorderHidden() => HeadlessTestApp.RunAsync(() =>
+    {
+        var theme = new FluentTheme();
+        Application.Current!.Styles.Add(theme);
+        try
+        {
+            var dialog = Show();
+            var border = dialog.BodyText.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_BorderElement");
+
+            dialog.BodyText.Focus();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(dialog.BodyText.IsFocused);
+            Assert.Equal(Colors.Transparent, Assert.IsType<ImmutableSolidColorBrush>(border.Background?.ToImmutable()).Color);
+            Assert.Equal(default, border.BorderThickness);
             dialog.Close();
         }
         finally
