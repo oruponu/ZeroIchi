@@ -23,6 +23,14 @@
         WindowDecorations="Full"
         mc:Ignorable="d">
 
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://ZeroIchi/Views/StructureTreeTheme.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
     <Window.Styles>
         <StyleInclude Source="avares://ZeroIchi/Views/MenuStyles.axaml"/>
 
@@ -287,15 +295,10 @@
                                 DockPanel.Dock="Top"/>
                         <ListBox AutoScrollToSelectedItem="False"
                                  Background="Transparent"
+                                 ItemContainerTheme="{StaticResource StructureTreeItemTheme}"
                                  ItemsSource="{Binding StructureTreeItems}"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                  SelectedItem="{Binding SelectedStructureItem, Mode=TwoWay}">
-                            <ListBox.Styles>
-                                <Style Selector="ListBoxItem">
-                                    <Setter Property="Padding" Value="4,1"/>
-                                    <Setter Property="MinHeight" Value="0"/>
-                                </Style>
-                            </ListBox.Styles>
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:StructureTreeItem">
                                     <StackPanel Margin="{Binding Indent}"
@@ -303,16 +306,13 @@
                                                 Spacing="0">
                                         <Button Width="16"
                                                 Height="16"
-                                                Padding="0"
                                                 VerticalAlignment="Center"
-                                                Background="Transparent"
-                                                BorderThickness="0"
                                                 Command="{Binding ToggleExpandCommand}"
                                                 CommandParameter="{Binding}"
-                                                IsVisible="{Binding HasChildren}">
+                                                IsVisible="{Binding HasChildren}"
+                                                Theme="{StaticResource StructureTreeExpanderTheme}">
                                             <TextBlock VerticalAlignment="Center"
                                                        FontSize="8"
-                                                       Foreground="#808080"
                                                        Text="{Binding ExpandIcon}"
                                                        TextAlignment="Center"/>
                                         </Button>
