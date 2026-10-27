@@ -11,6 +11,9 @@
                 <ResourceInclude Source="avares://ZeroIchi/Views/ScrollBarTheme.axaml"/>
             </ResourceDictionary.MergedDictionaries>
             <FontFamily x:Key="DefaultFontFamily">Inter</FontFamily>
+            <x:String x:Key="StringTextFlyoutCutText">切り取り(_T)</x:String>
+            <x:String x:Key="StringTextFlyoutCopyText">コピー(_C)</x:String>
+            <x:String x:Key="StringTextFlyoutPasteText">貼り付け(_P)</x:String>
             <ControlTheme x:Key="{x:Type chrome:WindowDrawnDecorations}" TargetType="chrome:WindowDrawnDecorations">
                 <Setter Property="Template">
                     <WindowDrawnDecorationsTemplate>
