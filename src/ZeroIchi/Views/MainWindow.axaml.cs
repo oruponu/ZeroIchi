@@ -61,7 +61,7 @@ public sealed partial class MainWindow : Window, IShellWindow
         _viewModel?.GoToOffsetFocusRequested += OnGoToOffsetFocusRequested;
     }
 
-    public void SetModalOverlayVisible(bool visible) => ModalOverlay.IsVisible = visible;
+    public void SetModalOverlayVisible(bool visible) => ModalOverlay.Opacity = visible ? 1 : 0;
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

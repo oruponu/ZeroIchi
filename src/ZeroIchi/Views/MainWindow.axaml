@@ -467,7 +467,13 @@
         <Border x:Name="ModalOverlay"
                 Background="#4D000000"
                 IsHitTestVisible="False"
-                IsVisible="False"/>
+                Opacity="0">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.083"/>
+                </Transitions>
+            </Border.Transitions>
+        </Border>
     </Panel>
 
 </Window>

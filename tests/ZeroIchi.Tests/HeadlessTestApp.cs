@@ -1,6 +1,8 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Media.Fonts;
+using Avalonia.Threading;
 using ZeroIchi.Tests;
 
 [assembly: AvaloniaTestApplication(typeof(HeadlessTestApp))]
@@ -28,6 +30,25 @@ public sealed class HeadlessTestApp : Application
                 await action();
                 return true;
             }, CancellationToken.None);
+
+    public static async Task CloseAsync(Window window)
+    {
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+        window.Close();
+        await WaitUntilAsync(() => closed);
+    }
+
+    public static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(2);
+        while (!condition())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "Timed out waiting for the condition.");
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
 }
 
 // Avalonia makes whichever thread creates a dispatcher first the UI thread, so headless tests

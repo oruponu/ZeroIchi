@@ -50,26 +50,22 @@ public sealed class AboutDialogTests
     });
 
     [Fact]
-    public Task Ok_ClosesTheDialog() => HeadlessTestApp.RunAsync(() =>
+    public Task Ok_ClosesTheDialog() => HeadlessTestApp.RunAsync(async () =>
     {
         var (dialog, closed) = Show();
 
         dialog.OkButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
 
-        Assert.True(closed());
-        return Task.CompletedTask;
+        await HeadlessTestApp.WaitUntilAsync(closed);
     });
 
     [Fact]
-    public Task Escape_ClosesTheDialog() => HeadlessTestApp.RunAsync(() =>
+    public Task Escape_ClosesTheDialog() => HeadlessTestApp.RunAsync(async () =>
     {
         var (dialog, closed) = Show();
 
         dialog.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
-        Dispatcher.UIThread.RunJobs();
 
-        Assert.True(closed());
-        return Task.CompletedTask;
+        await HeadlessTestApp.WaitUntilAsync(closed);
     });
 }

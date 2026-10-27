@@ -18,6 +18,7 @@ public sealed partial class SaveChangesDialog : Window
         DiscardButton.Click += (_, _) => { Result = SaveChangesResult.Discard; Close(); };
         CancelButton.Click += (_, _) => Close();
         DefaultButtonAccent.Attach(this);
+        DialogAnimation.Attach(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

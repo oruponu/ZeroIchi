@@ -20,6 +20,7 @@ public sealed partial class AboutDialog : Window
         LicensesButton.Click += async (_, _) => await LicensesDialog.ShowAsync(this);
         OkButton.Click += (_, _) => Close();
         DefaultButtonAccent.Attach(this);
+        DialogAnimation.Attach(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

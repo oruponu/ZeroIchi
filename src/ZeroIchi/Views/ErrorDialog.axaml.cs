@@ -12,6 +12,7 @@ public sealed partial class ErrorDialog : Window
 
         OkButton.Click += (_, _) => Close();
         DefaultButtonAccent.Attach(this);
+        DialogAnimation.Attach(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

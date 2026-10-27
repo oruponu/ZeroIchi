@@ -24,7 +24,7 @@ public sealed class LicensesDialogTests
     }
 
     [Fact]
-    public Task Selecting_AnotherNotice_ScrollsTheBodyBackToTheStart() => HeadlessTestApp.RunAsync(() =>
+    public Task Selecting_AnotherNotice_ScrollsTheBodyBackToTheStart() => HeadlessTestApp.RunAsync(async () =>
     {
         var theme = new FluentTheme();
         Application.Current!.Styles.Add(theme);
@@ -42,17 +42,16 @@ public sealed class LicensesDialogTests
             Dispatcher.UIThread.RunJobs();
 
             Assert.Equal(default, scrollViewer.Offset);
-            dialog.Close();
+            await HeadlessTestApp.CloseAsync(dialog);
         }
         finally
         {
             Application.Current!.Styles.Remove(theme);
         }
-        return Task.CompletedTask;
     });
 
     [Fact]
-    public Task FocusingTheBody_KeepsItsBackgroundAndBorderHidden() => HeadlessTestApp.RunAsync(() =>
+    public Task FocusingTheBody_KeepsItsBackgroundAndBorderHidden() => HeadlessTestApp.RunAsync(async () =>
     {
         var theme = new FluentTheme();
         Application.Current!.Styles.Add(theme);
@@ -67,13 +66,12 @@ public sealed class LicensesDialogTests
             Assert.True(dialog.BodyText.IsFocused);
             Assert.Equal(Colors.Transparent, Assert.IsType<ImmutableSolidColorBrush>(border.Background?.ToImmutable()).Color);
             Assert.Equal(default, border.BorderThickness);
-            dialog.Close();
+            await HeadlessTestApp.CloseAsync(dialog);
         }
         finally
         {
             Application.Current!.Styles.Remove(theme);
         }
-        return Task.CompletedTask;
     });
 
     [Fact]
@@ -117,16 +115,14 @@ public sealed class LicensesDialogTests
     });
 
     [Fact]
-    public Task Escape_ClosesTheDialog() => HeadlessTestApp.RunAsync(() =>
+    public Task Escape_ClosesTheDialog() => HeadlessTestApp.RunAsync(async () =>
     {
         var dialog = Show();
         var closed = false;
         dialog.Closed += (_, _) => closed = true;
 
         dialog.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
-        Dispatcher.UIThread.RunJobs();
 
-        Assert.True(closed);
-        return Task.CompletedTask;
+        await HeadlessTestApp.WaitUntilAsync(() => closed);
     });
 }
