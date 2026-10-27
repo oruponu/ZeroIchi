@@ -48,18 +48,19 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.caption-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="Background" Value="#0FFFFFFF"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
         <Style Selector="Button.caption-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#15FFFFFF"/>
+            <Setter Property="Background" Value="#0AFFFFFF"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
         <Style Selector="Button.caption-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#C42B1C"/>
         </Style>
         <Style Selector="Button.caption-close:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#A02015"/>
+            <Setter Property="Background" Value="#E6C42B1C"/>
+            <Setter Property="Foreground" Value="#B3FFFFFF"/>
         </Style>
 
         <Style Selector="Border.pane">
