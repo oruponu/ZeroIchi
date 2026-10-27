@@ -71,6 +71,10 @@
             <Setter Property="ClipToBounds" Value="True"/>
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
+        <Style Selector="Border.pane-divider">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Background" Value="#15FFFFFF"/>
+        </Style>
 
         <Style Selector="TextBlock#RestoreIcon">
             <Setter Property="IsVisible" Value="False"/>
@@ -251,9 +255,7 @@
                                        Foreground="#D4D4D4"
                                        Text="ファイル構造"/>
                         </DockPanel>
-                        <Border Height="1"
-                                Background="#3F3F3F"
-                                DockPanel.Dock="Top"/>
+                        <Border Classes="pane-divider" DockPanel.Dock="Top"/>
                         <ListBox AutoScrollToSelectedItem="False"
                                  Background="Transparent"
                                  ItemContainerTheme="{StaticResource StructureTreeItemTheme}"
@@ -436,9 +438,7 @@
                                        Text="インスペクター"/>
                         </DockPanel>
 
-                        <Border Height="1"
-                                Background="#3F3F3F"
-                                DockPanel.Dock="Top"/>
+                        <Border Classes="pane-divider" DockPanel.Dock="Top"/>
 
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <ItemsControl Margin="0,4" ItemsSource="{Binding InspectorEntries}">
