@@ -1,0 +1,7 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Styles.Resources>
+        <SolidColorBrush x:Key="ToolTipBackground" Color="#4D202020"/>
+        <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#33000000"/>
+        <Thickness x:Key="ToolTipBorderThemePadding">9,6,9,8</Thickness>
+    </Styles.Resources>
+</Styles>

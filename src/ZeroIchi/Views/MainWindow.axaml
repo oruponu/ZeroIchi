@@ -34,6 +34,7 @@
     <Window.Styles>
         <StyleInclude Source="avares://ZeroIchi/Views/MenuStyles.axaml"/>
         <StyleInclude Source="avares://ZeroIchi/Views/SearchBarStyles.axaml"/>
+        <StyleInclude Source="avares://ZeroIchi/Views/ToolTipStyles.axaml"/>
 
         <Style Selector="Button.caption-button">
             <Setter Property="Width" Value="46"/>
