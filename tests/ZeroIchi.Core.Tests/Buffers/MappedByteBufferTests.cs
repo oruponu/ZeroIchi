@@ -30,6 +30,41 @@ public sealed class MappedByteBufferTests : IDisposable
     }
 
     [Fact]
+    public void ReadBytes_CopiesRangeToBufferOffset()
+    {
+        using var buffer = new MappedByteBuffer(CreateTestFile([1, 2, 3, 4, 5]));
+
+        var dest = new byte[5];
+        buffer.ReadBytes(1, dest, 2, 3);
+
+        Assert.Equal([0, 0, 2, 3, 4], dest);
+    }
+
+    [Fact]
+    public void ReadBytes_PastEnd_CopiesOnlyAvailable()
+    {
+        using var buffer = new MappedByteBuffer(CreateTestFile([1, 2, 3]));
+
+        var dest = new byte[4];
+        buffer.ReadBytes(1, dest, 0, 4);
+
+        Assert.Equal([2, 3, 0, 0], dest);
+    }
+
+    [Fact]
+    public void ReadBytes_LargeFile_CopiesAcrossPages()
+    {
+        var content = new byte[3 * 65536 + 123];
+        new Random(42).NextBytes(content);
+        using var buffer = new MappedByteBuffer(CreateTestFile(content));
+
+        var dest = new byte[content.Length - 1000];
+        buffer.ReadBytes(1000, dest, 0, dest.Length);
+
+        Assert.Equal(content.AsSpan(1000).ToArray(), dest);
+    }
+
+    [Fact]
     public void ReadBytes_AfterReleaseMapping_ThrowsObjectDisposed()
     {
         using var buffer = new MappedByteBuffer(CreateTestFile([1, 2, 3]));

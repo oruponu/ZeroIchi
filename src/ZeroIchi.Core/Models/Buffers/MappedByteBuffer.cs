@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 
 namespace ZeroIchi.Models.Buffers;
 
@@ -39,13 +40,25 @@ public sealed class MappedByteBuffer : ByteBuffer
         return _accessor!.ReadByte(index);
     }
 
+    // ReadArray copies element by element, so copy through the view pointer to get a vectorized memmove
     public override void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count)
     {
         ThrowIfUnmapped();
+        ArgumentOutOfRangeException.ThrowIfNegative(offset);
         var available = (int)Math.Min(count, _length - offset);
         if (available <= 0) return;
 
-        _accessor!.ReadArray(offset, buffer, bufferOffset, available);
+        var handle = _accessor!.SafeMemoryMappedViewHandle;
+        var added = false;
+        try
+        {
+            handle.DangerousAddRef(ref added);
+            Marshal.Copy(handle.DangerousGetHandle() + (nint)(_accessor.PointerOffset + offset), buffer, bufferOffset, available);
+        }
+        finally
+        {
+            if (added) handle.DangerousRelease();
+        }
     }
 
     public void ReleaseMapping()
