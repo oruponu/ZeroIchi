@@ -8,21 +8,6 @@ namespace ZeroIchi.Controls;
 
 public partial class HexViewControl
 {
-    private static string BuildHeaderHexText()
-    {
-        Span<char> buf = stackalloc char[HexChars];
-        buf.Fill(' ');
-
-        for (var i = 0; i < BytesPerLine; i++)
-        {
-            var charPos = HexCharIndex(i);
-            buf[charPos] = ToHexChar(i >> 4);
-            buf[charPos + 1] = ToHexChar(i & 0xF);
-        }
-
-        return new string(buf);
-    }
-
     private void DrawHeader(DrawingContext context)
     {
         if (Buffer is not null)
@@ -59,7 +44,17 @@ public partial class HexViewControl
             }
         }
 
-        DrawText(context, HeaderHexText, _hexStartX, CellPaddingY, MonospaceTypeface, OffsetBrush);
+        Span<char> chars = stackalloc char[BytesPerLine * 2];
+        Span<double> xs = stackalloc double[BytesPerLine * 2];
+        for (var i = 0; i < BytesPerLine; i++)
+        {
+            var x = _hexStartX + HexCharIndex(i) * _charWidth;
+            chars[2 * i] = ToHexChar(i >> 4);
+            xs[2 * i] = x;
+            chars[2 * i + 1] = ToHexChar(i & 0xF);
+            xs[2 * i + 1] = x + _charWidth;
+        }
+        DrawGlyphs(context, OffsetBrush, chars, xs, CellPaddingY);
     }
 
     private void DrawAddressHighlight(DrawingContext context, long byteOffset,
@@ -285,14 +280,6 @@ public partial class HexViewControl
         context.DrawGeometry(brush, null, geo);
     }
 
-    private static void DrawText(DrawingContext context, string text, double x, double y,
-        Typeface typeface, IBrush brush)
-    {
-        var formatted = new FormattedText(text, System.Globalization.CultureInfo.InvariantCulture,
-            FlowDirection.LeftToRight, typeface, FontSize, brush);
-        context.DrawText(formatted, new Point(x, y));
-    }
-
     private static IBrush GetStructureBrush(StructureColorMap? map, long fileOffset, byte value)
     {
         if (map is not null)
@@ -360,6 +347,16 @@ public partial class HexViewControl
             }
             DrawGlyphs(context, _rowBrushes[first], chars[..count], xs[..count], y);
         }
+    }
+
+    private void DrawAddress(DrawingContext context, long byteOffset, double y)
+    {
+        Span<char> chars = stackalloc char[16];
+        Span<double> xs = stackalloc double[16];
+        byteOffset.TryFormat(chars, out var count, _offsetFormat);
+        for (var k = 0; k < count; k++)
+            xs[k] = CellPaddingX + k * _charWidth;
+        DrawGlyphs(context, OffsetBrush, chars[..count], xs[..count], y);
     }
 
     // Glyph runs with precomputed glyph indices skip text shaping, which is too slow to run for every row each frame
