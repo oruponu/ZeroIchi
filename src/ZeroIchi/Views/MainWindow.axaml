@@ -6,7 +6,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:fs="using:ZeroIchi.Models.FileStructure"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:models="using:ZeroIchi.Models"
         xmlns:vm="using:ZeroIchi.ViewModels"
         Title="{Binding Title}"
         Width="1280"
@@ -440,9 +439,9 @@
                         <Border Classes="pane-divider" DockPanel.Dock="Top"/>
 
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl Margin="0,4" ItemsSource="{Binding InspectorEntries}">
+                            <ItemsControl Margin="0,4" ItemsSource="{Binding InspectorRows}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="models:DataInspectorEntry">
+                                    <DataTemplate x:DataType="vm:InspectorRow">
                                         <DockPanel Height="20" Margin="8,0">
                                             <TextBlock Width="62"
                                                        VerticalAlignment="Center"

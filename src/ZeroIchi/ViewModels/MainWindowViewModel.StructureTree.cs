@@ -229,14 +229,25 @@ public partial class MainWindowViewModel
         }
     }
 
+    // Rows are updated in place because replacing them makes the view rebuild and re-measure every row on each cursor move
     private void UpdateInspector()
     {
-        if (!IsInspectorVisible || Document?.Buffer is not { } buffer)
+        List<DataInspectorEntry> entries = IsInspectorVisible && Document?.Buffer is { } buffer
+            ? DataInspector.Inspect(buffer, CursorPosition, IsInspectorBigEndian)
+            : [];
+
+        for (var i = 0; i < entries.Count; i++)
         {
-            InspectorEntries = [];
-            return;
+            var (label, value) = entries[i];
+            if (i >= InspectorRows.Count)
+                InspectorRows.Add(new InspectorRow(label, value));
+            else if (InspectorRows[i].Label == label)
+                InspectorRows[i].Value = value;
+            else
+                InspectorRows[i] = new InspectorRow(label, value);
         }
 
-        InspectorEntries = DataInspector.Inspect(buffer, CursorPosition, IsInspectorBigEndian);
+        while (InspectorRows.Count > entries.Count)
+            InspectorRows.RemoveAt(InspectorRows.Count - 1);
     }
 }

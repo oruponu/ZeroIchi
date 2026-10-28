@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime;
 using System.Threading.Tasks;
@@ -127,8 +126,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsInspectorBigEndian { get; set; }
 
-    [ObservableProperty]
-    public partial List<DataInspectorEntry> InspectorEntries { get; set; } = [];
+    public ObservableCollection<InspectorRow> InspectorRows { get; } = [];
 
     [RelayCommand]
     private void ToggleStructureTree()
