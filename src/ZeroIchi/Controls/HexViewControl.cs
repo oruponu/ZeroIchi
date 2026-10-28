@@ -95,6 +95,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private double _hexEndX;
     private double _asciiStartX;
     private double _asciiCellWidth;
+    private double _baseline;
+    private ushort[] _asciiGlyphs = [];
+    private readonly IBrush?[] _asciiBrushes = new IBrush?[BytesPerLine];
     private bool _metricsValid;
 
     private Vector _scrollOffset;
@@ -226,6 +229,8 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
             FlowDirection.LeftToRight, MonospaceTypeface, FontSize, Brushes.White);
         _charWidth = formatted.Width;
         _lineHeight = Math.Ceiling(formatted.Height);
+        _baseline = formatted.Baseline;
+        if (_asciiGlyphs.Length == 0) _asciiGlyphs = BuildAsciiGlyphs();
         _rowHeight = _lineHeight + 2 * CellPaddingY;
         _dataTop = _rowHeight + ColumnGap - 2 * CellPaddingX;
         _offsetChars = OffsetCharsFor(Buffer?.Length ?? 0);
@@ -313,7 +318,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
                             {
                                 var bufferOffset = (int)(byteOffset - startOffset);
                                 DrawHexBytes(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
-                                DrawAscii(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
+                                DrawAscii(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY);
                             }
                         }
                     }

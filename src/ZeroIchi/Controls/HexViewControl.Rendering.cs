@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Media.TextFormatting;
 using System;
 using ZeroIchi.Models.FileStructure;
 
@@ -293,20 +294,54 @@ public partial class HexViewControl
         }
     }
 
+    // Glyph runs with precomputed glyph indices skip text shaping, which is too slow to run per character every frame
     private void DrawAscii(DrawingContext context, byte[] data, int bufferOffset, long fileOffset,
-        int bytesInLine, double y, Typeface typeface)
+        int bytesInLine, double y)
     {
         var map = StructureColors;
+        var brushes = _asciiBrushes;
         for (var i = 0; i < bytesInLine; i++)
+            brushes[i] = GetStructureBrush(map, fileOffset + i, data[bufferOffset + i]);
+
+        Span<int> columns = stackalloc int[BytesPerLine];
+        for (var first = 0; first < bytesInLine; first++)
         {
-            var b = data[bufferOffset + i];
-            var ch = b is >= 0x20 and <= 0x7E ? (char)b : '.';
-            var brush = GetStructureBrush(map, fileOffset + i, b);
-            var formatted = new FormattedText(ch.ToString(), System.Globalization.CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight, typeface, FontSize, brush);
-            var x = AsciiCellX(i) + CellPaddingX;
-            context.DrawText(formatted, new Point(x, y));
+            var brush = brushes[first];
+            if (brush is null) continue;
+
+            var count = 0;
+            for (var i = first; i < bytesInLine; i++)
+            {
+                if (!ReferenceEquals(brushes[i], brush)) continue;
+                columns[count++] = i;
+                brushes[i] = null;
+            }
+
+            var chars = new char[count];
+            var glyphs = new GlyphInfo[count];
+            for (var k = 0; k < count; k++)
+            {
+                var b = data[bufferOffset + columns[k]];
+                var advance = k + 1 < count ? (columns[k + 1] - columns[k]) * _asciiCellWidth : _asciiCellWidth;
+                chars[k] = ToAsciiChar(b);
+                glyphs[k] = new GlyphInfo(_asciiGlyphs[b], k, advance);
+            }
+
+            using var run = new GlyphRun(MonospaceTypeface.GlyphTypeface, FontSize, chars, glyphs,
+                new Point(AsciiCellX(columns[0]) + CellPaddingX, y + _baseline));
+            context.DrawGlyphRun(brush, run);
         }
+    }
+
+    private static char ToAsciiChar(byte b) => b is >= 0x20 and <= 0x7E ? (char)b : '.';
+
+    private static ushort[] BuildAsciiGlyphs()
+    {
+        var map = MonospaceTypeface.GlyphTypeface.CharacterToGlyphMap;
+        var glyphs = new ushort[256];
+        for (var b = 0; b < glyphs.Length; b++)
+            glyphs[b] = map.GetGlyph(ToAsciiChar((byte)b));
+        return glyphs;
     }
 
     private static char ToHexChar(int nibble) =>
