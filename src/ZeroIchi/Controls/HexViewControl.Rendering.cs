@@ -95,11 +95,9 @@ public partial class HexViewControl
         double y, long selStart, long selEnd)
     {
         var cursor = CursorPosition;
-        var hasSelection = SelectionLength > 0;
         var doc = Document;
         var hovered = _hoveredByteIndex;
-        var buffer = Buffer;
-        var dataLength = buffer?.Length ?? 0;
+        var dataLength = Buffer?.Length ?? 0;
 
         var matchOffsets = SearchMatchOffsets;
         var matchLength = SearchMatchLength;
@@ -128,21 +126,21 @@ public partial class HexViewControl
             }
         }
 
+        var highlighted = HighlightMask(byteOffset, cursor, selStart, selEnd, dataLength);
+
         for (var i = 0; i < bytesInLine; i++)
         {
             var byteIndex = byteOffset + i;
-            var isCursor = byteIndex == cursor;
-            var isSelected = hasSelection && byteIndex >= selStart && byteIndex < selEnd;
             var isModified = doc?.IsByteModified(byteIndex) == true;
             var isHovered = byteIndex == hovered;
-            var highlighted = isCursor || isSelected;
+            var isHighlighted = IsSet(highlighted, i);
 
-            if (!highlighted && !isModified && !isHovered) continue;
+            if (!isHighlighted && !isModified && !isHovered) continue;
 
             var hexRect = HexCellRect(i, y);
             var asciiRect = new Rect(AsciiCellX(i), y, _asciiCellWidth, _rowHeight);
 
-            if (isHovered && !highlighted)
+            if (isHovered && !isHighlighted)
             {
                 context.DrawRectangle(HoverBgBrush, null, new RoundedRect(hexRect, HighlightCornerRadius));
                 context.DrawRectangle(HoverBgBrush, null, new RoundedRect(asciiRect, HighlightCornerRadius));
@@ -159,37 +157,77 @@ public partial class HexViewControl
                     i > 0 && IsModifiedNeighbor(byteIndex - 1),
                     i < BytesPerLine - 1 && IsModifiedNeighbor(byteIndex + 1));
             }
-
-            if (highlighted)
-            {
-                DrawMergedCells(context, isCursor ? CursorBgBrush : SelectionBgBrush, hexRect, asciiRect, i,
-                    byteIndex >= BytesPerLine && IsHighlighted(byteIndex - BytesPerLine),
-                    byteIndex + BytesPerLine <= dataLength && IsHighlighted(byteIndex + BytesPerLine),
-                    i > 0 && IsHighlighted(byteIndex - 1),
-                    i < BytesPerLine - 1 && IsHighlighted(byteIndex + 1));
-            }
         }
 
-        if (buffer is not null && cursor == dataLength)
+        if (highlighted == 0) return;
+
+        var above = HighlightMask(byteOffset - BytesPerLine, cursor, selStart, selEnd, dataLength);
+        var below = HighlightMask(byteOffset + BytesPerLine, cursor, selStart, selEnd, dataLength);
+        var cursorMask = cursor - byteOffset is >= 0 and < BytesPerLine ? 1 << (int)(cursor - byteOffset) : 0;
+        FillCellRuns(context, SelectionBgBrush, y, highlighted & ~cursorMask, highlighted, above, below);
+        FillCellRuns(context, CursorBgBrush, y, highlighted & cursorMask, highlighted, above, below);
+    }
+
+    // Bit i is set when byte i of the row is the cursor (including the cell past the end) or selected
+    private static int HighlightMask(long rowOffset, long cursor, long selStart, long selEnd, long dataLength)
+    {
+        if (rowOffset < 0 || rowOffset > dataLength) return 0;
+
+        var mask = 0;
+        var from = Math.Max(selStart, rowOffset);
+        var to = Math.Min(selEnd, Math.Min(rowOffset + BytesPerLine, dataLength));
+        if (from < to)
+            mask = ((1 << (int)(to - from)) - 1) << (int)(from - rowOffset);
+
+        if (cursor <= dataLength && cursor - rowOffset is >= 0 and < BytesPerLine)
+            mask |= 1 << (int)(cursor - rowOffset);
+        return mask;
+    }
+
+    private static bool IsSet(int mask, int column) => (mask & (1 << column)) != 0;
+
+    // Hex cells are not joined across the boundary between bytes 7 and 8
+    private void FillCellRuns(DrawingContext context, IBrush brush, double y,
+        int cells, int joined, int above, int below)
+    {
+        for (var first = 0; first < BytesPerLine; first++)
         {
-            var appendInLine = (int)(dataLength - byteOffset);
-            if (appendInLine is >= 0 and < BytesPerLine)
+            if (!IsSet(cells, first)) continue;
+
+            var last = first;
+            while (last < BytesPerLine - 1 && IsSet(cells, last + 1)) last++;
+
+            var left = first > 0 && IsSet(joined, first - 1);
+            var right = last < BytesPerLine - 1 && IsSet(joined, last + 1);
+
+            if (first < 8 && last >= 8)
             {
-                DrawMergedCells(context, CursorBgBrush,
-                    HexCellRect(appendInLine, y),
-                    new Rect(AsciiCellX(appendInLine), y, _asciiCellWidth, _rowHeight),
-                    appendInLine,
-                    cursor >= BytesPerLine && IsHighlighted(cursor - BytesPerLine),
-                    false,
-                    appendInLine > 0 && IsHighlighted(cursor - 1),
-                    false);
+                FillHexRun(first, 7, left, false);
+                FillHexRun(8, last, false, right);
             }
+            else
+            {
+                FillHexRun(first, last, left && first != 8, right && last != 7);
+            }
+
+            FillRun(new Rect(AsciiCellX(first), y, (last - first + 1) * _asciiCellWidth, _rowHeight),
+                first, last, left, right);
+
+            first = last;
         }
 
         return;
 
-        bool IsHighlighted(long index) =>
-            index == cursor || (hasSelection && index >= selStart && index < selEnd);
+        void FillHexRun(int from, int to, bool hasLeft, bool hasRight) =>
+            FillRun(new Rect(HexCellRect(from, y).TopLeft, HexCellRect(to, y).BottomRight), from, to, hasLeft, hasRight);
+
+        void FillRun(Rect rect, int from, int to, bool hasLeft, bool hasRight)
+        {
+            var r = HighlightCornerRadius;
+            FillRoundedRect(context, brush, rect,
+                IsSet(above, from) || hasLeft ? 0 : r, IsSet(above, to) || hasRight ? 0 : r,
+                IsSet(below, to) || hasRight ? 0 : r, IsSet(below, from) || hasLeft ? 0 : r);
+        }
     }
 
     // Cells are not merged across the boundary between bytes 7 and 8
