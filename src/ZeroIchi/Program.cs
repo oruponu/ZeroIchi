@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media.Fonts;
+using Avalonia.Rendering.Composition;
 using System;
 using System.Text;
 
@@ -28,5 +29,7 @@ sealed class Program
                     new Uri("fonts:App", UriKind.Absolute),
                     new Uri("avares://ZeroIchi/Assets/Fonts", UriKind.Absolute)));
             })
+            // Clipping to multiple dirty rects slows down redrawing the hex view several times over
+            .With(new CompositionOptions { UseRegionDirtyRectClipping = false })
             .LogToTrace();
 }
