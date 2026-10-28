@@ -15,7 +15,7 @@ public partial class HexViewControl
 
         for (var i = 0; i < BytesPerLine; i++)
         {
-            var charPos = i * 3 + (i >= 8 ? 1 : 0);
+            var charPos = HexCharIndex(i);
             buf[charPos] = ToHexChar(i >> 4);
             buf[charPos + 1] = ToHexChar(i & 0xF);
         }
@@ -266,81 +266,87 @@ public partial class HexViewControl
         return value == 0 ? ZeroByteBrush : TextBrush;
     }
 
-    private void DrawHexBytes(DrawingContext context, byte[] data, int bufferOffset, long fileOffset,
-        int bytesInLine, double y, Typeface typeface)
+    private void FillRowBrushes(byte[] data, int bufferOffset, long fileOffset, int bytesInLine)
     {
         var map = StructureColors;
-        Span<char> colorBuf = stackalloc char[HexChars];
-        var runStart = 0;
-        var runBrush = GetStructureBrush(map, fileOffset, data[bufferOffset]);
-
-        for (var i = 1; i <= bytesInLine; i++)
-        {
-            var brush = i < bytesInLine ? GetStructureBrush(map, fileOffset + i, data[bufferOffset + i]) : null;
-            if (ReferenceEquals(brush, runBrush) && i < bytesInLine) continue;
-
-            colorBuf.Fill(' ');
-            for (var j = runStart; j < i; j++)
-            {
-                var charPos = j * 3 + (j >= 8 ? 1 : 0);
-                var b = data[bufferOffset + j];
-                colorBuf[charPos] = ToHexChar(b >> 4);
-                colorBuf[charPos + 1] = ToHexChar(b & 0xF);
-            }
-            DrawText(context, new string(colorBuf), _hexStartX, y, typeface, runBrush);
-
-            runStart = i;
-            runBrush = brush!;
-        }
+        for (var i = 0; i < bytesInLine; i++)
+            _rowBrushes[i] = GetStructureBrush(map, fileOffset + i, data[bufferOffset + i]);
     }
 
-    // Glyph runs with precomputed glyph indices skip text shaping, which is too slow to run per character every frame
-    private void DrawAscii(DrawingContext context, byte[] data, int bufferOffset, long fileOffset,
-        int bytesInLine, double y)
+    private bool IsFirstOfBrush(int column)
     {
-        var map = StructureColors;
-        var brushes = _asciiBrushes;
-        for (var i = 0; i < bytesInLine; i++)
-            brushes[i] = GetStructureBrush(map, fileOffset + i, data[bufferOffset + i]);
+        for (var i = 0; i < column; i++)
+        {
+            if (ReferenceEquals(_rowBrushes[i], _rowBrushes[column])) return false;
+        }
+        return true;
+    }
 
-        Span<int> columns = stackalloc int[BytesPerLine];
+    private void DrawHexBytes(DrawingContext context, byte[] data, int bufferOffset, int bytesInLine, double y)
+    {
+        Span<char> chars = stackalloc char[BytesPerLine * 2];
+        Span<double> xs = stackalloc double[BytesPerLine * 2];
         for (var first = 0; first < bytesInLine; first++)
         {
-            var brush = brushes[first];
-            if (brush is null) continue;
+            if (!IsFirstOfBrush(first)) continue;
 
             var count = 0;
             for (var i = first; i < bytesInLine; i++)
             {
-                if (!ReferenceEquals(brushes[i], brush)) continue;
-                columns[count++] = i;
-                brushes[i] = null;
+                if (!ReferenceEquals(_rowBrushes[i], _rowBrushes[first])) continue;
+                var b = data[bufferOffset + i];
+                var x = _hexStartX + HexCharIndex(i) * _charWidth;
+                chars[count] = ToHexChar(b >> 4);
+                xs[count++] = x;
+                chars[count] = ToHexChar(b & 0xF);
+                xs[count++] = x + _charWidth;
             }
-
-            var chars = new char[count];
-            var glyphs = new GlyphInfo[count];
-            for (var k = 0; k < count; k++)
-            {
-                var b = data[bufferOffset + columns[k]];
-                var advance = k + 1 < count ? (columns[k + 1] - columns[k]) * _asciiCellWidth : _asciiCellWidth;
-                chars[k] = ToAsciiChar(b);
-                glyphs[k] = new GlyphInfo(_asciiGlyphs[b], k, advance);
-            }
-
-            using var run = new GlyphRun(MonospaceTypeface.GlyphTypeface, FontSize, chars, glyphs,
-                new Point(AsciiCellX(columns[0]) + CellPaddingX, y + _baseline));
-            context.DrawGlyphRun(brush, run);
+            DrawGlyphs(context, _rowBrushes[first], chars[..count], xs[..count], y);
         }
+    }
+
+    private void DrawAscii(DrawingContext context, byte[] data, int bufferOffset, int bytesInLine, double y)
+    {
+        Span<char> chars = stackalloc char[BytesPerLine];
+        Span<double> xs = stackalloc double[BytesPerLine];
+        for (var first = 0; first < bytesInLine; first++)
+        {
+            if (!IsFirstOfBrush(first)) continue;
+
+            var count = 0;
+            for (var i = first; i < bytesInLine; i++)
+            {
+                if (!ReferenceEquals(_rowBrushes[i], _rowBrushes[first])) continue;
+                chars[count] = ToAsciiChar(data[bufferOffset + i]);
+                xs[count++] = AsciiCellX(i) + CellPaddingX;
+            }
+            DrawGlyphs(context, _rowBrushes[first], chars[..count], xs[..count], y);
+        }
+    }
+
+    // Glyph runs with precomputed glyph indices skip text shaping, which is too slow to run for every row each frame
+    private void DrawGlyphs(DrawingContext context, IBrush brush, ReadOnlySpan<char> chars, ReadOnlySpan<double> xs, double y)
+    {
+        var glyphs = new GlyphInfo[chars.Length];
+        for (var k = 0; k < chars.Length; k++)
+        {
+            var advance = k + 1 < chars.Length ? xs[k + 1] - xs[k] : _charWidth;
+            glyphs[k] = new GlyphInfo(_glyphIndices[chars[k]], k, advance);
+        }
+
+        using var run = new GlyphRun(MonospaceTypeface.GlyphTypeface, FontSize, chars.ToArray(), glyphs,
+            new Point(xs[0], y + _baseline));
+        context.DrawGlyphRun(brush, run);
     }
 
     private static char ToAsciiChar(byte b) => b is >= 0x20 and <= 0x7E ? (char)b : '.';
 
-    private static ushort[] BuildAsciiGlyphs()
+    private static ushort[] BuildGlyphIndices()
     {
         var map = MonospaceTypeface.GlyphTypeface.CharacterToGlyphMap;
-        var glyphs = new ushort[256];
-        for (var b = 0; b < glyphs.Length; b++)
-            glyphs[b] = map.GetGlyph(ToAsciiChar((byte)b));
+        var glyphs = new ushort[0x7F];
+        for (var c = 0x20; c < glyphs.Length; c++)
+            glyphs[c] = map.GetGlyph(c);
         return glyphs;
     }
 

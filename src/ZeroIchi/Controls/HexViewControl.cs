@@ -96,8 +96,8 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private double _asciiStartX;
     private double _asciiCellWidth;
     private double _baseline;
-    private ushort[] _asciiGlyphs = [];
-    private readonly IBrush?[] _asciiBrushes = new IBrush?[BytesPerLine];
+    private ushort[] _glyphIndices = [];
+    private readonly IBrush[] _rowBrushes = new IBrush[BytesPerLine];
     private bool _metricsValid;
 
     private Vector _scrollOffset;
@@ -230,7 +230,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         _charWidth = formatted.Width;
         _lineHeight = Math.Ceiling(formatted.Height);
         _baseline = formatted.Baseline;
-        if (_asciiGlyphs.Length == 0) _asciiGlyphs = BuildAsciiGlyphs();
+        if (_glyphIndices.Length == 0) _glyphIndices = BuildGlyphIndices();
         _rowHeight = _lineHeight + 2 * CellPaddingY;
         _dataTop = _rowHeight + ColumnGap - 2 * CellPaddingX;
         _offsetChars = OffsetCharsFor(Buffer?.Length ?? 0);
@@ -248,11 +248,10 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private double AsciiCellX(int i) => _asciiStartX + i * _asciiCellWidth;
     private double TotalWidth => AsciiCellX(BytesPerLine);
 
-    private Rect HexCellRect(int byteInLine, double y)
-    {
-        var charInHex = byteInLine * 3 + (byteInLine >= 8 ? 1 : 0);
-        return new Rect(_hexStartX + charInHex * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
-    }
+    private static int HexCharIndex(int byteInLine) => byteInLine * 3 + (byteInLine >= 8 ? 1 : 0);
+
+    private Rect HexCellRect(int byteInLine, double y) =>
+        new(_hexStartX + HexCharIndex(byteInLine) * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
 
     protected override Size MeasureOverride(Size availableSize)
     {
@@ -317,8 +316,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
                             if (bytesInLine > 0)
                             {
                                 var bufferOffset = (int)(byteOffset - startOffset);
-                                DrawHexBytes(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY, MonospaceTypeface);
-                                DrawAscii(context, rentedBuffer, bufferOffset, byteOffset, bytesInLine, textY);
+                                FillRowBrushes(rentedBuffer, bufferOffset, byteOffset, bytesInLine);
+                                DrawHexBytes(context, rentedBuffer, bufferOffset, bytesInLine, textY);
+                                DrawAscii(context, rentedBuffer, bufferOffset, bytesInLine, textY);
                             }
                         }
                     }
