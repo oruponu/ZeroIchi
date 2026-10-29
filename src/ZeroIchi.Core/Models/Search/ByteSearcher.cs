@@ -13,6 +13,8 @@ public static class ByteSearcher
     public static void Scan(ByteBuffer buffer, byte[] pattern, long start, int maxMatches,
         Action<SearchProgress> report, CancellationToken cancellationToken)
     {
+        ArgumentOutOfRangeException.ThrowIfZero(pattern.Length);
+
         var length = buffer.Length;
         var overlap = pattern.Length - 1;
         var found = 0;
@@ -56,12 +58,5 @@ public static class ByteSearcher
 
             return true;
         }
-    }
-
-    internal static IEnumerable<(long Offset, int ReadLength)> EnumerateChunks(
-        long dataLength, int chunkSize, int overlap)
-    {
-        for (long offset = 0; offset < dataLength; offset += chunkSize)
-            yield return (offset, (int)Math.Min(chunkSize + overlap, dataLength - offset));
     }
 }

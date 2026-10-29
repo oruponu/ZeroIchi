@@ -90,17 +90,12 @@ public sealed class ByteSearcherTests
     }
 
     [Fact]
-    public void EnumerateChunks_BeyondIntRange_KeepsOffsetsAndFinalReadLength()
+    public void Scan_EmptyPattern_Throws()
     {
-        const long dataLength = 3L * 1024 * 1024 * 1024;
+        var buffer = new ArrayByteBuffer([0x58]);
 
-        var chunks = ByteSearcher.EnumerateChunks(dataLength, ChunkSize, overlap: 1).ToList();
-
-        Assert.Equal(dataLength / ChunkSize, (long)chunks.Count);
-        Assert.Equal(0L, chunks[0].Offset);
-        Assert.Equal(dataLength - ChunkSize, chunks[^1].Offset);
-        Assert.Equal(ChunkSize, chunks[^1].ReadLength);
-        Assert.Contains(chunks, c => c.Offset > int.MaxValue);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ByteSearcher.Scan(buffer, [], 0, MaxMatches, _ => { }, CancellationToken.None));
     }
 
     [Fact]
