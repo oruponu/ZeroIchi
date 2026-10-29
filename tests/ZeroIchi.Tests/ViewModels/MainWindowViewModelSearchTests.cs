@@ -45,6 +45,7 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
         new(new StubDialogService(), new StubClipboardService(), new StubWindowService())
         {
             SearchFlushInterval = TimeSpan.FromMilliseconds(10),
+            SearchBusyDelay = TimeSpan.FromMilliseconds(50),
             SearchSource = snapshot =>
             {
                 var gate = new GatedByteBuffer(snapshot);
@@ -436,6 +437,91 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
 
             vm.FindPreviousCommand.Execute(null);
             Assert.Equal(70000, vm.CursorPosition);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task IsSearching_TurnsOnAfterTheBusyDelayAndOffWhenDone() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
+        try
+        {
+            vm.SearchText = "AB";
+            await HeadlessTestApp.WaitUntilAsync(() => vm.IsSearching);
+
+            _gates[0].OpenAll();
+            await vm.SearchUpdate;
+
+            Assert.False(vm.IsSearching);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task IsSearching_StaysOffForAQuickSearch() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateFast();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
+        try
+        {
+            var values = new List<bool>();
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainWindowViewModel.IsSearching)) values.Add(vm.IsSearching);
+            };
+
+            vm.SearchText = "AB";
+            await vm.SearchUpdate;
+
+            Assert.DoesNotContain(true, values);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task IsSearching_StaysOnWhenANewSearchReplacesARunningOne() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), (300, [0xAB, 0xCD])));
+        try
+        {
+            vm.SearchText = "AB";
+            await HeadlessTestApp.WaitUntilAsync(() => vm.IsSearching);
+            var values = new List<bool>();
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainWindowViewModel.IsSearching)) values.Add(vm.IsSearching);
+            };
+
+            vm.SearchText = "AB CD";
+            await Task.Delay(50);
+
+            Assert.DoesNotContain(false, values);
+            Assert.True(vm.IsSearching);
+
+            foreach (var gate in _gates) gate.OpenAll();
+            await vm.SearchUpdate;
+
+            Assert.False(vm.IsSearching);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task CloseSearch_WhileSearching_TurnsOffIsSearching() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
+        try
+        {
+            vm.SearchText = "AB";
+            await HeadlessTestApp.WaitUntilAsync(() => vm.IsSearching);
+
+            vm.CloseSearchCommand.Execute(null);
+
+            Assert.False(vm.IsSearching);
         }
         finally { await CleanUpAsync(vm); }
     });

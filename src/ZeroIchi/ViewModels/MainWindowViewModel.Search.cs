@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,8 @@ public partial class MainWindowViewModel
     private (SearchDirection Direction, long From)? _pendingSearchMove;
 
     internal TimeSpan SearchFlushInterval { get; init; } = TimeSpan.FromMilliseconds(100);
+
+    internal TimeSpan SearchBusyDelay { get; init; } = TimeSpan.FromMilliseconds(300);
 
     internal Func<ByteBuffer, ByteBuffer> SearchSource { get; init; } = static snapshot => snapshot;
 
@@ -152,6 +155,7 @@ public partial class MainWindowViewModel
         CurrentSearchMatchOffset = -1;
         CurrentSearchMatchIndex = -1;
         SearchStatusText = "";
+        IsSearching = false;
     }
 
     private void StartSearch(SearchDirection direction)
@@ -188,6 +192,7 @@ public partial class MainWindowViewModel
     private async Task RunSearchAsync(BinaryDocument document, byte[] pattern, long start, SearchMatchSet set,
         CancellationToken cancellationToken)
     {
+        var startedAt = Stopwatch.GetTimestamp();
         try
         {
             var snapshot = SearchSource(document.CreateSnapshot());
@@ -213,7 +218,12 @@ public partial class MainWindowViewModel
                 if (done) set.Complete();
 
                 ApplySearchProgress(set, pattern.Length);
-                if (set.IsComplete) return;
+                if (set.IsComplete)
+                {
+                    IsSearching = false;
+                    return;
+                }
+                if (Stopwatch.GetElapsedTime(startedAt) >= SearchBusyDelay) IsSearching = true;
             }
         }
         catch (OperationCanceledException)

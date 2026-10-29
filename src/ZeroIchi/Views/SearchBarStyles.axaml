@@ -40,6 +40,13 @@
         <Setter Property="Foreground" Value="#D4D4D4"/>
     </Style>
 
+    <Style Selector="TextBlock.search-busy">
+        <Setter Property="Opacity" Value="0"/>
+    </Style>
+    <Style Selector="TextBlock.search-busy.searching">
+        <Setter Property="Opacity" Value="1"/>
+    </Style>
+
     <Style Selector="Border.search-mode-group">
         <Setter Property="Background" Value="#0FFFFFFF"/>
         <Setter Property="BorderBrush" Value="#12FFFFFF"/>

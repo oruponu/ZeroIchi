@@ -39,8 +39,8 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<int> SearchMatchLengthProperty =
         AvaloniaProperty.Register<HexViewControl, int>(nameof(SearchMatchLength), defaultValue: 0);
 
-    public static readonly StyledProperty<int> CurrentSearchMatchIndexProperty =
-        AvaloniaProperty.Register<HexViewControl, int>(nameof(CurrentSearchMatchIndex), defaultValue: -1);
+    public static readonly StyledProperty<long> CurrentSearchMatchOffsetProperty =
+        AvaloniaProperty.Register<HexViewControl, long>(nameof(CurrentSearchMatchOffset), defaultValue: -1);
 
     public static readonly StyledProperty<StructureColorMap?> StructureColorsProperty =
         AvaloniaProperty.Register<HexViewControl, StructureColorMap?>(nameof(StructureColors));
@@ -79,7 +79,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     {
         AffectsRender<HexViewControl>(DocumentProperty, DataVersionProperty, CursorPositionProperty,
             SelectionStartProperty, SelectionLengthProperty,
-            SearchMatchOffsetsProperty, SearchMatchLengthProperty, CurrentSearchMatchIndexProperty,
+            SearchMatchOffsetsProperty, SearchMatchLengthProperty, CurrentSearchMatchOffsetProperty,
             StructureColorsProperty);
         AffectsMeasure<HexViewControl>(DocumentProperty, DataVersionProperty);
     }
@@ -158,10 +158,10 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         set => SetValue(SearchMatchLengthProperty, value);
     }
 
-    public int CurrentSearchMatchIndex
+    public long CurrentSearchMatchOffset
     {
-        get => GetValue(CurrentSearchMatchIndexProperty);
-        set => SetValue(CurrentSearchMatchIndexProperty, value);
+        get => GetValue(CurrentSearchMatchOffsetProperty);
+        set => SetValue(CurrentSearchMatchOffsetProperty, value);
     }
 
     public StructureColorMap? StructureColors
@@ -207,7 +207,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
             _editingHighNibble = false;
             EnsureCursorVisible();
         }
-        else if (change.Property == CurrentSearchMatchIndexProperty)
+        else if (change.Property == CurrentSearchMatchOffsetProperty)
         {
             EnsureCursorVisible();
         }

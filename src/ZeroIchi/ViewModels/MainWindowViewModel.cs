@@ -110,6 +110,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial string SearchStatusText { get; set; } = "";
 
     [ObservableProperty]
+    public partial bool IsSearching { get; set; }
+
+    [ObservableProperty]
     public partial bool IsStructureTreeVisible { get; set; } = true;
 
     public ObservableCollection<StructureTreeItem> StructureTreeItems { get; } = [];

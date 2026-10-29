@@ -96,7 +96,7 @@ public partial class HexViewControl
 
         var matchOffsets = SearchMatchOffsets;
         var matchLength = SearchMatchLength;
-        var currentMatchIndex = CurrentSearchMatchIndex;
+        var currentMatchOffset = CurrentSearchMatchOffset;
         if (matchOffsets.Length > 0 && matchLength > 0)
         {
             var lineEnd = byteOffset + bytesInLine;
@@ -108,7 +108,7 @@ public partial class HexViewControl
                 var matchEnd = matchStart + matchLength;
                 var drawStart = Math.Max(matchStart, byteOffset);
                 var drawEnd = Math.Min(matchEnd, lineEnd);
-                var brush = m == currentMatchIndex ? CurrentSearchMatchBrush : SearchMatchBrush;
+                var brush = matchStart == currentMatchOffset ? CurrentSearchMatchBrush : SearchMatchBrush;
 
                 for (var byteIdx = drawStart; byteIdx < drawEnd; byteIdx++)
                 {

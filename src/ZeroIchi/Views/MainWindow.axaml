@@ -305,7 +305,7 @@
                                       IsVisible="{Binding Document, Converter={x:Static ObjectConverters.IsNotNull}}"
                                       VerticalScrollBarVisibility="Auto">
                             <controls:HexViewControl x:Name="HexView"
-                                                     CurrentSearchMatchIndex="{Binding CurrentSearchMatchIndex}"
+                                                     CurrentSearchMatchOffset="{Binding CurrentSearchMatchOffset}"
                                                      CursorPosition="{Binding CursorPosition}"
                                                      DataVersion="{Binding DataVersion}"
                                                      Document="{Binding Document}"
@@ -386,6 +386,12 @@
                                        Foreground="#A0A0A0"
                                        Text="{Binding SearchStatusText}"
                                        TextAlignment="Center"/>
+                            <TextBlock VerticalAlignment="Center"
+                                       Classes="search-busy"
+                                       Classes.searching="{Binding IsSearching}"
+                                       FontSize="11"
+                                       Foreground="#A0A0A0"
+                                       Text="検索中"/>
                             <Button Classes="search-button"
                                     Command="{Binding FindPreviousCommand}"
                                     ToolTip.Tip="前を検索 (Shift+F3)">
