@@ -17,6 +17,7 @@ public partial class MainWindowViewModel
     private CancellationTokenSource? _searchCts;
     private Task _searchTail = Task.CompletedTask;
     private SearchMatchSet? _searchSet;
+    private long _searchStart;
     private bool _searchSwapped;
     private (SearchDirection Direction, long From)? _pendingSearchMove;
 
@@ -125,15 +126,19 @@ public partial class MainWindowViewModel
             return;
         }
 
-        if (!set.IsComplete)
+        _pendingSearchMove = _searchSwapped && CurrentSearchMatchOffset >= 0
+            ? (direction, CurrentSearchMatchOffset)
+            : InitialSearchMove(direction, _searchStart);
+
+        if (!_searchSwapped)
             return;
 
-        var target = direction == SearchDirection.Forward
-            ? set.FindNext(CurrentSearchMatchOffset)
-            : set.FindPrevious(CurrentSearchMatchOffset >= 0 ? CurrentSearchMatchOffset : long.MaxValue);
-        if (target.Offset >= 0) MoveToSearchMatch(target.Offset);
+        ResolvePendingSearchMove(set);
         UpdateSearchStatus(set);
     }
+
+    private static (SearchDirection Direction, long From) InitialSearchMove(SearchDirection direction, long start) =>
+        direction == SearchDirection.Forward ? (direction, start - 1) : (direction, start);
 
     private void ClearSearchResults()
     {
@@ -172,10 +177,9 @@ public partial class MainWindowViewModel
         var start = Math.Min(CursorPosition, buffer.Length);
         var set = new SearchMatchSet(start, buffer.Length);
         _searchSet = set;
+        _searchStart = start;
         _searchSwapped = false;
-        _pendingSearchMove = direction == SearchDirection.Forward
-            ? (SearchDirection.Forward, start - 1)
-            : (SearchDirection.Backward, start);
+        _pendingSearchMove = InitialSearchMove(direction, start);
         _searchCts = new CancellationTokenSource();
         SearchUpdate = RunSearchAsync(document, pattern, start, set, _searchCts.Token);
     }
@@ -239,19 +243,23 @@ public partial class MainWindowViewModel
             SearchMatchOffsets = set.ToArray();
         }
 
-        if (_pendingSearchMove is { } move)
-        {
-            var target = move.Direction == SearchDirection.Forward
-                ? set.FindNext(move.From)
-                : set.FindPrevious(move.From);
-            if (target.IsResolved)
-            {
-                _pendingSearchMove = null;
-                if (target.Offset >= 0) MoveToSearchMatch(target.Offset);
-            }
-        }
-
+        ResolvePendingSearchMove(set);
         UpdateSearchStatus(set);
+    }
+
+    private void ResolvePendingSearchMove(SearchMatchSet set)
+    {
+        if (_pendingSearchMove is not { } move)
+            return;
+
+        var target = move.Direction == SearchDirection.Forward
+            ? set.FindNext(move.From)
+            : set.FindPrevious(move.From);
+        if (!target.IsResolved)
+            return;
+
+        _pendingSearchMove = null;
+        if (target.Offset >= 0) MoveToSearchMatch(target.Offset);
     }
 
     private void MoveToSearchMatch(long offset)

@@ -296,6 +296,151 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
     });
 
     [Fact]
+    public Task FindNext_WhileTheNextMatchIsUnscanned_JumpsWhenItIsFound() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
+        try
+        {
+            vm.SearchText = "AB";
+            _gates[0].Allow(1);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.CursorPosition == 10);
+
+            vm.FindNextCommand.Execute(null);
+            await Task.Delay(50);
+            Assert.Equal(10, vm.CursorPosition);
+
+            _gates[0].Allow(1);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.CursorPosition == 70000);
+            Assert.Equal("2/2", vm.SearchStatusText);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task FindPrevious_ToStartASearch_JumpsToTheNearestMatchBeforeTheCursor() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(100), Ab(70000)));
+        try
+        {
+            vm.SearchText = "AB";
+            _gates[0].OpenAll();
+            await vm.SearchUpdate;
+            vm.OnByteModified(200, 0x11, cursorPositionAfter: 200);
+            vm.CursorPosition = 150;
+
+            vm.FindPreviousCommand.Execute(null);
+            _gates[1].Allow(4);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.SearchMatchOffsets.Length == 1);
+
+            Assert.Equal([70000L], vm.SearchMatchOffsets);
+            Assert.Equal(150, vm.CursorPosition);
+            Assert.Equal("-/1", vm.SearchStatusText);
+
+            _gates[1].OpenAll();
+            await vm.SearchUpdate;
+
+            Assert.Equal(100, vm.CursorPosition);
+            Assert.Equal("2/3", vm.SearchStatusText);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task FindPrevious_ToStartASearch_WithNoMatchBeforeTheCursor_WrapsToTheLastMatch() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateFast();
+        await vm.OpenFileAsync(WriteFile(Ab(70000), Ab(140000)));
+        try
+        {
+            vm.SearchText = "AB";
+            await vm.SearchUpdate;
+            vm.OnByteModified(5, 0x11, cursorPositionAfter: 5);
+            vm.CursorPosition = 10;
+
+            vm.FindPreviousCommand.Execute(null);
+            await vm.SearchUpdate;
+
+            Assert.Equal(140000, vm.CursorPosition);
+            Assert.Equal("2/2", vm.SearchStatusText);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task PressingAgainWhileWaiting_KeepsOnlyTheLastDirection() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000), Ab(140000)));
+        try
+        {
+            vm.SearchText = "AB";
+            _gates[0].Allow(1);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.CursorPosition == 10);
+
+            vm.FindNextCommand.Execute(null);
+            vm.FindPreviousCommand.Execute(null);
+            _gates[0].Allow(1);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.SearchMatchOffsets.Length == 2);
+
+            Assert.Equal(10, vm.CursorPosition);
+
+            _gates[0].OpenAll();
+            await vm.SearchUpdate;
+
+            Assert.Equal(140000, vm.CursorPosition);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task ClosingTheSearch_DropsThePendingMove() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateGated();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
+        try
+        {
+            vm.SearchText = "AB";
+            _gates[0].Allow(1);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.CursorPosition == 10);
+
+            vm.FindNextCommand.Execute(null);
+            vm.CloseSearchCommand.Execute(null);
+            _gates[0].OpenAll();
+            await vm.SearchUpdate;
+            await Task.Delay(50);
+
+            Assert.Equal(10, vm.CursorPosition);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task FindNext_AfterTheScanCompletes_WrapsAround() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateFast();
+        await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
+        try
+        {
+            vm.SearchText = "AB";
+            await vm.SearchUpdate;
+
+            vm.FindNextCommand.Execute(null);
+            Assert.Equal(70000, vm.CursorPosition);
+            Assert.Equal("2/2", vm.SearchStatusText);
+
+            vm.FindNextCommand.Execute(null);
+            Assert.Equal(10, vm.CursorPosition);
+            Assert.Equal("1/2", vm.SearchStatusText);
+
+            vm.FindPreviousCommand.Execute(null);
+            Assert.Equal(70000, vm.CursorPosition);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
     public Task Search_WhenReadingFails_ShowsAnError() => HeadlessTestApp.RunAsync(async () =>
     {
         var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService())
