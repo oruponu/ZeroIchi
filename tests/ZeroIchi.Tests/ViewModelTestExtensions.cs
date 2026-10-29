@@ -6,7 +6,7 @@ internal static class ViewModelTestExtensions
 {
     internal static async Task DisposeDocumentAsync(this MainWindowViewModel vm)
     {
-        await vm.PauseStructureUpdatesAsync();
+        await vm.PauseBackgroundWorkAsync();
         vm.Document?.Dispose();
     }
 }

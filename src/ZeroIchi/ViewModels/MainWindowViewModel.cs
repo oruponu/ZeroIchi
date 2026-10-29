@@ -219,10 +219,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     internal static void WarmUpFileTypeDetection() => FileTypeDetector.Default.Detect(new ArrayByteBuffer(new byte[1024]));
 
+    internal async Task PauseBackgroundWorkAsync()
+    {
+        await Task.WhenAll(PauseStructureUpdatesAsync(), PauseSearchAsync());
+    }
+
+    internal void ResumeBackgroundWork()
+    {
+        ResumeStructureUpdates();
+        ResumeSearch();
+    }
+
     // Avalonia bindings cache the old Document, so release Data explicitly
     private async Task ReplaceDocumentAsync(BinaryDocument newDocument)
     {
-        await PauseStructureUpdatesAsync();
+        await PauseBackgroundWorkAsync();
         try
         {
             var oldDocument = Document;
@@ -241,7 +252,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            ResumeStructureUpdates();
+            ResumeBackgroundWork();
         }
     }
 }

@@ -21,6 +21,8 @@ public partial class MainWindowViewModel
     private long _searchStart;
     private bool _searchSwapped;
     private (SearchDirection Direction, long From)? _pendingSearchMove;
+    private int _searchPauseCount;
+    private SearchDirection? _pausedSearchDirection;
 
     internal TimeSpan SearchFlushInterval { get; init; } = TimeSpan.FromMilliseconds(100);
 
@@ -99,6 +101,7 @@ public partial class MainWindowViewModel
     private void CloseSearch()
     {
         IsSearchVisible = false;
+        _pausedSearchDirection = null;
         ClearSearchResults();
     }
 
@@ -178,6 +181,12 @@ public partial class MainWindowViewModel
             return;
         }
 
+        if (_searchPauseCount > 0)
+        {
+            _pausedSearchDirection = direction;
+            return;
+        }
+
         var start = Math.Min(CursorPosition, buffer.Length);
         var set = new SearchMatchSet(start, buffer.Length);
         _searchSet = set;
@@ -186,6 +195,22 @@ public partial class MainWindowViewModel
         _pendingSearchMove = InitialSearchMove(direction, start);
         _searchCts = new CancellationTokenSource();
         SearchUpdate = RunSearchAsync(document, pattern, start, set, _searchCts.Token);
+    }
+
+    private Task PauseSearchAsync()
+    {
+        _searchPauseCount++;
+        ClearSearchResults();
+        return _searchTail;
+    }
+
+    private void ResumeSearch()
+    {
+        _searchPauseCount--;
+        if (_searchPauseCount > 0 || _pausedSearchDirection is not { } direction) return;
+
+        _pausedSearchDirection = null;
+        if (IsSearchVisible && !string.IsNullOrEmpty(SearchText)) StartSearch(direction);
     }
 
     // Task.Run takes no token: cancelling before it starts would skip awaiting the previous scan

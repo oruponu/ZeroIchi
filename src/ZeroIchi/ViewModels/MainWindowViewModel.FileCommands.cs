@@ -86,7 +86,7 @@ public partial class MainWindowViewModel
         }
 
         var document = Document;
-        await PauseStructureUpdatesAsync();
+        await PauseBackgroundWorkAsync();
         try
         {
             if (Document != document) return;
@@ -98,7 +98,7 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            ResumeStructureUpdates();
+            ResumeBackgroundWork();
         }
     }
 
@@ -111,7 +111,7 @@ public partial class MainWindowViewModel
         if (path is null) return;
 
         var document = Document;
-        await PauseStructureUpdatesAsync();
+        await PauseBackgroundWorkAsync();
         try
         {
             if (Document != document) return;
@@ -119,7 +119,7 @@ public partial class MainWindowViewModel
         }
         finally
         {
-            ResumeStructureUpdates();
+            ResumeBackgroundWork();
         }
     }
 
