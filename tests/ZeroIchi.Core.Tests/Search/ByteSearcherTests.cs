@@ -24,67 +24,67 @@ public sealed class ByteSearcherTests
     [InlineData(new long[] { ChunkSize * 2 })]
     [InlineData(new long[] { BufferSize - 2 })]
     [InlineData(new long[0])]
-    public void FindMatches_FindsPatternAtPlantedOffsets(long[] offsets)
+    public void Scan_FindsPatternAtPlantedOffsets(long[] offsets)
     {
         byte[] pattern = [0x58, 0x59];
         var buffer = CreateBuffer(pattern, offsets);
 
-        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
+        var matches = Collect(buffer, pattern, 0).After;
 
         Assert.Equal(offsets, matches);
     }
 
     [Fact]
-    public void FindMatches_SingleBytePattern_FindsMatchesAdjacentToBoundaries()
+    public void Scan_SingleBytePattern_FindsMatchesAdjacentToBoundaries()
     {
         byte[] pattern = [0x58];
         var buffer = CreateBuffer(pattern, ChunkSize - 1, ChunkSize, ChunkSize * 2 - 1, ChunkSize * 2);
 
-        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
+        var matches = Collect(buffer, pattern, 0).After;
 
         long[] expected = [ChunkSize - 1, ChunkSize, ChunkSize * 2 - 1, ChunkSize * 2];
         Assert.Equal(expected, matches);
     }
 
     [Fact]
-    public void FindMatches_FindsOverlappingMatchesAcrossBoundary()
+    public void Scan_FindsOverlappingMatchesAcrossBoundary()
     {
         var buffer = CreateBuffer([0x58, 0x58, 0x58, 0x58], ChunkSize * 2 - 2);
 
-        var matches = ByteSearcher.FindMatches(buffer, [0x58, 0x58], MaxMatches);
+        var matches = Collect(buffer, [0x58, 0x58], 0).After;
 
         long[] expected = [ChunkSize * 2 - 2, ChunkSize * 2 - 1, ChunkSize * 2];
         Assert.Equal(expected, matches);
     }
 
     [Fact]
-    public void FindMatches_MultiBytePattern_FindsMatchSpanningBoundary()
+    public void Scan_MultiBytePattern_FindsMatchSpanningBoundary()
     {
         byte[] pattern = [0x57, 0x58, 0x59, 0x5A];
         var buffer = CreateBuffer(pattern, ChunkSize * 2 - 1);
 
-        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
+        var matches = Collect(buffer, pattern, 0).After;
 
         long[] expected = [ChunkSize * 2 - 1];
         Assert.Equal(expected, matches);
     }
 
     [Fact]
-    public void FindMatches_ReturnsEmpty_WhenPatternLongerThanBuffer()
+    public void Scan_ReturnsEmpty_WhenPatternLongerThanBuffer()
     {
         var buffer = new ArrayByteBuffer([0x58]);
 
-        var matches = ByteSearcher.FindMatches(buffer, [0x58, 0x59], MaxMatches);
+        var matches = Collect(buffer, [0x58, 0x59], 0).After;
 
         Assert.Empty(matches);
     }
 
     [Fact]
-    public void FindMatches_ReturnsEmpty_WhenBufferEmpty()
+    public void Scan_ReturnsEmpty_WhenBufferEmpty()
     {
         var buffer = new ArrayByteBuffer([]);
 
-        var matches = ByteSearcher.FindMatches(buffer, [0x58, 0x59], MaxMatches);
+        var matches = Collect(buffer, [0x58, 0x59], 0).After;
 
         Assert.Empty(matches);
     }
@@ -103,38 +103,26 @@ public sealed class ByteSearcherTests
         Assert.Contains(chunks, c => c.Offset > int.MaxValue);
     }
 
-    [Theory]
-    [InlineData(0x2000L, 0)]
-    [InlineData(0x7FFFFFFFL, 1)]
-    [InlineData(0x80000000L, 1)]
-    [InlineData(0xC0000000L, 2)]
-    public void FindClosestMatch_SelectsNearestOffsetBeyondIntRange(long position, int expected)
-    {
-        List<long> matches = [0x1000L, 0x80000000L, 0xF0000000L];
-
-        Assert.Equal(expected, ByteSearcher.FindClosestMatch(matches, position));
-    }
-
     [Fact]
-    public void FindMatches_PatternBeyondIntRange_ReturnsLongOffset()
+    public void Scan_PatternBeyondIntRange_ReturnsLongOffset()
     {
         const long plantedOffset = 0x8000_0000L;
         byte[] pattern = [0x58, 0x59];
         var buffer = new SparseByteBuffer(plantedOffset + pattern.Length, (plantedOffset, pattern));
 
-        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxMatches);
+        var matches = Collect(buffer, pattern, 0).After;
 
         long[] expected = [plantedOffset];
         Assert.Equal(expected, matches);
     }
 
     [Fact]
-    public void FindMatches_StopsAtMaxMatches()
+    public void Scan_StopsAtMaxMatches()
     {
         var data = new byte[1000];
         Array.Fill(data, (byte)0x58);
 
-        var matches = ByteSearcher.FindMatches(new ArrayByteBuffer(data), [0x58], maxMatches: 10);
+        var matches = Collect(new ArrayByteBuffer(data), [0x58], 0, maxMatches: 10).After;
 
         Assert.Equal(10, matches.Count);
     }

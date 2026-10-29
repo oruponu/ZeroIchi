@@ -1,7 +1,11 @@
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Collections.Concurrent;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using ZeroIchi.Models;
+using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Search;
 
 namespace ZeroIchi.ViewModels;
@@ -10,9 +14,27 @@ public partial class MainWindowViewModel
 {
     private const int MaxSearchMatches = 100_000;
 
+    private CancellationTokenSource? _searchCts;
+    private Task _searchTail = Task.CompletedTask;
+    private SearchMatchSet? _searchSet;
+    private bool _searchSwapped;
+    private (SearchDirection Direction, long From)? _pendingSearchMove;
+
+    internal TimeSpan SearchFlushInterval { get; init; } = TimeSpan.FromMilliseconds(100);
+
+    internal Func<ByteBuffer, ByteBuffer> SearchSource { get; init; } = static snapshot => snapshot;
+
+    internal Task SearchUpdate { get; private set; } = Task.CompletedTask;
+
     public event EventHandler? GoToOffsetFocusRequested;
 
     public event EventHandler? SearchFocusRequested;
+
+    private enum SearchDirection
+    {
+        Forward,
+        Backward,
+    }
 
     [RelayCommand]
     private void OpenGoToOffset()
@@ -86,46 +108,54 @@ public partial class MainWindowViewModel
     private bool CanCloseOverlay() => IsGoToOffsetVisible || IsSearchVisible;
 
     [RelayCommand]
-    private void FindNext()
-    {
-        if (SearchMatchOffsets.Length == 0)
-        {
-            ExecuteSearch();
-            return;
-        }
-
-        CurrentSearchMatchIndex = (CurrentSearchMatchIndex + 1) % SearchMatchOffsets.Length;
-        NavigateToCurrentMatch();
-    }
+    private void FindNext() => NavigateSearch(SearchDirection.Forward);
 
     [RelayCommand]
-    private void FindPrevious()
+    private void FindPrevious() => NavigateSearch(SearchDirection.Backward);
+
+    partial void OnSearchTextChanged(string value) => StartSearch(SearchDirection.Forward);
+    partial void OnIsHexSearchChanged(bool value) => StartSearch(SearchDirection.Forward);
+
+    private void NavigateSearch(SearchDirection direction)
     {
-        if (SearchMatchOffsets.Length == 0)
+        var set = _searchSet;
+        if (set is null || set is { IsComplete: true, Count: 0 })
         {
-            ExecuteSearch();
+            StartSearch(direction);
             return;
         }
 
-        CurrentSearchMatchIndex = (CurrentSearchMatchIndex - 1 + SearchMatchOffsets.Length) % SearchMatchOffsets.Length;
-        NavigateToCurrentMatch();
-    }
+        if (!set.IsComplete)
+            return;
 
-    partial void OnSearchTextChanged(string value) => ExecuteSearch();
-    partial void OnIsHexSearchChanged(bool value) => ExecuteSearch();
+        var target = direction == SearchDirection.Forward
+            ? set.FindNext(CurrentSearchMatchOffset)
+            : set.FindPrevious(CurrentSearchMatchOffset >= 0 ? CurrentSearchMatchOffset : long.MaxValue);
+        if (target.Offset >= 0) MoveToSearchMatch(target.Offset);
+        UpdateSearchStatus(set);
+    }
 
     private void ClearSearchResults()
     {
+        _searchCts?.Cancel();
+        _searchCts = null;
+        _searchSet = null;
+        _searchSwapped = false;
+        _pendingSearchMove = null;
         SearchMatchOffsets = [];
         SearchMatchLength = 0;
+        CurrentSearchMatchOffset = -1;
         CurrentSearchMatchIndex = -1;
         SearchStatusText = "";
     }
 
-    private void ExecuteSearch()
+    private void StartSearch(SearchDirection direction)
     {
-        var buffer = Document?.Buffer;
-        if (buffer is null || string.IsNullOrEmpty(SearchText))
+        _searchCts?.Cancel();
+        _searchCts = null;
+
+        var document = Document;
+        if (document?.Buffer is not { } buffer || string.IsNullOrEmpty(SearchText))
         {
             ClearSearchResults();
             return;
@@ -139,33 +169,113 @@ public partial class MainWindowViewModel
             return;
         }
 
-        SearchMatchLength = pattern.Length;
-        var matches = ByteSearcher.FindMatches(buffer, pattern, MaxSearchMatches);
-
-        SearchMatchOffsets = [.. matches];
-
-        if (matches.Count == 0)
-        {
-            CurrentSearchMatchIndex = -1;
-            SearchStatusText = "0/0";
-            return;
-        }
-
-        var closestIndex = ByteSearcher.FindClosestMatch(matches, CursorPosition);
-        CurrentSearchMatchIndex = closestIndex;
-        NavigateToCurrentMatch();
+        var start = Math.Min(CursorPosition, buffer.Length);
+        var set = new SearchMatchSet(start, buffer.Length);
+        _searchSet = set;
+        _searchSwapped = false;
+        _pendingSearchMove = direction == SearchDirection.Forward
+            ? (SearchDirection.Forward, start - 1)
+            : (SearchDirection.Backward, start);
+        _searchCts = new CancellationTokenSource();
+        SearchUpdate = RunSearchAsync(document, pattern, start, set, _searchCts.Token);
     }
 
-    private void NavigateToCurrentMatch()
+    // Task.Run takes no token: cancelling before it starts would skip awaiting the previous scan
+    private async Task RunSearchAsync(BinaryDocument document, byte[] pattern, long start, SearchMatchSet set,
+        CancellationToken cancellationToken)
     {
-        if (CurrentSearchMatchIndex < 0 || CurrentSearchMatchIndex >= SearchMatchOffsets.Length)
-            return;
+        try
+        {
+            var snapshot = SearchSource(document.CreateSnapshot());
+            var reports = new ConcurrentQueue<SearchProgress>();
+            var previous = _searchTail;
+            var scan = Task.Run(async () =>
+            {
+                await previous;
+                cancellationToken.ThrowIfCancellationRequested();
+                ByteSearcher.Scan(snapshot, pattern, start, MaxSearchMatches, reports.Enqueue, cancellationToken);
+            });
+            _searchTail = scan.ContinueWith(static _ => { }, TaskScheduler.Default);
 
-        var matchOffset = SearchMatchOffsets[CurrentSearchMatchIndex];
-        CursorPosition = matchOffset;
-        SelectionStart = matchOffset;
+            while (true)
+            {
+                await Task.WhenAny(scan, Task.Delay(SearchFlushInterval, cancellationToken));
+                if (cancellationToken.IsCancellationRequested) return;
+
+                var done = scan.IsCompleted;
+                if (done) await scan;
+                while (reports.TryDequeue(out var progress))
+                    set.Add(progress);
+                if (done) set.Complete();
+
+                ApplySearchProgress(set, pattern.Length);
+                if (set.IsComplete) return;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            if (cancellationToken.IsCancellationRequested || _searchSet != set) return;
+            ClearSearchResults();
+            SearchStatusText = "検索できませんでした";
+        }
+    }
+
+    private void ApplySearchProgress(SearchMatchSet set, int patternLength)
+    {
+        if (!_searchSwapped)
+        {
+            if (set.Count == 0 && !set.IsComplete) return;
+
+            _searchSwapped = true;
+            SearchMatchLength = patternLength;
+            CurrentSearchMatchOffset = -1;
+            SearchMatchOffsets = set.ToArray();
+        }
+        else if (set.Count != SearchMatchOffsets.Length)
+        {
+            SearchMatchOffsets = set.ToArray();
+        }
+
+        if (_pendingSearchMove is { } move)
+        {
+            var target = move.Direction == SearchDirection.Forward
+                ? set.FindNext(move.From)
+                : set.FindPrevious(move.From);
+            if (target.IsResolved)
+            {
+                _pendingSearchMove = null;
+                if (target.Offset >= 0) MoveToSearchMatch(target.Offset);
+            }
+        }
+
+        UpdateSearchStatus(set);
+    }
+
+    private void MoveToSearchMatch(long offset)
+    {
+        CursorPosition = offset;
+        SelectionStart = offset;
         SelectionLength = SearchMatchLength;
-        var truncated = SearchMatchOffsets.Length >= MaxSearchMatches ? "+" : "";
-        SearchStatusText = $"{CurrentSearchMatchIndex + 1}/{SearchMatchOffsets.Length}{truncated}";
+        CurrentSearchMatchOffset = offset;
+    }
+
+    private void UpdateSearchStatus(SearchMatchSet set)
+    {
+        var offsets = SearchMatchOffsets;
+        var count = offsets.Length;
+        var truncated = count >= MaxSearchMatches ? "+" : "";
+        var index = CurrentSearchMatchOffset >= 0 ? Array.BinarySearch(offsets, CurrentSearchMatchOffset) : -1;
+        if (index < 0) index = -1;
+        CurrentSearchMatchIndex = index;
+
+        if (index >= 0)
+            SearchStatusText = $"{index + 1}/{count}{truncated}";
+        else if (count > 0)
+            SearchStatusText = $"-/{count}{truncated}";
+        else
+            SearchStatusText = set.IsComplete ? "0/0" : "";
     }
 }

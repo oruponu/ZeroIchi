@@ -104,6 +104,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial int CurrentSearchMatchIndex { get; set; } = -1;
 
     [ObservableProperty]
+    public partial long CurrentSearchMatchOffset { get; set; } = -1;
+
+    [ObservableProperty]
     public partial string SearchStatusText { get; set; } = "";
 
     [ObservableProperty]
