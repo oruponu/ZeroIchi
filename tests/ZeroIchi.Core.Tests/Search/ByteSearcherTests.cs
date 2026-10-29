@@ -138,4 +138,122 @@ public sealed class ByteSearcherTests
 
         Assert.Equal(10, matches.Count);
     }
+
+    private static (List<long> After, List<long> Before) Collect(ByteBuffer buffer, byte[] pattern, long start,
+        int maxMatches = MaxMatches)
+    {
+        var after = new List<long>();
+        var before = new List<long>();
+        ByteSearcher.Scan(buffer, pattern, start, maxMatches,
+            p => (p.Phase == SearchPhase.AfterStart ? after : before).AddRange(p.Matches), CancellationToken.None);
+        return (after, before);
+    }
+
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(100L)]
+    [InlineData(101L)]
+    [InlineData(ChunkSize - 1L)]
+    [InlineData(ChunkSize * 2L)]
+    [InlineData(BufferSize - 1L)]
+    [InlineData((long)BufferSize)]
+    public void Scan_FromAnyStart_FindsEachMatchOnceInWrappedOrder(long start)
+    {
+        byte[] pattern = [0x58, 0x59];
+        long[] planted = [100, ChunkSize - 1, ChunkSize * 2 - 1, ChunkSize * 2 + 1, BufferSize - 2];
+        var buffer = CreateBuffer(pattern, planted);
+
+        var (after, before) = Collect(buffer, pattern, start);
+
+        Assert.Equal(planted.Where(o => o >= start), after);
+        Assert.Equal(planted.Where(o => o < start), before);
+    }
+
+    [Fact]
+    public void Scan_OverlappingMatchesAroundTheStart_AreSplitByTheirStartOffset()
+    {
+        var buffer = CreateBuffer([0x58, 0x58, 0x58, 0x58], 1000);
+
+        var (after, before) = Collect(buffer, [0x58, 0x58], 1001);
+
+        Assert.Equal([1001L, 1002L], after);
+        Assert.Equal([1000L], before);
+    }
+
+    [Fact]
+    public void Scan_ReportsOncePerChunkWithOneReadEach()
+    {
+        var buffer = new CountingByteBuffer(CreateBuffer([0x58], 10));
+        var reports = new List<SearchProgress>();
+
+        ByteSearcher.Scan(buffer, [0x58], ChunkSize + 5, MaxMatches, reports.Add, CancellationToken.None);
+
+        (SearchPhase, long)[] expected =
+        [
+            (SearchPhase.AfterStart, ChunkSize * 2 + 5), (SearchPhase.AfterStart, ChunkSize * 3 + 5),
+            (SearchPhase.AfterStart, BufferSize), (SearchPhase.BeforeStart, ChunkSize),
+            (SearchPhase.BeforeStart, ChunkSize + 5),
+        ];
+        Assert.Equal(expected, reports.Select(r => (r.Phase, r.ScannedTo)));
+        Assert.Equal([10L], reports.SelectMany(r => r.Matches));
+        Assert.Equal(reports.Count, buffer.Reads);
+    }
+
+    [Fact]
+    public void Scan_StopsWhenCancelled()
+    {
+        var buffer = CreateBuffer([0x58], 10, ChunkSize * 3);
+        using var cts = new CancellationTokenSource();
+        var reports = 0;
+
+        Assert.Throws<OperationCanceledException>(() => ByteSearcher.Scan(buffer, [0x58], 0, MaxMatches,
+            _ => { if (++reports == 1) cts.Cancel(); }, cts.Token));
+
+        Assert.Equal(1, reports);
+    }
+
+    [Fact]
+    public void Scan_StopsAtMaxMatchesCountingFromTheStart()
+    {
+        var buffer = CreateBuffer([0x58], 10, 20, ChunkSize + 10, ChunkSize + 20);
+
+        var (after, before) = Collect(buffer, [0x58], ChunkSize, maxMatches: 3);
+
+        Assert.Equal([ChunkSize + 10L, ChunkSize + 20L], after);
+        Assert.Equal([10L], before);
+    }
+
+    [Fact]
+    public void Scan_PatternLongerThanBuffer_ReportsNoMatches()
+    {
+        var (after, before) = Collect(new ArrayByteBuffer([0x58]), [0x58, 0x58], 0);
+
+        Assert.Empty(after);
+        Assert.Empty(before);
+    }
+
+    [Fact]
+    public void Scan_EmptyBuffer_ReportsNothing()
+    {
+        var reports = new List<SearchProgress>();
+
+        ByteSearcher.Scan(new ArrayByteBuffer([]), [0x58], 0, MaxMatches, reports.Add, CancellationToken.None);
+
+        Assert.Empty(reports);
+    }
+
+    private sealed class CountingByteBuffer(ByteBuffer inner) : ByteBuffer
+    {
+        public int Reads { get; private set; }
+
+        public override long Length => inner.Length;
+
+        public override byte ReadByte(long index) => inner.ReadByte(index);
+
+        public override void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count)
+        {
+            Reads++;
+            inner.ReadBytes(offset, buffer, bufferOffset, count);
+        }
+    }
 }
