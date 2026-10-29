@@ -234,7 +234,7 @@ public partial class MainWindowViewModel
             while (true)
             {
                 await Task.WhenAny(scan, Task.Delay(SearchFlushInterval, cancellationToken));
-                if (cancellationToken.IsCancellationRequested) return;
+                if (cancellationToken.IsCancellationRequested || Document != document) return;
 
                 var done = scan.IsCompleted;
                 if (done) await scan;

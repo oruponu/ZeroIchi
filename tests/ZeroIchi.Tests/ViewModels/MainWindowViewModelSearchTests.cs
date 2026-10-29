@@ -462,7 +462,11 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
     [Fact]
     public Task IsSearching_StaysOffForAQuickSearch() => HeadlessTestApp.RunAsync(async () =>
     {
-        var vm = CreateFast();
+        var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService())
+        {
+            SearchFlushInterval = TimeSpan.FromMilliseconds(10),
+            SearchBusyDelay = TimeSpan.FromSeconds(2),
+        };
         await vm.OpenFileAsync(WriteFile(Ab(10), Ab(70000)));
         try
         {
@@ -505,6 +509,7 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
             await vm.SearchUpdate;
 
             Assert.False(vm.IsSearching);
+            Assert.Equal([300L], vm.SearchMatchOffsets);
         }
         finally { await CleanUpAsync(vm); }
     });
