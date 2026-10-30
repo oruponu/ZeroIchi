@@ -21,6 +21,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IWindowService _window;
 
     private bool _isSyncingSelection;
+    private bool _isReplacingDocument;
 
     public MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
     {
@@ -34,6 +35,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
     [NotifyCanExecuteChangedFor(nameof(CutCommand))]
     public partial BinaryDocument? Document { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(NewFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SaveFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SaveAsFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(UndoCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RedoCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CutCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PasteCommand))]
+    public partial bool IsSaving { get; private set; }
+
+    internal Task SaveCompletion { get; private set; } = Task.CompletedTask;
 
     [ObservableProperty]
     public partial bool CanUndo { get; set; }
@@ -157,6 +171,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SyncStructureTreeSelection(value);
     }
 
+    partial void OnIsSavingChanged(bool value) => UpdateUndoRedoState();
+
     partial void OnSelectionStartChanged(long value) => UpdateStatusBar();
     partial void OnSelectionLengthChanged(long value) => UpdateStatusBar();
 
@@ -233,26 +249,34 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     // Avalonia bindings cache the old Document, so release Data explicitly
     private async Task ReplaceDocumentAsync(BinaryDocument newDocument)
     {
-        await PauseBackgroundWorkAsync();
+        _isReplacingDocument = true;
         try
         {
-            var oldDocument = Document;
-            Document = newDocument;
-            oldDocument?.Dispose();
+            await PauseBackgroundWorkAsync();
+            try
+            {
+                var oldDocument = Document;
+                Document = newDocument;
+                oldDocument?.Dispose();
 
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+                GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
 
-            CursorPosition = 0;
-            SelectionStart = 0;
-            SelectionLength = 0;
-            UpdateUndoRedoState();
-            UpdateTitle();
-            ClearSearchResults();
+                CursorPosition = 0;
+                SelectionStart = 0;
+                SelectionLength = 0;
+                UpdateUndoRedoState();
+                UpdateTitle();
+                ClearSearchResults();
+            }
+            finally
+            {
+                ResumeBackgroundWork();
+            }
         }
         finally
         {
-            ResumeBackgroundWork();
+            _isReplacingDocument = false;
         }
     }
 }

@@ -12,13 +12,15 @@ public partial class MainWindowViewModel
     private const string UnusableDocumentNotice =
         "表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。";
 
-    [RelayCommand]
+    private bool IsNotSaving() => !IsSaving;
+
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task NewFileAsync()
     {
         await TryReplaceDocumentAsync(BinaryDocument.CreateNew, "新しいファイルを作成できませんでした");
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task OpenFileAsync()
     {
         var path = await _dialog.PickOpenFileAsync("ファイルを開く");
@@ -35,7 +37,7 @@ public partial class MainWindowViewModel
 
     private async Task<bool> TryReplaceDocumentAsync(Func<BinaryDocument> factory, string failureMessage)
     {
-        if (!await ConfirmDiscardChangesAsync())
+        if (IsSaving || !await ConfirmDiscardChangesAsync() || IsSaving)
             return false;
 
         BinaryDocument? newDocument = null;
@@ -74,10 +76,12 @@ public partial class MainWindowViewModel
 
     private Task DetachUnusableDocumentAsync() => ReplaceDocumentAsync(BinaryDocument.CreateNew());
 
-    [RelayCommand]
+    private bool CanStartSave() => !IsSaving && !_isReplacingDocument;
+
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task SaveFileAsync()
     {
-        if (Document is null || !Document.IsModified) return;
+        if (!CanStartSave() || Document is null || !Document.IsModified) return;
 
         if (Document.IsNew)
         {
@@ -85,41 +89,45 @@ public partial class MainWindowViewModel
             return;
         }
 
-        var document = Document;
-        await PauseBackgroundWorkAsync();
-        try
-        {
-            if (Document != document) return;
-            await TryFileOperationAsync("保存できませんでした", () =>
-            {
-                document.Save();
-                return Task.CompletedTask;
-            });
-        }
-        finally
-        {
-            ResumeBackgroundWork();
-        }
+        await RunSaveAsync(Document, (d, p) => d.SaveAsync(p));
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task SaveAsFileAsync()
     {
-        if (Document is null) return;
+        if (!CanStartSave() || Document is null) return;
 
         var path = await _dialog.PickSaveFileAsync("名前を付けて保存", Document.FileName);
-        if (path is null) return;
+        if (path is null || !CanStartSave()) return;
 
-        var document = Document;
-        await PauseBackgroundWorkAsync();
-        try
+        await RunSaveAsync(Document, (d, p) => d.SaveAsAsync(path, p));
+    }
+
+    private Task RunSaveAsync(BinaryDocument document, Func<BinaryDocument, IProgress<long>?, Task> save)
+    {
+        IsSaving = true;
+        SaveCompletion = RunAsync();
+        return SaveCompletion;
+
+        async Task RunAsync()
         {
-            if (Document != document) return;
-            await TryFileOperationAsync("保存できませんでした", () => document.SaveAsAsync(path));
-        }
-        finally
-        {
-            ResumeBackgroundWork();
+            try
+            {
+                await PauseBackgroundWorkAsync();
+                try
+                {
+                    if (Document != document) return;
+                    await TryFileOperationAsync("保存できませんでした", () => save(document, null));
+                }
+                finally
+                {
+                    ResumeBackgroundWork();
+                }
+            }
+            finally
+            {
+                IsSaving = false;
+            }
         }
     }
 

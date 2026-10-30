@@ -44,8 +44,8 @@ public sealed class MainWindowViewModelStructureSaveTests : IDisposable
             await save;
             await vm.StructureUpdate;
 
-            Assert.Equal("ZI\u000A"u8.ToArray(), await File.ReadAllBytesAsync(path));
-            Assert.Equal("10", Len(vm));
+            Assert.Equal("ZI\u0009"u8.ToArray(), await File.ReadAllBytesAsync(path));
+            Assert.Equal("9", Len(vm));
             Assert.Equal(2, gate.Calls);
         }
         finally
@@ -56,7 +56,7 @@ public sealed class MainWindowViewModelStructureSaveTests : IDisposable
     });
 
     [Fact]
-    public Task OpenAnotherFile_WhileSaveIsWaiting_DoesNotSaveTheDisposedDocument() => HeadlessTestApp.RunAsync(async () =>
+    public Task OpenAnotherFile_WhileSaveIsWaiting_KeepsTheDocumentAndSaves() => HeadlessTestApp.RunAsync(async () =>
     {
         var gate = new GateNative(honorsCancellation: false);
         var vm = Create(Registry(gate, GateYaml, OtherYamlForSave), TimeSpan.Zero);
@@ -73,10 +73,9 @@ public sealed class MainWindowViewModelStructureSaveTests : IDisposable
             await Task.WhenAll(save, open);
             await vm.StructureUpdate;
 
-            Assert.Equal("b.bin", vm.Document!.FileName);
-            Assert.Equal("magic,other", Names(vm));
-            var saved = await File.ReadAllBytesAsync(path);
-            Assert.True(saved.SequenceEqual("ZI\u0005"u8.ToArray()) || saved.SequenceEqual("ZI\u0009"u8.ToArray()));
+            Assert.Equal("a.bin", vm.Document!.FileName);
+            Assert.Equal("9", Len(vm));
+            Assert.Equal("ZI\u0009"u8.ToArray(), await File.ReadAllBytesAsync(path));
         }
         finally
         {

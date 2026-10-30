@@ -9,7 +9,7 @@ public partial class MainWindowViewModel
 {
     public void OnByteModified(long index, byte value, long cursorPositionAfter)
     {
-        if (Document is null) return;
+        if (Document is null || IsSaving) return;
 
         IEditCommand command;
         if (index == Document.Buffer.Length)
@@ -26,13 +26,13 @@ public partial class MainWindowViewModel
 
     public void OnBytesDeleted(long index, long count, long cursorPositionAfter)
     {
-        if (Document is null) return;
+        if (Document is null || IsSaving) return;
 
         var command = new DeleteBytesCommand(Document, index, count, CursorPosition, cursorPositionAfter);
         Document.ExecuteCommand(command);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private void Undo()
     {
         if (Document is null) return;
@@ -44,7 +44,7 @@ public partial class MainWindowViewModel
         SelectByteAtCursor();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private void Redo()
     {
         if (Document is null) return;
@@ -64,8 +64,8 @@ public partial class MainWindowViewModel
 
     private void UpdateUndoRedoState()
     {
-        CanUndo = Document?.CanUndo ?? false;
-        CanRedo = Document?.CanRedo ?? false;
+        CanUndo = !IsSaving && (Document?.CanUndo ?? false);
+        CanRedo = !IsSaving && (Document?.CanRedo ?? false);
     }
 
     internal static string? ToClipboardText(byte[] bytes, int maxBytes) =>
@@ -73,6 +73,8 @@ public partial class MainWindowViewModel
 
     private bool CanCopy() =>
         Document is null || CopyRange.CanCopy(SelectionLength, SelectionStart, Document.Buffer.Length);
+
+    private bool CanCut() => CanCopy() && !IsSaving;
 
     private byte[]? ReadSelectedBytes()
     {
@@ -96,7 +98,7 @@ public partial class MainWindowViewModel
             await WriteClipboardAsync(bytes);
     }
 
-    [RelayCommand(CanExecute = nameof(CanCopy))]
+    [RelayCommand(CanExecute = nameof(CanCut))]
     private async Task CutAsync()
     {
         if (Document is not { } document || ReadSelectedBytes() is not { } bytes) return;
@@ -106,7 +108,7 @@ public partial class MainWindowViewModel
         var version = DataVersion;
 
         await WriteClipboardAsync(bytes);
-        if (Document != document || DataVersion != version) return;
+        if (IsSaving || Document != document || DataVersion != version) return;
 
         var command = new DeleteBytesCommand(document, start, bytes.Length, cursorPositionBefore, cursorPositionAfter: start);
         document.ExecuteCommand(command);
@@ -115,7 +117,7 @@ public partial class MainWindowViewModel
         SelectByteAtCursor();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task PasteAsync()
     {
         if (Document is null) return;
@@ -124,7 +126,7 @@ public partial class MainWindowViewModel
         if (bytes is null && await _clipboard.GetTextAsync() is { } text)
             bytes = HexText.Parse(text);
 
-        if (bytes is null || bytes.Length == 0) return;
+        if (bytes is null || bytes.Length == 0 || IsSaving) return;
 
         var insertIndex = CursorPosition;
         var cursorPositionAfter = insertIndex + bytes.Length;
