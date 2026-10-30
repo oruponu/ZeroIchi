@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Commands;
 
@@ -30,6 +31,43 @@ public sealed class BinaryDocumentBackgroundSaveTests : IDisposable
             {
                 lock (_lock)
                     return [.. _values];
+            }
+        }
+    }
+
+    private sealed class FreshInstancePumpContext : SynchronizationContext
+    {
+        private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue;
+
+        public FreshInstancePumpContext() : this(new BlockingCollection<(SendOrPostCallback, object?)>())
+        {
+        }
+
+        private FreshInstancePumpContext(BlockingCollection<(SendOrPostCallback, object?)> queue) => _queue = queue;
+
+        public override void Post(SendOrPostCallback d, object? state) => _queue.Add((d, state));
+
+        public override SynchronizationContext CreateCopy() => new FreshInstancePumpContext(_queue);
+
+        public void Run(Func<Task> action, Action beforeEachCallback)
+        {
+            var previous = Current;
+            try
+            {
+                SetSynchronizationContext(this);
+                var task = action();
+                task.ContinueWith(_ => _queue.CompleteAdding(), TaskScheduler.Default);
+                foreach (var (callback, state) in _queue.GetConsumingEnumerable())
+                {
+                    SetSynchronizationContext(new FreshInstancePumpContext(_queue));
+                    beforeEachCallback();
+                    callback(state);
+                }
+                task.GetAwaiter().GetResult();
+            }
+            finally
+            {
+                SetSynchronizationContext(previous);
             }
         }
     }
@@ -150,6 +188,34 @@ public sealed class BinaryDocumentBackgroundSaveTests : IDisposable
         await doc.SaveAsAsync(target, progress);
 
         AssertStrictlyIncreasingTo(progress.Values, FileLength + 1);
+    }
+
+    [Fact]
+    public void SaveAsync_DoesNotYieldWhileTheOriginalIsUnmapped()
+    {
+        var original = MakeSequential(FileLength);
+        var path = CreateTestFile(original);
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(0, [0xAA]);
+        GatedByteBuffer? gate = null;
+        doc.SaveSourceWrapper = s => gate = new GatedByteBuffer(s);
+        var callbacksWhileUnmapped = 0;
+
+        new FreshInstancePumpContext().Run(
+            () =>
+            {
+                var save = doc.SaveAsync();
+                gate!.OpenAll();
+                return save;
+            },
+            () =>
+            {
+                if (!doc.IsUsable)
+                    callbacksWhileUnmapped++;
+            });
+
+        Assert.Equal(0, callbacksWhileUnmapped);
+        Assert.Equal(WithLeadingByte(original), File.ReadAllBytes(path));
     }
 
     [Fact]

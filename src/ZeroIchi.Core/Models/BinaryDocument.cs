@@ -15,6 +15,7 @@ public sealed class BinaryDocument : IDisposable
     private readonly record struct WritePlanEntry(Piece Piece, long OutputOffset);
     private readonly record struct OverwrittenRange(long Offset, byte[] Bytes);
     private readonly record struct HistorySavePlan(IEditCommand? DiscardThrough, Dictionary<IEditCommand, byte[]> RetainedBytes);
+    private readonly record struct SavePlan(HistorySavePlan History, WritePlanEntry[] Entries, long FinalSize, bool NeedsShift, string TempPath);
 
     private const int ReplaceAttempts = 4;
     private const int WriteChunkSize = 81920;
@@ -34,12 +35,6 @@ public sealed class BinaryDocument : IDisposable
     public bool IsModified => _pieceTable.Length != _original.Length || _pieceTable.HasAddPieces;
     public bool IsNew => FilePath == "";
     public bool IsSaving { get; private set; }
-
-    private void ThrowIfSaving()
-    {
-        if (IsSaving)
-            throw new InvalidOperationException("The document is being saved.");
-    }
     public bool IsUsable => _original is not MappedByteBuffer { IsMapped: false };
     public bool CanUndo => _undoRedoManager.CanUndo;
     public bool CanRedo => _undoRedoManager.CanRedo;
@@ -148,15 +143,17 @@ public sealed class BinaryDocument : IDisposable
 
     private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
+    private void ThrowIfSaving()
+    {
+        if (IsSaving)
+            throw new InvalidOperationException("The document is being saved.");
+    }
+
     public bool IsByteModified(long index) => _pieceTable.IsModified(index);
 
     public ByteBuffer CreateSnapshot() => _pieceTable.CreateSnapshot();
 
-    public void Save() => SaveCoreAsync(progress: null, background: false).GetAwaiter().GetResult();
-
-    public Task SaveAsync(IProgress<long>? progress = null) => SaveCoreAsync(progress, background: true);
-
-    private async Task SaveCoreAsync(IProgress<long>? progress, bool background)
+    public void Save()
     {
         ThrowIfSaving();
         if (!IsModified || IsNew) return;
@@ -164,17 +161,10 @@ public sealed class BinaryDocument : IDisposable
         IsSaving = true;
         try
         {
-            var historyPlan = PlanHistoryForSave();
-            var (entries, finalSize, needsShift) = ComputeWritePlan();
-            if (needsShift)
-                await SaveByReplaceAsync(progress, background);
-            else
-                SaveInPlace(entries, finalSize);
-
-            var newOriginal = new MappedByteBuffer(FilePath);
-            _original.Dispose();
-            ResetPieceTable(newOriginal);
-            CommitHistoryAfterSave(historyPlan);
+            var plan = PlanSave();
+            if (plan.NeedsShift)
+                WriteTempFile(plan.TempPath, CreateSaveSource(), progress: null);
+            FinishSave(plan);
         }
         finally
         {
@@ -182,6 +172,55 @@ public sealed class BinaryDocument : IDisposable
         }
 
         OnChanged();
+    }
+
+    public async Task SaveAsync(IProgress<long>? progress = null)
+    {
+        ThrowIfSaving();
+        if (!IsModified || IsNew) return;
+
+        IsSaving = true;
+        try
+        {
+            var plan = PlanSave();
+            if (plan.NeedsShift)
+            {
+                var source = CreateSaveSource();
+                await Task.Run(() => WriteTempFile(plan.TempPath, source, progress));
+            }
+            FinishSave(plan);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+
+        OnChanged();
+    }
+
+    private SavePlan PlanSave()
+    {
+        var historyPlan = PlanHistoryForSave();
+        var (entries, finalSize, needsShift) = ComputeWritePlan();
+        return new SavePlan(historyPlan, entries, finalSize, needsShift, FilePath + ".zitmp");
+    }
+
+    private void FinishSave(SavePlan plan)
+    {
+        if (plan.NeedsShift)
+            ReplaceOriginalFile(plan.TempPath);
+        else
+            SaveInPlace(plan.Entries, plan.FinalSize);
+
+        ReloadOriginal(FilePath, plan.History);
+    }
+
+    private void ReloadOriginal(string path, HistorySavePlan historyPlan)
+    {
+        var newOriginal = new MappedByteBuffer(path);
+        _original.Dispose();
+        ResetPieceTable(newOriginal);
+        CommitHistoryAfterSave(historyPlan);
     }
 
     private void SaveInPlace(WritePlanEntry[] entries, long finalSize)
@@ -265,11 +304,8 @@ public sealed class BinaryDocument : IDisposable
         }
     }
 
-    private async Task SaveByReplaceAsync(IProgress<long>? progress, bool background)
+    private void ReplaceOriginalFile(string tempPath)
     {
-        var tempPath = FilePath + ".zitmp";
-        await WriteTempFileAsync(tempPath, progress, background);
-
         if (_original is MappedByteBuffer mapped)
             mapped.ReleaseMapping();
 
@@ -321,14 +357,10 @@ public sealed class BinaryDocument : IDisposable
         }
     }
 
-    private async Task WriteTempFileAsync(string tempPath, IProgress<long>? progress, bool background)
+    private ByteBuffer CreateSaveSource()
     {
         var snapshot = CreateSnapshot();
-        var source = SaveSourceWrapper?.Invoke(snapshot) ?? snapshot;
-        if (background)
-            await Task.Run(() => WriteTempFile(tempPath, source, progress));
-        else
-            WriteTempFile(tempPath, source, progress);
+        return SaveSourceWrapper?.Invoke(snapshot) ?? snapshot;
     }
 
     private static void WriteTempFile(string tempPath, ByteBuffer source, IProgress<long>? progress)
@@ -373,7 +405,8 @@ public sealed class BinaryDocument : IDisposable
         {
             var historyPlan = PlanHistoryForSave();
             var tempPath = path + ".zitmp";
-            await WriteTempFileAsync(tempPath, progress, background: true);
+            var source = CreateSaveSource();
+            await Task.Run(() => WriteTempFile(tempPath, source, progress));
 
             try
             {
@@ -388,10 +421,7 @@ public sealed class BinaryDocument : IDisposable
                 throw;
             }
 
-            var newOriginal = new MappedByteBuffer(path);
-            _original.Dispose();
-            ResetPieceTable(newOriginal);
-            CommitHistoryAfterSave(historyPlan);
+            ReloadOriginal(path, historyPlan);
 
             FilePath = path;
             FileName = Path.GetFileName(path);
