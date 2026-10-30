@@ -83,4 +83,44 @@ public sealed class MainWindowViewModelGoToOffsetTests : IDisposable
             await vm.DisposeDocumentAsync();
         }
     }
+
+    [Theory]
+    [InlineData(true, "200", "範囲外 (0 - 1FF)")]
+    [InlineData(false, "512", "範囲外 (0 - 511)")]
+    public async Task GoToOffset_PastTheEnd_ShowsTheRangeInTheSelectedRadix(bool isHex, string text, string expected)
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile(0x200));
+        try
+        {
+            vm.IsHexGoToOffset = isHex;
+            vm.GoToOffsetText = text;
+            vm.GoToOffsetCommand.Execute(null);
+
+            Assert.Equal(expected, vm.GoToOffsetError);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task GoToOffset_InAnEmptyFile_SaysTheFileIsEmpty()
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile(0));
+        try
+        {
+            vm.GoToOffsetText = "0";
+            vm.GoToOffsetCommand.Execute(null);
+
+            Assert.Equal("範囲外 (空のファイル)", vm.GoToOffsetError);
+            Assert.Equal(0L, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
 }

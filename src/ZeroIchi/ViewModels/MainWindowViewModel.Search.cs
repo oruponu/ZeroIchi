@@ -77,7 +77,10 @@ public partial class MainWindowViewModel
 
         if (offset < 0 || offset >= buffer.Length)
         {
-            GoToOffsetError = $"範囲外 (0 - {buffer.Length - 1:X})";
+            var last = buffer.Length - 1;
+            GoToOffsetError = buffer.Length == 0 ? "範囲外 (空のファイル)"
+                : IsHexGoToOffset ? $"範囲外 (0 - {last:X})"
+                : $"範囲外 (0 - {last})";
             return;
         }
 
