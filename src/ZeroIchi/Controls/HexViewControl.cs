@@ -107,7 +107,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private Size _scrollViewport;
     private bool _isDragging;
     private bool _editingHighNibble;
-    private long _hoveredByteIndex = -1;
+    internal long HoveredByteIndex { get; private set; } = -1;
     private Avalonia.Threading.DispatcherTimer? _autoScrollTimer;
     private Point _lastPointerPosition;
 
@@ -429,6 +429,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
 
             if (_scrollOffset == clamped) return;
             _scrollOffset = clamped;
+            UpdateHover();
             InvalidateVisual();
             InvalidateScrollable();
         }

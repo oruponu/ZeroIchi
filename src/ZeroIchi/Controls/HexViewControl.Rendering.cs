@@ -91,7 +91,7 @@ public partial class HexViewControl
     {
         var cursor = CursorPosition;
         var doc = Document;
-        var hovered = _hoveredByteIndex;
+        var hovered = HoveredByteIndex;
         var dataLength = Buffer?.Length ?? 0;
 
         var matchOffsets = SearchMatchOffsets;

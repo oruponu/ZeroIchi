@@ -122,10 +122,10 @@ public partial class HexViewControl
         base.OnPointerMoved(e);
 
         var pos = e.GetPosition(this);
+        _lastPointerPosition = pos;
 
         if (_isDragging)
         {
-            _lastPointerPosition = pos;
             UpdateDragSelection();
 
             if (pos.Y < _dataTop || pos.Y > Bounds.Height)
@@ -137,11 +137,15 @@ public partial class HexViewControl
             return;
         }
 
-        var byteIndex = HitTestByte(pos);
-        var newHover = byteIndex >= 0 ? byteIndex : -1;
-        if (newHover != _hoveredByteIndex)
+        UpdateHover();
+    }
+
+    private void UpdateHover()
+    {
+        var newHover = IsPointerOver ? HitTestByte(_lastPointerPosition) : -1;
+        if (newHover != HoveredByteIndex)
         {
-            _hoveredByteIndex = newHover;
+            HoveredByteIndex = newHover;
             InvalidateVisual();
         }
     }
@@ -150,9 +154,9 @@ public partial class HexViewControl
     {
         base.OnPointerExited(e);
 
-        if (_hoveredByteIndex >= 0)
+        if (HoveredByteIndex >= 0)
         {
-            _hoveredByteIndex = -1;
+            HoveredByteIndex = -1;
             InvalidateVisual();
         }
     }
