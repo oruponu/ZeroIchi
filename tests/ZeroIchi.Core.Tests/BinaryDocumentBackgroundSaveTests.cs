@@ -1,4 +1,5 @@
 using ZeroIchi.Models;
+using ZeroIchi.Models.Commands;
 
 namespace ZeroIchi.Tests;
 
@@ -193,5 +194,83 @@ public sealed class BinaryDocumentBackgroundSaveTests : IDisposable
         await doc.SaveAsAsync(target);
 
         Assert.Equal(0, new FileInfo(target).Length);
+    }
+
+    [Fact]
+    public async Task WhileSaving_RejectsChangesAndAnotherSave()
+    {
+        var original = MakeSequential(FileLength);
+        var expected = WithLeadingByte(original);
+        var path = CreateTestFile(original);
+        var otherPath = Path.Combine(_tempDir, "other.bin");
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(0, [0xAA]);
+        GatedByteBuffer? gate = null;
+        doc.SaveSourceWrapper = s => gate = new GatedByteBuffer(s);
+
+        var save = doc.SaveAsync();
+
+        Assert.True(doc.IsSaving);
+        Assert.Throws<InvalidOperationException>(() => doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0x22, 1, 1)));
+        Assert.Throws<InvalidOperationException>(() => doc.Undo());
+        Assert.Throws<InvalidOperationException>(() => doc.Redo());
+        Assert.Throws<InvalidOperationException>(() => doc.Save());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => doc.SaveAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => doc.SaveAsAsync(otherPath));
+        gate!.OpenAll();
+        await save;
+        Assert.False(doc.IsSaving);
+        Assert.Equal(expected, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task WhileSaving_RejectsLowLevelEdits()
+    {
+        var original = MakeSequential(FileLength);
+        var expected = WithLeadingByte(original);
+        var path = CreateTestFile(original);
+        using var doc = BinaryDocument.Open(path);
+        var edit = doc.InsertBytes(0, [0xAA]);
+        GatedByteBuffer? gate = null;
+        doc.SaveSourceWrapper = s => gate = new GatedByteBuffer(s);
+
+        var save = doc.SaveAsync();
+
+        Assert.Throws<InvalidOperationException>(() => doc.WriteByte(1, 0x22));
+        Assert.Throws<InvalidOperationException>(() => doc.AppendByte(0x22));
+        Assert.Throws<InvalidOperationException>(() => doc.InsertBytes(1, [0x22]));
+        Assert.Throws<InvalidOperationException>(() => doc.DeleteBytes(1, 1));
+        Assert.Throws<InvalidOperationException>(() => doc.UndoEdit(edit));
+        Assert.Throws<InvalidOperationException>(() => doc.RedoEdit(edit));
+        gate!.OpenAll();
+        await save;
+        Assert.Equal(expected, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task IsSaving_IsClearedWhenTheSaveFails()
+    {
+        var path = CreateTestFile(MakeSequential(100));
+        Directory.CreateDirectory(path + ".zitmp");
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(50, [0xAA]);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => doc.SaveAsync());
+
+        Assert.False(doc.IsSaving);
+        doc.ExecuteCommand(new WriteByteCommand(doc, 1, 0x22, 1, 1));
+    }
+
+    [Fact]
+    public void IsSaving_IsFalseOutsideASave()
+    {
+        var path = CreateTestFile(MakeSequential(100));
+        using var doc = BinaryDocument.Open(path);
+        Assert.False(doc.IsSaving);
+
+        doc.WriteByte(0, 0xFF);
+        doc.Save();
+
+        Assert.False(doc.IsSaving);
     }
 }
