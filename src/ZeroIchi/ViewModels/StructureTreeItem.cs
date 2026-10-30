@@ -21,6 +21,7 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
 
     public FileStructureNode Node { get; } = node;
     public int Depth { get; } = depth;
+    public string Key { get; init; } = "";
     public bool HasChildren { get; } = node.HasChildren;
 
     public string Name => Node.IsUnparsed ? "未解析" : Node.Name;

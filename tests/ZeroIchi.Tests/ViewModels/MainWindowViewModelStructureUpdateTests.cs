@@ -287,6 +287,50 @@ public sealed class MainWindowViewModelStructureUpdateTests : IDisposable
     });
 
     [Fact]
+    public Task Reparse_KeepsOnlyTheExpandedNodeAmongNodesWithTheSameName() => HeadlessTestApp.RunAsync(async () =>
+    {
+        const string yaml = """
+            meta:
+              id: zi
+            seq:
+              - id: magic
+                contents: ZI
+              - id: a
+                type: pair
+              - id: b
+                type: pair
+            types:
+              pair:
+                seq:
+                  - id: inner
+                    type: leaf
+              leaf:
+                seq:
+                  - id: v
+                    type: u1
+            """;
+        var vm = Create(Registry(null, yaml), TimeSpan.Zero);
+        await vm.OpenFileAsync(Write("a.bin", "ZI\u0001\u0002"u8.ToArray()));
+        await vm.StructureUpdate;
+        try
+        {
+            vm.ToggleExpandCommand.Execute(vm.StructureTreeItems.Single(i => i.Name == "a"));
+            vm.ToggleExpandCommand.Execute(vm.StructureTreeItems.Single(i => i.Name == "b"));
+            vm.ToggleExpandCommand.Execute(vm.StructureTreeItems.First(i => i.Name == "inner"));
+            Assert.Equal("magic,a,inner,v,b,inner", Names(vm));
+
+            vm.OnByteModified(2, 9, cursorPositionAfter: 2);
+            await vm.StructureUpdate;
+
+            Assert.Equal("magic,a,inner,v,b,inner", Names(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
     public Task UnexpectedFailure_ClearsTheTreeWithoutThrowing() => HeadlessTestApp.RunAsync(async () =>
     {
         var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService())

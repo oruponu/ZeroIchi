@@ -15,7 +15,7 @@ public partial class MainWindowViewModel
     private Task _parseTail = Task.CompletedTask;
     private int _structurePauseCount;
     private bool _structureUpdatePending;
-    private HashSet<(string name, int depth)> _expandedHint = [];
+    private HashSet<string> _expandedHint = [];
     private int _busySequence;
     private int _busyOwner;
 
@@ -148,7 +148,7 @@ public partial class MainWindowViewModel
 
         StructureColors = analysis.Colors;
         foreach (var child in analysis.Root.Children)
-            AddTreeItem(child, 0, expanded);
+            AddTreeItem(child, 0, ChildKey("", child), expanded);
         SyncStructureTreeSelection(CursorPosition);
     }
 
@@ -160,13 +160,13 @@ public partial class MainWindowViewModel
         SelectedStructureItem = null;
     }
 
-    private HashSet<(string name, int depth)> CollectExpanded()
+    private HashSet<string> CollectExpanded()
     {
-        var expanded = new HashSet<(string name, int depth)>();
+        var expanded = new HashSet<string>();
         foreach (var item in StructureTreeItems)
         {
             if (item.HasChildren && item.IsExpanded)
-                expanded.Add((item.Name, item.Depth));
+                expanded.Add(item.Key);
         }
         return expanded;
     }
@@ -189,18 +189,20 @@ public partial class MainWindowViewModel
         ScheduleStructureUpdate(immediate: true);
     }
 
-    private void AddTreeItem(FileStructureNode node, int depth, HashSet<(string name, int depth)> expanded)
+    private void AddTreeItem(FileStructureNode node, int depth, string key, HashSet<string> expanded)
     {
-        var isExpanded = expanded.Contains((node.Name, depth));
-        var item = new StructureTreeItem(node, depth, isExpanded) { ToggleExpandCommand = ToggleExpandCommand };
+        var isExpanded = expanded.Contains(key);
+        var item = new StructureTreeItem(node, depth, isExpanded) { Key = key, ToggleExpandCommand = ToggleExpandCommand };
         StructureTreeItems.Add(item);
 
         if (item.IsExpanded)
         {
             foreach (var child in node.Children)
-                AddTreeItem(child, depth + 1, expanded);
+                AddTreeItem(child, depth + 1, ChildKey(key, child), expanded);
         }
     }
+
+    private static string ChildKey(string parentKey, FileStructureNode child) => parentKey + "/" + child.Name;
 
     [RelayCommand]
     private void ToggleExpand(StructureTreeItem item)
@@ -224,7 +226,7 @@ public partial class MainWindowViewModel
             var insertIndex = index + 1;
             foreach (var child in item.Node.Children)
             {
-                StructureTreeItems.Insert(insertIndex++, new StructureTreeItem(child, item.Depth + 1) { ToggleExpandCommand = ToggleExpandCommand });
+                StructureTreeItems.Insert(insertIndex++, new StructureTreeItem(child, item.Depth + 1) { Key = ChildKey(item.Key, child), ToggleExpandCommand = ToggleExpandCommand });
             }
         }
     }
