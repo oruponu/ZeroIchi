@@ -333,14 +333,14 @@
                                      Text="{Binding GoToOffsetText, Mode=TwoWay}"/>
                             <Border Classes="search-mode-group">
                                 <StackPanel Orientation="Horizontal" Spacing="1">
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="Hex"
-                                                  FontSize="11"
-                                                  IsChecked="{Binding IsHexGoToOffset}"/>
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="Dec"
-                                                  FontSize="11"
-                                                  IsChecked="{Binding !IsHexGoToOffset}"/>
+                                    <controls:ModeToggleButton Classes="search-mode"
+                                                               Content="Hex"
+                                                               FontSize="11"
+                                                               IsChecked="{Binding IsHexGoToOffset}"/>
+                                    <controls:ModeToggleButton Classes="search-mode"
+                                                               Content="Dec"
+                                                               FontSize="11"
+                                                               IsChecked="{Binding !IsHexGoToOffset}"/>
                                 </StackPanel>
                             </Border>
                             <TextBlock MinWidth="36"
@@ -376,14 +376,14 @@
                                      Text="{Binding SearchText, Mode=TwoWay}"/>
                             <Border Classes="search-mode-group">
                                 <StackPanel Orientation="Horizontal" Spacing="1">
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="Hex"
-                                                  FontSize="11"
-                                                  IsChecked="{Binding IsHexSearch}"/>
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="ASCII"
-                                                  FontSize="11"
-                                                  IsChecked="{Binding !IsHexSearch}"/>
+                                    <controls:ModeToggleButton Classes="search-mode"
+                                                               Content="Hex"
+                                                               FontSize="11"
+                                                               IsChecked="{Binding IsHexSearch}"/>
+                                    <controls:ModeToggleButton Classes="search-mode"
+                                                               Content="ASCII"
+                                                               FontSize="11"
+                                                               IsChecked="{Binding !IsHexSearch}"/>
                                 </StackPanel>
                             </Border>
                             <TextBlock MinWidth="36"
@@ -433,14 +433,14 @@
                         <DockPanel Margin="8,6" DockPanel.Dock="Top">
                             <Border Classes="search-mode-group" DockPanel.Dock="Right">
                                 <StackPanel Orientation="Horizontal" Spacing="1">
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="LE"
-                                                  FontSize="10"
-                                                  IsChecked="{Binding !IsInspectorBigEndian}"/>
-                                    <ToggleButton Classes="search-mode"
-                                                  Content="BE"
-                                                  FontSize="10"
-                                                  IsChecked="{Binding IsInspectorBigEndian}"/>
+                                    <controls:ModeToggleButton Classes="search-mode"
+                                                               Content="LE"
+                                                               FontSize="10"
+                                                               IsChecked="{Binding !IsInspectorBigEndian}"/>
+                                    <controls:ModeToggleButton Classes="search-mode"
+                                                               Content="BE"
+                                                               FontSize="10"
+                                                               IsChecked="{Binding IsInspectorBigEndian}"/>
                                 </StackPanel>
                             </Border>
                             <TextBlock VerticalAlignment="Center"
