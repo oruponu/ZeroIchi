@@ -125,6 +125,18 @@ public partial class MainWindowViewModel
 
     private void NavigateSearch(SearchDirection direction)
     {
+        if (!IsSearchVisible)
+        {
+            if (string.IsNullOrEmpty(SearchText))
+            {
+                OpenSearch();
+                return;
+            }
+
+            if (IsGoToOffsetVisible) CloseGoToOffset();
+            IsSearchVisible = true;
+        }
+
         var set = _searchSet;
         if (set is null || set is { IsComplete: true, Count: 0 })
         {

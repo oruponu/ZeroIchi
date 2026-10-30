@@ -418,6 +418,80 @@ public sealed class MainWindowViewModelSearchTests : IDisposable
     });
 
     [Fact]
+    public Task FindNext_AfterClosingTheSearch_ReopensTheSearchBarWithoutTakingFocus() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.OpenSearchCommand.Execute(null);
+            vm.SearchText = "AB";
+            await vm.SearchUpdate;
+            vm.CloseSearchCommand.Execute(null);
+            vm.CursorPosition = 0;
+            var focusRequests = 0;
+            vm.SearchFocusRequested += (_, _) => focusRequests++;
+
+            vm.FindNextCommand.Execute(null);
+            await vm.SearchUpdate;
+
+            Assert.True(vm.IsSearchVisible);
+            Assert.True(vm.CloseOverlayCommand.CanExecute(null));
+            Assert.Equal(95, vm.CursorPosition);
+            Assert.Equal(0, focusRequests);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task FindNext_WithTheSearchClosedAndNoText_OpensTheSearchBox() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            var focusRequests = 0;
+            vm.SearchFocusRequested += (_, _) => focusRequests++;
+
+            vm.FindNextCommand.Execute(null);
+
+            Assert.True(vm.IsSearchVisible);
+            Assert.Equal(1, focusRequests);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task FindNext_WhileTheGoToBarIsOpen_ReplacesItWithTheSearchBar() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(CreateTestFile());
+        try
+        {
+            vm.OpenSearchCommand.Execute(null);
+            vm.SearchText = "AB";
+            await vm.SearchUpdate;
+            vm.OpenGoToOffsetCommand.Execute(null);
+
+            vm.FindNextCommand.Execute(null);
+            await vm.SearchUpdate;
+
+            Assert.False(vm.IsGoToOffsetVisible);
+            Assert.True(vm.IsSearchVisible);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
     public Task FindNext_AfterTheScanCompletes_WrapsAround() => HeadlessTestApp.RunAsync(async () =>
     {
         var vm = CreateFast();
