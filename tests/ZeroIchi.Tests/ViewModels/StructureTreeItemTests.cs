@@ -76,6 +76,19 @@ public sealed class StructureTreeItemTests
         Assert.Equal(Color.Parse("#F48771"), error.Color);
     }
 
+    [Theory]
+    [InlineData(ValueKind.None)]
+    [InlineData(ValueKind.Numeric)]
+    [InlineData(ValueKind.Ascii)]
+    [InlineData(ValueKind.Bytes)]
+    public void DescriptionForeground_IsImmutableSoAnyThreadCanRenderIt(ValueKind kind)
+    {
+        var item = new StructureTreeItem(new FileStructureNode { Name = "n", Offset = 0, Length = 1, ValueKind = kind }, 0);
+
+        Assert.IsAssignableFrom<IImmutableBrush>(item.DescriptionForeground);
+        Assert.IsAssignableFrom<IImmutableBrush>(Item("5", "broken").DescriptionForeground);
+    }
+
     [Fact]
     public void FontStyle_IsItalicWithoutAFileRange()
     {

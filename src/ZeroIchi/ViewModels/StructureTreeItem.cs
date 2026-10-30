@@ -9,11 +9,11 @@ namespace ZeroIchi.ViewModels;
 public sealed partial class StructureTreeItem(FileStructureNode node, int depth, bool isExpanded = false)
     : ObservableObject
 {
-    private static readonly IBrush DefaultBrush = new SolidColorBrush(Color.Parse("#808080"));
-    private static readonly IBrush NumericBrush = new SolidColorBrush(Color.Parse("#B5CEA8"));
-    private static readonly IBrush AsciiBrush = new SolidColorBrush(Color.Parse("#CE9178"));
+    private static readonly IBrush DefaultBrush = new SolidColorBrush(Color.Parse("#808080")).ToImmutable();
+    private static readonly IBrush NumericBrush = new SolidColorBrush(Color.Parse("#B5CEA8")).ToImmutable();
+    private static readonly IBrush AsciiBrush = new SolidColorBrush(Color.Parse("#CE9178")).ToImmutable();
     private static readonly IBrush BytesBrush = DefaultBrush;
-    private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.Parse("#F48771"));
+    private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.Parse("#F48771")).ToImmutable();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExpandIcon))]
