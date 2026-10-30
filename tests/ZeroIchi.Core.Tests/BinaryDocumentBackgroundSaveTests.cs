@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using ZeroIchi.Models;
+using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Commands;
 
 namespace ZeroIchi.Tests;
@@ -249,6 +250,75 @@ public sealed class BinaryDocumentBackgroundSaveTests : IDisposable
         Assert.True(doc.IsModified);
         doc.Dispose();
         Assert.Equal(original, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task SaveAsync_AfterAFailedWrite_CanSaveAgain()
+    {
+        var original = MakeSequential(100);
+        var path = CreateTestFile(original);
+        Directory.CreateDirectory(path + ".zitmp");
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(0, [0xAA]);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => doc.SaveAsync());
+        Directory.Delete(path + ".zitmp");
+
+        await doc.SaveAsync();
+
+        Assert.Equal(WithLeadingByte(original), await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public void Save_WritesTheTempFileWithoutReadingTheOriginalMapping()
+    {
+        var original = MakeSequential(FileLength);
+        var path = CreateTestFile(original);
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(0, [0xAA]);
+        doc.SaveSourceWrapper = s =>
+        {
+            ((MappedByteBuffer)doc.Original).ReleaseMapping();
+            return s;
+        };
+
+        doc.Save();
+
+        Assert.Equal(WithLeadingByte(original), File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public void Save_WhenTheOriginalIsUnmappedAndTheFileShrank_ThrowsWithoutWriting()
+    {
+        var original = MakeSequential(FileLength);
+        var path = CreateTestFile(original);
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(0, [0xAA]);
+        ((MappedByteBuffer)doc.Original).ReleaseMapping();
+        using (var fs = new FileStream(path, FileMode.Open, FileAccess.Write))
+            fs.SetLength(10);
+
+        Assert.Throws<ObjectDisposedException>(doc.Save);
+
+        Assert.Equal(original[..10], File.ReadAllBytes(path));
+    }
+
+    [Fact]
+    public async Task SaveAsAsync_WritesTheTempFileWithoutReadingTheOriginalMapping()
+    {
+        var original = MakeSequential(FileLength);
+        var path = CreateTestFile(original);
+        var target = Path.Combine(_tempDir, "copy.bin");
+        using var doc = BinaryDocument.Open(path);
+        doc.InsertBytes(0, [0xAA]);
+        doc.SaveSourceWrapper = s =>
+        {
+            ((MappedByteBuffer)doc.Original).ReleaseMapping();
+            return s;
+        };
+
+        await doc.SaveAsAsync(target);
+
+        Assert.Equal(WithLeadingByte(original), await File.ReadAllBytesAsync(target));
     }
 
     [Fact]

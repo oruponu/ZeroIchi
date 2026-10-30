@@ -9,10 +9,12 @@ internal sealed class PieceTableSnapshot : ByteBuffer
     private readonly Piece[] _pieces;
     private readonly AddBufferView _added;
     private readonly long[] _starts;
+    private readonly bool _ownsOriginal;
 
-    public PieceTableSnapshot(ByteBuffer original, Piece[] pieces, AddBufferView added)
+    public PieceTableSnapshot(ByteBuffer original, Piece[] pieces, AddBufferView added, bool ownsOriginal = false)
     {
         _original = original;
+        _ownsOriginal = ownsOriginal;
         _pieces = pieces;
         _added = added;
         _starts = new long[pieces.Length];
@@ -54,6 +56,13 @@ internal sealed class PieceTableSnapshot : ByteBuffer
             pieceIndex++;
             offsetInPiece = 0;
         }
+    }
+
+    public override void Dispose()
+    {
+        if (_ownsOriginal)
+            _original.Dispose();
+        base.Dispose();
     }
 
     private int FindPiece(long index)

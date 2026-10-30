@@ -303,6 +303,9 @@ public sealed class PieceTable
 
     public ByteBuffer CreateSnapshot() => new PieceTableSnapshot(_original, _pieces.ToArray(), _addBuffer.View());
 
+    public ByteBuffer CreateSnapshot(ByteBuffer ownedOriginal) =>
+        new PieceTableSnapshot(ownedOriginal, _pieces.ToArray(), _addBuffer.View(), ownsOriginal: true);
+
     private void ReplacePieces(int index, int removeCount, Piece[] newPieces, long lengthDelta)
     {
         var start = index < _starts.Count ? _starts[index] : Length;

@@ -163,7 +163,10 @@ public sealed class BinaryDocument : IDisposable
         {
             var plan = PlanSave();
             if (plan.NeedsShift)
-                WriteTempFile(plan.TempPath, CreateSaveSource(), progress: null);
+            {
+                using var snapshot = CreateSaveSnapshot();
+                WriteTempFile(plan.TempPath, WrapSaveSource(snapshot), progress: null);
+            }
             FinishSave(plan);
         }
         finally
@@ -185,7 +188,8 @@ public sealed class BinaryDocument : IDisposable
             var plan = PlanSave();
             if (plan.NeedsShift)
             {
-                var source = CreateSaveSource();
+                using var snapshot = CreateSaveSnapshot();
+                var source = WrapSaveSource(snapshot);
                 await Task.Run(() => WriteTempFile(plan.TempPath, source, progress));
             }
             FinishSave(plan);
@@ -357,11 +361,13 @@ public sealed class BinaryDocument : IDisposable
         }
     }
 
-    private ByteBuffer CreateSaveSource()
-    {
-        var snapshot = CreateSnapshot();
-        return SaveSourceWrapper?.Invoke(snapshot) ?? snapshot;
-    }
+    // Reading the whole original through the mapping would make releasing the mapping slow, so read it from a separate handle
+    private ByteBuffer CreateSaveSnapshot() =>
+        _original is MappedByteBuffer { IsMapped: true }
+            ? _pieceTable.CreateSnapshot(ownedOriginal: new FileByteBuffer(FilePath))
+            : CreateSnapshot();
+
+    private ByteBuffer WrapSaveSource(ByteBuffer snapshot) => SaveSourceWrapper?.Invoke(snapshot) ?? snapshot;
 
     private static void WriteTempFile(string tempPath, ByteBuffer source, IProgress<long>? progress)
     {
@@ -405,8 +411,11 @@ public sealed class BinaryDocument : IDisposable
         {
             var historyPlan = PlanHistoryForSave();
             var tempPath = path + ".zitmp";
-            var source = CreateSaveSource();
-            await Task.Run(() => WriteTempFile(tempPath, source, progress));
+            using (var snapshot = CreateSaveSnapshot())
+            {
+                var source = WrapSaveSource(snapshot);
+                await Task.Run(() => WriteTempFile(tempPath, source, progress));
+            }
 
             try
             {
