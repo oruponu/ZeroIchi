@@ -17,6 +17,7 @@ public sealed class BinaryDocument : IDisposable
     private readonly record struct HistorySavePlan(IEditCommand? DiscardThrough, Dictionary<IEditCommand, byte[]> RetainedBytes);
 
     private const int ReplaceAttempts = 4;
+    private const int WriteChunkSize = 81920;
     private static readonly TimeSpan ReplaceRetryDelay = TimeSpan.FromMilliseconds(50);
 
     private ByteBuffer _original;
@@ -37,6 +38,7 @@ public sealed class BinaryDocument : IDisposable
     public bool CanRedo => _undoRedoManager.CanRedo;
     internal ByteBuffer Original => _original;
     internal Func<Stream, Stream>? InPlaceStreamWrapper { get; set; }
+    internal Func<ByteBuffer, ByteBuffer>? SaveSourceWrapper { get; set; }
     internal Action? ReplaceRetrying { get; set; }
     internal long UndoRetentionLimit { get; set; } = 64L * 1024 * 1024;
     internal PieceTable CurrentPieceTable => _pieceTable;
@@ -110,14 +112,18 @@ public sealed class BinaryDocument : IDisposable
 
     public ByteBuffer CreateSnapshot() => _pieceTable.CreateSnapshot();
 
-    public void Save()
+    public void Save() => SaveCoreAsync(progress: null, background: false).GetAwaiter().GetResult();
+
+    public Task SaveAsync(IProgress<long>? progress = null) => SaveCoreAsync(progress, background: true);
+
+    private async Task SaveCoreAsync(IProgress<long>? progress, bool background)
     {
         if (!IsModified || IsNew) return;
 
         var historyPlan = PlanHistoryForSave();
         var (entries, finalSize, needsShift) = ComputeWritePlan();
         if (needsShift)
-            SaveByReplace();
+            await SaveByReplaceAsync(progress, background);
         else
             SaveInPlace(entries, finalSize);
 
@@ -209,20 +215,10 @@ public sealed class BinaryDocument : IDisposable
         }
     }
 
-    private void SaveByReplace()
+    private async Task SaveByReplaceAsync(IProgress<long>? progress, bool background)
     {
         var tempPath = FilePath + ".zitmp";
-        try
-        {
-            using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            _pieceTable.WriteTo(fs);
-            fs.Flush(flushToDisk: true);
-        }
-        catch
-        {
-            TryDeleteTempFile(tempPath);
-            throw;
-        }
+        await WriteTempFileAsync(tempPath, progress, background);
 
         if (_original is MappedByteBuffer mapped)
             mapped.ReleaseMapping();
@@ -275,20 +271,31 @@ public sealed class BinaryDocument : IDisposable
         }
     }
 
-    public async Task SaveAsAsync(string path)
+    private async Task WriteTempFileAsync(string tempPath, IProgress<long>? progress, bool background)
     {
-        if (!IsNew && string.Equals(Path.GetFullPath(path), Path.GetFullPath(FilePath), StringComparison.OrdinalIgnoreCase))
-        {
-            Save();
-            return;
-        }
+        var snapshot = CreateSnapshot();
+        var source = SaveSourceWrapper?.Invoke(snapshot) ?? snapshot;
+        if (background)
+            await Task.Run(() => WriteTempFile(tempPath, source, progress));
+        else
+            WriteTempFile(tempPath, source, progress);
+    }
 
-        var historyPlan = PlanHistoryForSave();
-        var tempPath = path + ".zitmp";
+    private static void WriteTempFile(string tempPath, ByteBuffer source, IProgress<long>? progress)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(WriteChunkSize);
         try
         {
-            await using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            _pieceTable.WriteTo(fs);
+            using var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            long written = 0;
+            while (written < source.Length)
+            {
+                var chunk = (int)Math.Min(source.Length - written, WriteChunkSize);
+                source.ReadBytes(written, buffer, 0, chunk);
+                fs.Write(buffer, 0, chunk);
+                written += chunk;
+                progress?.Report(written);
+            }
             fs.Flush(flushToDisk: true);
         }
         catch
@@ -296,6 +303,23 @@ public sealed class BinaryDocument : IDisposable
             TryDeleteTempFile(tempPath);
             throw;
         }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    public async Task SaveAsAsync(string path, IProgress<long>? progress = null)
+    {
+        if (!IsNew && string.Equals(Path.GetFullPath(path), Path.GetFullPath(FilePath), StringComparison.OrdinalIgnoreCase))
+        {
+            await SaveAsync(progress);
+            return;
+        }
+
+        var historyPlan = PlanHistoryForSave();
+        var tempPath = path + ".zitmp";
+        await WriteTempFileAsync(tempPath, progress, background: true);
 
         try
         {

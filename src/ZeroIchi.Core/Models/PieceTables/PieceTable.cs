@@ -303,38 +303,6 @@ public sealed class PieceTable
 
     public ByteBuffer CreateSnapshot() => new PieceTableSnapshot(_original, _pieces.ToArray(), _addBuffer.View());
 
-    public void WriteTo(Stream stream)
-    {
-        var buffer = ArrayPool<byte>.Shared.Rent(81920);
-        try
-        {
-            foreach (var piece in _pieces)
-            {
-                var remaining = piece.Length;
-                var srcOffset = piece.Offset;
-                while (remaining > 0)
-                {
-                    var chunk = (int)Math.Min(remaining, buffer.Length);
-                    if (piece.Source == PieceSource.Original)
-                    {
-                        _original.ReadBytes(srcOffset, buffer, 0, chunk);
-                    }
-                    else
-                    {
-                        _addBuffer.CopyTo(srcOffset, buffer.AsSpan(0, chunk));
-                    }
-                    stream.Write(buffer, 0, chunk);
-                    srcOffset += chunk;
-                    remaining -= chunk;
-                }
-            }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
     private void ReplacePieces(int index, int removeCount, Piece[] newPieces, long lengthDelta)
     {
         var start = index < _starts.Count ? _starts[index] : Length;
