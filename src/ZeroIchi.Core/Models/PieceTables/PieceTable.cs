@@ -139,6 +139,10 @@ public sealed class PieceTable
 
     public PieceTableEdit InsertBytes(long index, byte[] bytes)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Length);
+        if (bytes.Length == 0) throw new ArgumentException("Bytes to insert must not be empty.", nameof(bytes));
+
         var addOffset = _addBuffer.Length;
         _addBuffer.Append(bytes);
         var insertPiece = new Piece(PieceSource.Add, addOffset, bytes.Length);
@@ -179,6 +183,9 @@ public sealed class PieceTable
 
     public PieceTableEdit DeleteBytes(long index, long count)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - index);
+
         var (startPi, startOffset) = FindPiece(index);
         var endLogical = index + count;
 
