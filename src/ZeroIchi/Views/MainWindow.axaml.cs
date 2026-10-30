@@ -23,6 +23,8 @@ public sealed partial class MainWindow : Window, IShellWindow
         InitializeComponent();
         HexView.AddHandler(HexViewControl.ByteModifiedEvent, OnByteModified);
         HexView.AddHandler(HexViewControl.BytesDeletedEvent, OnBytesDeleted);
+        AddHandler(DragDrop.DragEnterEvent, OnDragOver);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
         SearchTextBox.KeyDown += OnSearchTextBoxKeyDown;
         GoToOffsetTextBox.KeyDown += OnGoToOffsetTextBoxKeyDown;
@@ -174,6 +176,9 @@ public sealed partial class MainWindow : Window, IShellWindow
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
+
+    private static void OnDragOver(object? sender, DragEventArgs e) =>
+        e.DragEffects = e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
