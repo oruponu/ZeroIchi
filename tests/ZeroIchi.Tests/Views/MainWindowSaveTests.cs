@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia.Threading;
+using ZeroIchi.Models.Buffers;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
@@ -20,7 +21,9 @@ public sealed class MainWindowSaveTests : IDisposable
 
     private sealed class CountingDialogService : IDialogService
     {
+        public SaveChangesResult SaveChangesAnswer { get; set; } = SaveChangesResult.Discard;
         public int SaveChangesDialogCount { get; private set; }
+        public int ErrorCount { get; private set; }
 
         public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => Task.FromResult<string?>(null);
@@ -28,11 +31,33 @@ public sealed class MainWindowSaveTests : IDisposable
         public Task<SaveChangesResult> ShowSaveChangesDialogAsync()
         {
             SaveChangesDialogCount++;
-            return Task.FromResult(SaveChangesResult.Discard);
+            return Task.FromResult(SaveChangesAnswer);
         }
 
-        public Task ShowErrorAsync(string message, string detail) => Task.CompletedTask;
+        public Task ShowErrorAsync(string message, string detail)
+        {
+            ErrorCount++;
+            return Task.CompletedTask;
+        }
+
         public Task ShowAboutAsync() => Task.CompletedTask;
+    }
+
+    private sealed class FailingByteBuffer(ByteBuffer inner) : ByteBuffer
+    {
+        private readonly ManualResetEventSlim _opened = new();
+
+        public override long Length => inner.Length;
+
+        public override byte ReadByte(long index) => inner.ReadByte(index);
+
+        public override void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count)
+        {
+            _opened.Wait();
+            throw new IOException("The write failed.");
+        }
+
+        public void Open() => _opened.Set();
     }
 
     private async Task<(MainWindowViewModel Vm, MainWindow Window)> ShowAsync(IDialogService? dialog = null)
@@ -114,6 +139,43 @@ public sealed class MainWindowSaveTests : IDisposable
         finally
         {
             gate?.OpenAll();
+            await vm.SaveCompletion;
+            await vm.DisposeDocumentAsync();
+            if (!closed) window.Close();
+        }
+    });
+
+    [Fact]
+    public Task Closing_DuringAFailingSave_AsksOnceAndStaysOpen() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var dialog = new CountingDialogService();
+        var (vm, window) = await ShowAsync(dialog);
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+        FailingByteBuffer? failing = null;
+        try
+        {
+            vm.OnBytesDeleted(0, 1, cursorPositionAfter: 0);
+            vm.Document!.SaveSourceWrapper = source => failing = new FailingByteBuffer(source);
+
+            var save = vm.SaveFileCommand.ExecuteAsync(null);
+            await HeadlessTestApp.WaitUntilAsync(() => failing is not null);
+
+            window.Close();
+            window.Close();
+            dialog.SaveChangesAnswer = SaveChangesResult.Cancel;
+            failing!.Open();
+            await save;
+            await HeadlessTestApp.WaitUntilAsync(() => dialog.SaveChangesDialogCount > 0);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.Equal(1, dialog.SaveChangesDialogCount);
+            Assert.False(closed);
+        }
+        finally
+        {
+            failing?.Open();
             await vm.SaveCompletion;
             await vm.DisposeDocumentAsync();
             if (!closed) window.Close();

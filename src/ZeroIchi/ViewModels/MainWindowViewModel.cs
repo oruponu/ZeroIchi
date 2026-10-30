@@ -21,7 +21,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IWindowService _window;
 
     private bool _isSyncingSelection;
-    private bool _isReplacingDocument;
+    private int _replacingDocumentCount;
 
     public MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
     {
@@ -256,7 +256,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     // Avalonia bindings cache the old Document, so release Data explicitly
     private async Task ReplaceDocumentAsync(BinaryDocument newDocument)
     {
-        _isReplacingDocument = true;
+        _replacingDocumentCount++;
         try
         {
             await PauseBackgroundWorkAsync();
@@ -283,7 +283,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            _isReplacingDocument = false;
+            _replacingDocumentCount--;
         }
     }
 }

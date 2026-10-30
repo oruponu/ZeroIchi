@@ -28,11 +28,12 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
         public SaveChangesResult SaveChangesAnswer { get; set; } = SaveChangesResult.Discard;
         public Action? SaveChangesDialogShowing { get; set; }
         public Action? ErrorShowing { get; set; }
+        public Func<Task<string?>> PickSaveFile { get; set; } = () => Task.FromResult<string?>(null);
         public int SaveChangesDialogCount { get; private set; }
         public int ErrorCount { get; private set; }
 
         public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
-        public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => Task.FromResult<string?>(null);
+        public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => PickSaveFile();
 
         public Task<SaveChangesResult> ShowSaveChangesDialogAsync()
         {
@@ -256,6 +257,73 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
             Assert.Equal(1, _saveSourceCount);
             Assert.Same(document, vm.Document);
             Assert.Equal(0, dialog.SaveChangesDialogCount);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task SaveAs_StartsSavingAfterThePickerAndWritesInTheBackground() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var dialog = new CountingDialogService();
+        var (vm, _, expected) = await OpenDeletedAsync(dialog);
+        var target = Path.Combine(_tempDir, "target.bin");
+        var picker = new TaskCompletionSource<string?>();
+        bool? savingWhilePicking = null;
+        dialog.PickSaveFile = () =>
+        {
+            savingWhilePicking = vm.IsSaving;
+            return picker.Task;
+        };
+        try
+        {
+            var saveAs = vm.SaveAsFileCommand.ExecuteAsync(null);
+            Assert.False(savingWhilePicking);
+            Assert.False(vm.IsSaving);
+
+            picker.SetResult(target);
+            await WaitForSaveGateAsync();
+
+            Assert.True(vm.IsSaving);
+            Assert.False(saveAs.IsCompleted);
+            Assert.False(File.Exists(target));
+
+            OpenSaveGates();
+            await saveAs;
+
+            Assert.False(vm.IsSaving);
+            Assert.Equal(expected, File.ReadAllBytes(target));
+            Assert.Equal(target, vm.Document!.FilePath);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task SaveAs_WhenASaveStartsWhileThePickerIsOpen_DoesNothing() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var dialog = new CountingDialogService();
+        var (vm, path, expected) = await OpenDeletedAsync(dialog);
+        var target = Path.Combine(_tempDir, "target.bin");
+        var picker = new TaskCompletionSource<string?>();
+        dialog.PickSaveFile = () => picker.Task;
+        try
+        {
+            var saveAs = vm.SaveAsFileCommand.ExecuteAsync(null);
+            var save = vm.SaveFileCommand.ExecuteAsync(null);
+            await WaitForSaveGateAsync();
+
+            picker.SetResult(target);
+            await saveAs;
+
+            Assert.Equal(1, _saveSourceCount);
+            Assert.False(File.Exists(target));
+
+            OpenSaveGates();
+            await save;
+
+            Assert.Equal(1, _saveSourceCount);
+            Assert.False(File.Exists(target));
+            Assert.Equal(expected, File.ReadAllBytes(path));
+            Assert.Equal(path, vm.Document!.FilePath);
         }
         finally { await CleanUpAsync(vm); }
     });

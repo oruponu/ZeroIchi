@@ -78,7 +78,7 @@ public partial class MainWindowViewModel
 
     private Task DetachUnusableDocumentAsync() => ReplaceDocumentAsync(BinaryDocument.CreateNew());
 
-    private bool CanStartSave() => !IsSaving && !_isReplacingDocument;
+    private bool CanStartSave() => !IsSaving && _replacingDocumentCount == 0;
 
     [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task SaveFileAsync()
