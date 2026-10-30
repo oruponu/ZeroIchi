@@ -45,6 +45,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<StructureColorMap?> StructureColorsProperty =
         AvaloniaProperty.Register<HexViewControl, StructureColorMap?>(nameof(StructureColors));
 
+    public static readonly StyledProperty<bool> IsReadOnlyProperty =
+        AvaloniaProperty.Register<HexViewControl, bool>(nameof(IsReadOnly));
+
     public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
         RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
 
@@ -170,6 +173,12 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         set => SetValue(StructureColorsProperty, value);
     }
 
+    public bool IsReadOnly
+    {
+        get => GetValue(IsReadOnlyProperty);
+        set => SetValue(IsReadOnlyProperty, value);
+    }
+
     public event EventHandler<ByteModifiedEventArgs>? ByteModified
     {
         add => AddHandler(ByteModifiedEvent, value);
@@ -210,6 +219,10 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         else if (change.Property == CurrentSearchMatchOffsetProperty)
         {
             EnsureCursorVisible();
+        }
+        else if (change.Property == IsReadOnlyProperty)
+        {
+            _editingHighNibble = false;
         }
     }
 

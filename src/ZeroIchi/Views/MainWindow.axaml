@@ -315,6 +315,7 @@
                                                      CursorPosition="{Binding CursorPosition}"
                                                      DataVersion="{Binding DataVersion}"
                                                      Document="{Binding Document}"
+                                                     IsReadOnly="{Binding IsSaving}"
                                                      SearchMatchLength="{Binding SearchMatchLength}"
                                                      SearchMatchOffsets="{Binding SearchMatchOffsets}"
                                                      SelectionLength="{Binding SelectionLength}"

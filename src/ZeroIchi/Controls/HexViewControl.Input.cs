@@ -244,7 +244,7 @@ public partial class HexViewControl
                 break;
             case Key.Delete:
             case Key.Back:
-                HandleDelete(e.Key, dataLength);
+                if (!IsReadOnly) HandleDelete(e.Key, dataLength);
                 e.Handled = true;
                 return;
             default:
@@ -273,7 +273,7 @@ public partial class HexViewControl
         base.OnTextInput(e);
 
         var buffer = Buffer;
-        if (buffer is null || e.Text is not { } text) return;
+        if (IsReadOnly || buffer is null || e.Text is not { } text) return;
 
         foreach (var c in text)
         {
