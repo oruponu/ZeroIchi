@@ -48,6 +48,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<bool> IsReadOnlyProperty =
         AvaloniaProperty.Register<HexViewControl, bool>(nameof(IsReadOnly));
 
+    public static readonly StyledProperty<double> TopOverlayHeightProperty =
+        AvaloniaProperty.Register<HexViewControl, double>(nameof(TopOverlayHeight));
+
     public static readonly RoutedEvent<ByteModifiedEventArgs> ByteModifiedEvent =
         RoutedEvent.Register<HexViewControl, ByteModifiedEventArgs>(nameof(ByteModified), RoutingStrategies.Bubble);
 
@@ -177,6 +180,12 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     {
         get => GetValue(IsReadOnlyProperty);
         set => SetValue(IsReadOnlyProperty, value);
+    }
+
+    public double TopOverlayHeight
+    {
+        get => GetValue(TopOverlayHeightProperty);
+        set => SetValue(TopOverlayHeightProperty, value);
     }
 
     public event EventHandler<ByteModifiedEventArgs>? ByteModified
@@ -369,9 +378,10 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         var cursorLine = CursorPosition / BytesPerLine;
         var cursorY = cursorLine * _rowHeight;
         var viewHeight = _scrollViewport.Height - _dataTop;
+        var hiddenTop = Math.Max(0, TopOverlayHeight - _dataTop);
 
-        if (cursorY < y)
-            y = cursorY;
+        if (cursorY < y + hiddenTop)
+            y = cursorY - hiddenTop;
         else if (cursorY + _rowHeight > y + viewHeight)
             y = cursorY + _rowHeight - viewHeight;
 

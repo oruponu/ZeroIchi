@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -28,6 +29,8 @@ public sealed partial class MainWindow : Window, IShellWindow
         AddHandler(DragDrop.DropEvent, OnDrop);
         SearchTextBox.KeyDown += OnSearchTextBoxKeyDown;
         GoToOffsetTextBox.KeyDown += OnGoToOffsetTextBoxKeyDown;
+        SearchBar.PropertyChanged += OnOverlayBarPropertyChanged;
+        GoToOffsetBar.PropertyChanged += OnOverlayBarPropertyChanged;
         Opened += (_, _) => HexView.Focus();
 
         // Registered here instead of XAML because window KeyBindings are evaluated before TextBox handles KeyDown.
@@ -77,6 +80,19 @@ public sealed partial class MainWindow : Window, IShellWindow
                 Dispatcher.UIThread.Post(() => HexView.Focus());
                 break;
         }
+    }
+
+    private void OnOverlayBarPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property != BoundsProperty && e.Property != IsVisibleProperty) return;
+
+        var bottom = 0.0;
+        foreach (var bar in (Control[])[SearchBar, GoToOffsetBar])
+        {
+            if (bar.IsVisible && bar.TranslatePoint(new Point(0, bar.Bounds.Height), HexView) is { } point)
+                bottom = Math.Max(bottom, point.Y);
+        }
+        HexView.TopOverlayHeight = bottom;
     }
 
     private void OnSearchFocusRequested(object? sender, EventArgs e)
