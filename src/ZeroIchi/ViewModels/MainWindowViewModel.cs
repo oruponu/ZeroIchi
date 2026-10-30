@@ -49,6 +49,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     internal Task SaveCompletion { get; private set; } = Task.CompletedTask;
 
+    internal TimeSpan SaveBusyDelay { get; init; } = TimeSpan.FromMilliseconds(300);
+
+    internal TimeSpan SaveProgressInterval { get; init; } = TimeSpan.FromMilliseconds(100);
+
+    [ObservableProperty]
+    public partial string SaveProgressText { get; private set; } = "";
+
     [ObservableProperty]
     public partial bool CanUndo { get; set; }
 

@@ -27,6 +27,7 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
     {
         public SaveChangesResult SaveChangesAnswer { get; set; } = SaveChangesResult.Discard;
         public Action? SaveChangesDialogShowing { get; set; }
+        public Action? ErrorShowing { get; set; }
         public int SaveChangesDialogCount { get; private set; }
         public int ErrorCount { get; private set; }
 
@@ -43,6 +44,7 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
         public Task ShowErrorAsync(string message, string detail)
         {
             ErrorCount++;
+            ErrorShowing?.Invoke();
             return Task.CompletedTask;
         }
 
@@ -74,9 +76,11 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
     }
 
     private MainWindowViewModel Create(CountingDialogService? dialog = null, IClipboardService? clipboard = null,
-        bool gateSearch = false) =>
+        bool gateSearch = false, TimeSpan? saveBusyDelay = null, TimeSpan? saveProgressInterval = null) =>
         new(dialog ?? new CountingDialogService(), clipboard ?? new StubClipboardService(), new StubWindowService())
         {
+            SaveBusyDelay = saveBusyDelay ?? TimeSpan.FromMilliseconds(300),
+            SaveProgressInterval = saveProgressInterval ?? TimeSpan.FromMilliseconds(100),
             SearchFlushInterval = TimeSpan.FromMilliseconds(10),
             SearchSource = gateSearch
                 ? snapshot =>
@@ -101,9 +105,9 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
 
     private async Task<(MainWindowViewModel Vm, string Path, byte[] Expected)> OpenDeletedAsync(
         CountingDialogService? dialog = null, IClipboardService? clipboard = null, bool gateSearch = false,
-        byte[]? content = null)
+        byte[]? content = null, TimeSpan? saveBusyDelay = null, TimeSpan? saveProgressInterval = null)
     {
-        var vm = Create(dialog, clipboard, gateSearch);
+        var vm = Create(dialog, clipboard, gateSearch, saveBusyDelay, saveProgressInterval);
         var bytes = content ?? PatternBytes();
         var path = WriteFile(bytes);
         await vm.OpenFileAsync(path);
@@ -133,6 +137,17 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
         await vm.SaveCompletion;
         await vm.SearchUpdate;
         await vm.DisposeDocumentAsync();
+    }
+
+    private static List<string> RecordSaveProgressText(MainWindowViewModel vm)
+    {
+        var shown = new List<string>();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainWindowViewModel.SaveProgressText))
+                shown.Add(vm.SaveProgressText);
+        };
+        return shown;
     }
 
     [Fact]
@@ -259,6 +274,64 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
             Assert.Equal(1, dialog.ErrorCount);
             Assert.False(vm.IsSaving);
             Assert.True(vm.SaveFileCommand.CanExecute(null));
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task SlowSave_ShowsTheProgressAndClearsItWhenDone() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, _, _) = await OpenDeletedAsync(saveBusyDelay: TimeSpan.FromMilliseconds(20),
+            saveProgressInterval: TimeSpan.FromMilliseconds(10));
+        try
+        {
+            _ = vm.SaveFileCommand.ExecuteAsync(null);
+            await WaitForSaveGateAsync();
+
+            _saveGates[0].Allow(1);
+            await HeadlessTestApp.WaitUntilAsync(() => vm.SaveProgressText == "保存中 31%");
+
+            OpenSaveGates();
+            await vm.SaveCompletion;
+
+            Assert.Equal("", vm.SaveProgressText);
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task FastSave_DoesNotShowTheProgress() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, _, _) = await OpenDeletedAsync(saveBusyDelay: TimeSpan.FromSeconds(1));
+        var shown = RecordSaveProgressText(vm);
+        try
+        {
+            OpenSaveGates();
+            await vm.SaveFileCommand.ExecuteAsync(null);
+
+            Assert.False(vm.Document!.IsModified);
+            Assert.All(shown, text => Assert.Equal("", text));
+        }
+        finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task FailedSave_ClearsTheProgressBeforeTheErrorDialog() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var dialog = new CountingDialogService();
+        var (vm, path, _) = await OpenDeletedAsync(dialog, saveBusyDelay: TimeSpan.Zero);
+        Directory.CreateDirectory(path + ".zitmp");
+        var shown = RecordSaveProgressText(vm);
+        string? textAtError = null;
+        dialog.ErrorShowing = () => textAtError = vm.SaveProgressText;
+        try
+        {
+            OpenSaveGates();
+            await vm.SaveFileCommand.ExecuteAsync(null);
+
+            Assert.Equal(1, dialog.ErrorCount);
+            Assert.Contains("保存中 0%", shown);
+            Assert.Equal("", textAtError);
         }
         finally { await CleanUpAsync(vm); }
     });

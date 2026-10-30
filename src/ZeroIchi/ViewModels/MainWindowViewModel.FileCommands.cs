@@ -117,7 +117,8 @@ public partial class MainWindowViewModel
                 try
                 {
                     if (Document != document) return;
-                    await TryFileOperationAsync("保存できませんでした", () => save(document, null));
+                    var progress = new SaveProgress(document.FileSize);
+                    await TryFileOperationAsync("保存できませんでした", () => ShowSaveProgressAsync(save(document, progress), progress));
                 }
                 finally
                 {
@@ -129,6 +130,19 @@ public partial class MainWindowViewModel
                 IsSaving = false;
             }
         }
+    }
+
+    private async Task ShowSaveProgressAsync(Task saving, SaveProgress progress)
+    {
+        var delay = SaveBusyDelay;
+        while (await Task.WhenAny(saving, Task.Delay(delay)) != saving)
+        {
+            SaveProgressText = progress.Text;
+            delay = SaveProgressInterval;
+        }
+
+        SaveProgressText = "";
+        await saving;
     }
 
     [RelayCommand]

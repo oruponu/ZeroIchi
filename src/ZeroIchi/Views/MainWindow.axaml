@@ -229,6 +229,12 @@
                                FontSize="11"
                                Foreground="#A0A0A0"
                                Text="{Binding StatusBarFileTypeText}"/>
+                    <TextBlock Margin="0,0,16,0"
+                               DockPanel.Dock="Right"
+                               FontSize="11"
+                               Foreground="#A0A0A0"
+                               IsVisible="{Binding SaveProgressText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Text="{Binding SaveProgressText}"/>
                     <TextBlock FontSize="11"
                                Foreground="#A0A0A0"
                                Text="{Binding StatusBarPositionText}"/>
