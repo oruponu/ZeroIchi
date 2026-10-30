@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia.Threading;
+using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
 using static ZeroIchi.Tests.ViewModelTestFactory;
@@ -17,12 +18,29 @@ public sealed class MainWindowSaveTests : IDisposable
 
     public void Dispose() => Directory.Delete(_tempDir, recursive: true);
 
-    private async Task<(MainWindowViewModel Vm, MainWindow Window)> ShowAsync()
+    private sealed class CountingDialogService : IDialogService
+    {
+        public int SaveChangesDialogCount { get; private set; }
+
+        public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
+        public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => Task.FromResult<string?>(null);
+
+        public Task<SaveChangesResult> ShowSaveChangesDialogAsync()
+        {
+            SaveChangesDialogCount++;
+            return Task.FromResult(SaveChangesResult.Discard);
+        }
+
+        public Task ShowErrorAsync(string message, string detail) => Task.CompletedTask;
+        public Task ShowAboutAsync() => Task.CompletedTask;
+    }
+
+    private async Task<(MainWindowViewModel Vm, MainWindow Window)> ShowAsync(IDialogService? dialog = null)
     {
         var path = Path.Combine(_tempDir, Guid.NewGuid().ToString("N") + ".bin");
         File.WriteAllBytes(path, new byte[0x100]);
 
-        var vm = CreateViewModel();
+        var vm = CreateViewModel(dialog);
         await vm.OpenFileAsync(path);
         var window = new MainWindow { DataContext = vm };
         window.Show();
@@ -63,6 +81,42 @@ public sealed class MainWindowSaveTests : IDisposable
             gate?.OpenAll();
             await vm.SaveCompletion;
             await CloseAsync(vm, window);
+        }
+    });
+
+    [Fact]
+    public Task Closing_WhileSaving_ClosesAfterTheSave() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var dialog = new CountingDialogService();
+        var (vm, window) = await ShowAsync(dialog);
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+        GatedByteBuffer? gate = null;
+        try
+        {
+            vm.OnBytesDeleted(0, 1, cursorPositionAfter: 0);
+            vm.Document!.SaveSourceWrapper = source => gate = new GatedByteBuffer(source);
+
+            var save = vm.SaveFileCommand.ExecuteAsync(null);
+            await HeadlessTestApp.WaitUntilAsync(() => gate is not null);
+
+            window.Close();
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(closed);
+
+            gate!.OpenAll();
+            await HeadlessTestApp.WaitUntilAsync(() => closed);
+            await save;
+
+            Assert.Equal(0, dialog.SaveChangesDialogCount);
+        }
+        finally
+        {
+            gate?.OpenAll();
+            await vm.SaveCompletion;
+            await vm.DisposeDocumentAsync();
+            if (!closed) window.Close();
         }
     });
 }

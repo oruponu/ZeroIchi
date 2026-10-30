@@ -12,6 +12,8 @@ public partial class MainWindowViewModel
     private const string UnusableDocumentNotice =
         "表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。";
 
+    private bool _isCloseRequested;
+
     private bool IsNotSaving() => !IsSaving;
 
     [RelayCommand(CanExecute = nameof(IsNotSaving))]
@@ -37,7 +39,7 @@ public partial class MainWindowViewModel
 
     private async Task<bool> TryReplaceDocumentAsync(Func<BinaryDocument> factory, string failureMessage)
     {
-        if (IsSaving || !await ConfirmDiscardChangesAsync() || IsSaving)
+        if (IsSaving || !await ConfirmDiscardChangesAsync() || IsSaving || _isCloseRequested)
             return false;
 
         BinaryDocument? newDocument = null;
@@ -149,6 +151,25 @@ public partial class MainWindowViewModel
     private void Exit()
     {
         _window.Close();
+    }
+
+    public async Task<bool> PrepareCloseAsync()
+    {
+        _isCloseRequested = true;
+        var confirmed = false;
+        try
+        {
+            while (IsSaving)
+                await SaveCompletion;
+
+            confirmed = await ConfirmDiscardChangesAsync();
+            return confirmed;
+        }
+        finally
+        {
+            if (!confirmed)
+                _isCloseRequested = false;
+        }
     }
 
     public async Task<bool> ConfirmDiscardChangesAsync()

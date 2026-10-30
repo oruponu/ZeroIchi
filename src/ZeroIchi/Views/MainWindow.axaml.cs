@@ -15,6 +15,7 @@ namespace ZeroIchi.Views;
 public sealed partial class MainWindow : Window, IShellWindow
 {
     private bool _isClosingConfirmed;
+    private bool _isCloseInProgress;
     private MainWindowViewModel? _viewModel;
 
     public MainWindow()
@@ -94,16 +95,27 @@ public sealed partial class MainWindow : Window, IShellWindow
             if (DataContext is not MainWindowViewModel vm)
                 return;
 
-            if (vm.Document is not { IsModified: true })
+            if (!vm.IsSaving && vm.Document is not { IsModified: true })
                 return;
 
             e.Cancel = true;
 
-            if (!await vm.ConfirmDiscardChangesAsync())
+            if (_isCloseInProgress)
                 return;
 
-            _isClosingConfirmed = true;
-            Close();
+            _isCloseInProgress = true;
+            try
+            {
+                if (!await vm.PrepareCloseAsync())
+                    return;
+
+                _isClosingConfirmed = true;
+                Close();
+            }
+            finally
+            {
+                _isCloseInProgress = false;
+            }
         }
         catch (Exception ex)
         {
