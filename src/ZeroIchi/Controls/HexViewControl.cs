@@ -209,6 +209,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         {
             _editingHighNibble = false;
             _metricsValid = false;
+            UpdateScrollExtent();
             InvalidateScrollable();
         }
         else if (change.Property == CursorPositionProperty)
@@ -265,16 +266,19 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private Rect HexCellRect(int byteInLine, double y) =>
         new(_hexStartX + HexCharIndex(byteInLine) * _charWidth - CellPaddingX, y, 2 * _charWidth + 2 * CellPaddingX, _rowHeight);
 
-    protected override Size MeasureOverride(Size availableSize)
+    private void UpdateScrollExtent()
     {
         EnsureMetrics();
+        _scrollExtent = new Size(TotalWidth, TotalLines * _rowHeight + _dataTop);
+    }
 
-        var desiredWidth = TotalWidth;
-        _scrollExtent = new Size(desiredWidth, TotalLines * _rowHeight + _dataTop);
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        UpdateScrollExtent();
         _scrollViewport = new Size(availableSize.Width, availableSize.Height);
         InvalidateScrollable();
 
-        return new Size(desiredWidth, 0);
+        return new Size(_scrollExtent.Width, 0);
     }
 
     public override void Render(DrawingContext context)
