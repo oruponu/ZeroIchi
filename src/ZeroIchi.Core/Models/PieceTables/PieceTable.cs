@@ -74,7 +74,7 @@ public sealed class PieceTable
 
     public void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count)
     {
-        if (count <= 0) return;
+        if (count <= 0 || offset >= Length) return;
         var remaining = count;
         var destOffset = bufferOffset;
         var (pieceIdx, offsetInPiece) = FindPiece(offset);

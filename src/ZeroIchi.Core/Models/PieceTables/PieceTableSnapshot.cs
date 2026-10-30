@@ -39,7 +39,7 @@ internal sealed class PieceTableSnapshot : ByteBuffer
 
     public override void ReadBytes(long offset, byte[] buffer, int bufferOffset, int count)
     {
-        if (count <= 0) return;
+        if (count <= 0 || offset >= Length) return;
         var pieceIndex = FindPiece(offset);
         var offsetInPiece = offset - _starts[pieceIndex];
         while (count > 0 && pieceIndex < _pieces.Length)
