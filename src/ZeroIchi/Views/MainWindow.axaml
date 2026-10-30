@@ -260,7 +260,8 @@
                                        Text="ファイル構造"/>
                         </DockPanel>
                         <Border Classes="pane-divider" DockPanel.Dock="Top"/>
-                        <ListBox AutoScrollToSelectedItem="False"
+                        <ListBox x:Name="StructureTreeList"
+                                 AutoScrollToSelectedItem="False"
                                  Background="Transparent"
                                  ItemContainerTheme="{StaticResource StructureTreeItemTheme}"
                                  ItemsSource="{Binding StructureTreeItems}"

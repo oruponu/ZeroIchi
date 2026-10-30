@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -31,6 +32,7 @@ public sealed partial class MainWindow : Window, IShellWindow
         GoToOffsetTextBox.KeyDown += OnGoToOffsetTextBoxKeyDown;
         SearchBar.PropertyChanged += OnOverlayBarPropertyChanged;
         GoToOffsetBar.PropertyChanged += OnOverlayBarPropertyChanged;
+        StructureTreeList.Tapped += OnStructureTreeTapped;
         Opened += (_, _) => HexView.Focus();
 
         // Registered here instead of XAML because window KeyBindings are evaluated before TextBox handles KeyDown.
@@ -93,6 +95,17 @@ public sealed partial class MainWindow : Window, IShellWindow
                 bottom = Math.Max(bottom, point.Y);
         }
         HexView.TopOverlayHeight = bottom;
+    }
+
+    private void OnStructureTreeTapped(object? sender, TappedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm
+            && e.Source is Visual source
+            && source.FindAncestorOfType<Button>(includeSelf: true) is null
+            && source.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is StructureTreeItem item)
+        {
+            vm.SelectStructureItemRange(item);
+        }
     }
 
     private void OnSearchFocusRequested(object? sender, EventArgs e)

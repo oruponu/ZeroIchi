@@ -29,14 +29,19 @@ public partial class MainWindowViewModel
 
     partial void OnSelectedStructureItemChanged(StructureTreeItem? value)
     {
-        if (_isSyncingSelection) return;
-        if (value is null || Document?.Buffer is not { } buffer || !value.Node.HasRange) return;
+        if (_isSyncingSelection || value is null) return;
+        SelectStructureItemRange(value);
+    }
+
+    public void SelectStructureItemRange(StructureTreeItem item)
+    {
+        if (Document?.Buffer is not { } buffer || !item.Node.HasRange) return;
         var length = buffer.Length;
-        var offset = Math.Min(value.Node.Offset, length);
+        var offset = Math.Min(item.Node.Offset, length);
         _isSyncingSelection = true;
         CursorPosition = offset;
         SelectionStart = offset;
-        SelectionLength = Math.Min(value.Node.Length, length - offset);
+        SelectionLength = Math.Min(item.Node.Length, length - offset);
         _isSyncingSelection = false;
     }
 
