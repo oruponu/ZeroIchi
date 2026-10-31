@@ -154,4 +154,19 @@
   <data name="SaveProgress" xml:space="preserve">
     <value>保存中 {0}%</value>
   </data>
+  <data name="GoToOffsetInvalid" xml:space="preserve">
+    <value>無効な値</value>
+  </data>
+  <data name="GoToOffsetOutOfRangeEmpty" xml:space="preserve">
+    <value>範囲外 (空のファイル)</value>
+  </data>
+  <data name="GoToOffsetOutOfRange" xml:space="preserve">
+    <value>範囲外 (0 - {0})</value>
+  </data>
+  <data name="SearchInvalidHex" xml:space="preserve">
+    <value>無効な16進数</value>
+  </data>
+  <data name="SearchFailed" xml:space="preserve">
+    <value>検索できませんでした</value>
+  </data>
 </root>

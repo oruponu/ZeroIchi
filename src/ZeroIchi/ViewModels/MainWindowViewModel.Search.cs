@@ -2,9 +2,11 @@ using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ZeroIchi.Localization;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.Search;
@@ -71,16 +73,15 @@ public partial class MainWindowViewModel
 
         if (!OffsetText.TryParse(text, IsHexGoToOffset, out var offset))
         {
-            GoToOffsetError = "無効な値";
+            GoToOffsetError = Strings.GoToOffsetInvalid;
             return;
         }
 
         if (offset < 0 || offset >= buffer.Length)
         {
             var last = buffer.Length - 1;
-            GoToOffsetError = buffer.Length == 0 ? "範囲外 (空のファイル)"
-                : IsHexGoToOffset ? $"範囲外 (0 - {last:X})"
-                : $"範囲外 (0 - {last})";
+            GoToOffsetError = buffer.Length == 0 ? Strings.GoToOffsetOutOfRangeEmpty
+                : string.Format(CultureInfo.CurrentCulture, Strings.GoToOffsetOutOfRange, IsHexGoToOffset ? $"{last:X}" : $"{last}");
             return;
         }
 
@@ -192,7 +193,7 @@ public partial class MainWindowViewModel
         if (pattern is null || pattern.Length == 0)
         {
             ClearSearchResults();
-            if (IsHexSearch) SearchStatusText = "無効な16進数";
+            if (IsHexSearch) SearchStatusText = Strings.SearchInvalidHex;
             return;
         }
 
@@ -273,7 +274,7 @@ public partial class MainWindowViewModel
         {
             if (cancellationToken.IsCancellationRequested || _searchSet != set) return;
             ClearSearchResults();
-            SearchStatusText = "検索できませんでした";
+            SearchStatusText = Strings.SearchFailed;
         }
     }
 
