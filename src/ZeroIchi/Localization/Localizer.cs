@@ -6,7 +6,7 @@ namespace ZeroIchi.Localization;
 
 public sealed class Localizer : INotifyPropertyChanged
 {
-    private static readonly PropertyChangedEventArgs IndexerChangedArgs = new("Item[]");
+    private static readonly PropertyChangedEventArgs IndexerChangedArgs = new("Item");
 
     public static Localizer Instance { get; } = new();
 
