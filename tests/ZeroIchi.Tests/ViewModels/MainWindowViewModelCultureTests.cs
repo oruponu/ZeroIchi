@@ -40,7 +40,7 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     }
 
     [Fact]
-    public async Task CultureChange_RebuildsTheLiveTexts()
+    public Task CultureChange_RebuildsTheLiveTexts() => HeadlessTestApp.RunAsync(async () =>
     {
         using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
@@ -69,10 +69,10 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
             SwitchToJapanese();
             await vm.DisposeDocumentAsync();
         }
-    }
+    });
 
     [Fact]
-    public async Task CultureChange_RebuildsTheStructureTreeItemTexts()
+    public Task CultureChange_RebuildsTheStructureTreeItemTexts() => HeadlessTestApp.RunAsync(async () =>
     {
         const string yaml = "meta:\n  id: zi\nseq:\n  - id: magic\n    contents: ZI\n  - id: len\n    type: u1\n";
         var registry = new KsyFormatRegistry();
@@ -105,10 +105,10 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
             SwitchToJapanese();
             await vm.DisposeDocumentAsync();
         }
-    }
+    });
 
     [Fact]
-    public async Task CultureChange_AfterTheGoToOffsetErrorIsCleared_KeepsItEmpty()
+    public Task CultureChange_AfterTheGoToOffsetErrorIsCleared_KeepsItEmpty() => HeadlessTestApp.RunAsync(async () =>
     {
         using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
@@ -129,10 +129,10 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
             SwitchToJapanese();
             await vm.DisposeDocumentAsync();
         }
-    }
+    });
 
     [Fact]
-    public async Task CultureChange_WhenNotSaving_KeepsTheProgressTextEmpty()
+    public Task CultureChange_WhenNotSaving_KeepsTheProgressTextEmpty() => HeadlessTestApp.RunAsync(async () =>
     {
         using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
@@ -148,10 +148,10 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
             SwitchToJapanese();
             await vm.DisposeDocumentAsync();
         }
-    }
+    });
 
     [Fact]
-    public void CultureChange_WithoutADocument_KeepsTheStatusBarEmpty()
+    public Task CultureChange_WithoutADocument_KeepsTheStatusBarEmpty() => HeadlessTestApp.RunAsync(() =>
     {
         using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
@@ -168,5 +168,6 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
         {
             SwitchToJapanese();
         }
-    }
+        return Task.CompletedTask;
+    });
 }

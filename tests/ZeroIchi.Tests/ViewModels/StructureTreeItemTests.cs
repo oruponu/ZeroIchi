@@ -107,7 +107,7 @@ public sealed class StructureTreeItemTests
     }
 
     [Fact]
-    public void Texts_FollowTheCulture()
+    public Task Texts_FollowTheCulture() => HeadlessTestApp.RunAsync(() =>
     {
         var unparsed = new StructureTreeItem(new FileStructureNode
         {
@@ -138,7 +138,8 @@ public sealed class StructureTreeItemTests
         {
             Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("ja"));
         }
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
     public void FontStyle_IsItalicWithoutAFileRange()

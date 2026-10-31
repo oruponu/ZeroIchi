@@ -23,7 +23,7 @@ public sealed class LocalizerTests
     }
 
     [Fact]
-    public void SetCulture_SetsTheStringsCultureAndNotifies()
+    public Task SetCulture_SetsTheStringsCultureAndNotifies() => HeadlessTestApp.RunAsync(() =>
     {
         var names = new List<string?>();
         var cultureChangedCount = 0;
@@ -46,10 +46,11 @@ public sealed class LocalizerTests
             Localizer.Instance.CultureChanged -= onCultureChanged;
             Localizer.Instance.SetCulture(Japanese);
         }
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void Strings_UnderAnEnglishCulture_FallsBackToJapanese()
+    public Task Strings_UnderAnEnglishCulture_FallsBackToJapanese() => HeadlessTestApp.RunAsync(() =>
     {
         try
         {
@@ -61,10 +62,11 @@ public sealed class LocalizerTests
         {
             Localizer.Instance.SetCulture(Japanese);
         }
-    }
+        return Task.CompletedTask;
+    });
 
     [Fact]
-    public void FakeEnglishStrings_PrefixesTheValuesUnderEnglish()
+    public Task FakeEnglishStrings_PrefixesTheValuesUnderEnglish() => HeadlessTestApp.RunAsync(() =>
     {
         using var _ = FakeEnglishStrings.Use();
         try
@@ -78,5 +80,6 @@ public sealed class LocalizerTests
         {
             Localizer.Instance.SetCulture(Japanese);
         }
-    }
+        return Task.CompletedTask;
+    });
 }
