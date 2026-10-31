@@ -5,6 +5,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <Version>0.1.0</Version>
+    <NeutralLanguage>ja</NeutralLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +16,16 @@
     <AvaloniaResource Include="Assets\**" />
     <EmbeddedResource Include="..\..\THIRD-PARTY-NOTICES.md" LogicalName="ZeroIchi.THIRD-PARTY-NOTICES.md" />
     <None Include="..\..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Localization\Strings.resx">
+      <Generator>MSBuild:Compile</Generator>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Strings.Designer.cs</StronglyTypedFileName>
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedNamespace>ZeroIchi.Localization</StronglyTypedNamespace>
+      <StronglyTypedClassName>Strings</StronglyTypedClassName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
