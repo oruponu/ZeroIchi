@@ -32,8 +32,7 @@ public sealed partial class App : Application
         var fontFamily = CreateDefaultFontFamily();
         Resources["DefaultFontFamily"] = fontFamily;
         Resources["ContentControlThemeFontFamily"] = fontFamily;
-        TextFlyoutStrings.Apply(Resources);
-        Localizer.Instance.CultureChanged += (_, _) => TextFlyoutStrings.Apply(Resources);
+        TextFlyoutStrings.Attach(Resources);
         PopupCorners.Register();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
