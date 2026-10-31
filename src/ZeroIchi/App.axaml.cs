@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using ZeroIchi.Infrastructure;
+using ZeroIchi.Localization;
 using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
@@ -31,6 +32,8 @@ public sealed partial class App : Application
         var fontFamily = CreateDefaultFontFamily();
         Resources["DefaultFontFamily"] = fontFamily;
         Resources["ContentControlThemeFontFamily"] = fontFamily;
+        TextFlyoutStrings.Apply(Resources);
+        Localizer.Instance.CultureChanged += (_, _) => TextFlyoutStrings.Apply(Resources);
         PopupCorners.Register();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
