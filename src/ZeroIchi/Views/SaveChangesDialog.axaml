@@ -1,6 +1,7 @@
 <Window x:Class="ZeroIchi.Views.SaveChangesDialog"
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="using:ZeroIchi.Localization"
         Title="ZeroIchi"
         Background="Transparent"
         CanResize="False"
@@ -23,7 +24,7 @@
                            FontSize="20"
                            FontWeight="SemiBold"
                            Text="ZeroIchi"/>
-                <TextBlock Text="変更内容を保存しますか？" TextWrapping="Wrap"/>
+                <TextBlock Text="{l:Localize SaveChangesMessage}" TextWrapping="Wrap"/>
             </StackPanel>
 
             <Border Classes="dialog-footer" DockPanel.Dock="Bottom">
@@ -33,18 +34,18 @@
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
                             Classes="accent"
-                            Content="保存する"
+                            Content="{l:Localize SaveChangesSave}"
                             IsDefault="True"/>
                     <Button x:Name="DiscardButton"
                             Grid.Column="2"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Content="保存しない"/>
+                            Content="{l:Localize SaveChangesDiscard}"/>
                     <Button x:Name="CancelButton"
                             Grid.Column="4"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
-                            Content="キャンセル"/>
+                            Content="{l:Localize SaveChangesCancel}"/>
                 </Grid>
             </Border>
         </DockPanel>

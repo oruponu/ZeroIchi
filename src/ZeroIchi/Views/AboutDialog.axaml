@@ -1,7 +1,8 @@
 <Window x:Class="ZeroIchi.Views.AboutDialog"
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="バージョン情報"
+        xmlns:l="using:ZeroIchi.Localization"
+        Title="{l:Localize AboutTitle}"
         Background="Transparent"
         CanResize="False"
         ShowInTaskbar="False"
@@ -30,7 +31,7 @@
                            Text="Copyright © 2026 oruponu"/>
                 <TextBlock FontSize="12"
                            Foreground="#C5FFFFFF"
-                           Text="MIT License のもとで公開されています。"/>
+                           Text="{l:Localize AboutLicenseNotice}"/>
                 <HyperlinkButton x:Name="RepositoryLink"
                                  Margin="0,8,0,0"
                                  Padding="0"
@@ -43,7 +44,7 @@
                             Spacing="8">
                     <Button x:Name="LicensesButton"
                             HorizontalContentAlignment="Center"
-                            Content="ライセンス"/>
+                            Content="{l:Localize AboutLicensesButton}"/>
                     <Button x:Name="OkButton"
                             MinWidth="120"
                             HorizontalContentAlignment="Center"

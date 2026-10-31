@@ -169,4 +169,31 @@
   <data name="SearchFailed" xml:space="preserve">
     <value>検索できませんでした</value>
   </data>
+  <data name="AboutTitle" xml:space="preserve">
+    <value>バージョン情報</value>
+  </data>
+  <data name="AboutLicenseNotice" xml:space="preserve">
+    <value>MIT License のもとで公開されています。</value>
+  </data>
+  <data name="AboutLicensesButton" xml:space="preserve">
+    <value>ライセンス</value>
+  </data>
+  <data name="LicensesTitle" xml:space="preserve">
+    <value>ライセンス</value>
+  </data>
+  <data name="LicensesClose" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="SaveChangesMessage" xml:space="preserve">
+    <value>変更内容を保存しますか？</value>
+  </data>
+  <data name="SaveChangesSave" xml:space="preserve">
+    <value>保存する</value>
+  </data>
+  <data name="SaveChangesDiscard" xml:space="preserve">
+    <value>保存しない</value>
+  </data>
+  <data name="SaveChangesCancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
 </root>
