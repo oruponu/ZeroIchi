@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Input;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using ZeroIchi.Localization;
 using ZeroIchi.Models;
 using ZeroIchi.Services;
 
@@ -9,9 +10,6 @@ namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
-    private const string UnusableDocumentNotice =
-        "表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。";
-
     private bool _isCloseRequested;
 
     private bool IsNotSaving() => !IsSaving;
@@ -19,13 +17,13 @@ public partial class MainWindowViewModel
     [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task NewFileAsync()
     {
-        await TryReplaceDocumentAsync(BinaryDocument.CreateNew, "新しいファイルを作成できませんでした");
+        await TryReplaceDocumentAsync(BinaryDocument.CreateNew, Strings.FileNewFailed);
     }
 
     [RelayCommand(CanExecute = nameof(IsNotSaving))]
     private async Task OpenFileAsync()
     {
-        var path = await _dialog.PickOpenFileAsync("ファイルを開く");
+        var path = await _dialog.PickOpenFileAsync(Strings.FileOpenTitle);
         if (path is null)
             return;
 
@@ -34,7 +32,7 @@ public partial class MainWindowViewModel
 
     public async Task OpenFileAsync(string path)
     {
-        await TryReplaceDocumentAsync(() => BinaryDocument.Open(path), "ファイルを開けませんでした");
+        await TryReplaceDocumentAsync(() => BinaryDocument.Open(path), Strings.FileOpenFailed);
     }
 
     private async Task<bool> TryReplaceDocumentAsync(Func<BinaryDocument> factory, string failureMessage)
@@ -68,7 +66,7 @@ public partial class MainWindowViewModel
             if (Document is { IsUsable: false })
             {
                 await DetachUnusableDocumentAsync();
-                detail = $"{ex.Message}\n\n{UnusableDocumentNotice}";
+                detail = $"{ex.Message}\n\n{Strings.FileUnusableNotice}";
             }
 
             await _dialog.ShowErrorAsync(failureMessage, detail);
@@ -99,7 +97,7 @@ public partial class MainWindowViewModel
     {
         if (!CanStartSave() || Document is null) return;
 
-        var path = await _dialog.PickSaveFileAsync("名前を付けて保存", Document.FileName);
+        var path = await _dialog.PickSaveFileAsync(Strings.FileSaveAsTitle, Document.FileName);
         if (path is null || !CanStartSave()) return;
 
         await RunSaveAsync(Document, (d, p) => d.SaveAsAsync(path, p));
@@ -120,7 +118,7 @@ public partial class MainWindowViewModel
                 {
                     if (Document != document) return;
                     var progress = new SaveProgress(document.FileSize);
-                    await TryFileOperationAsync("保存できませんでした", () => ShowSaveProgressAsync(save(document, progress), progress));
+                    await TryFileOperationAsync(Strings.FileSaveFailed, () => ShowSaveProgressAsync(save(document, progress), progress));
                 }
                 finally
                 {

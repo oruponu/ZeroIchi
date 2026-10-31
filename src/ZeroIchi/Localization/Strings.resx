@@ -58,4 +58,22 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="FileNewFailed" xml:space="preserve">
+    <value>新しいファイルを作成できませんでした</value>
+  </data>
+  <data name="FileOpenTitle" xml:space="preserve">
+    <value>ファイルを開く</value>
+  </data>
+  <data name="FileOpenFailed" xml:space="preserve">
+    <value>ファイルを開けませんでした</value>
+  </data>
+  <data name="FileSaveAsTitle" xml:space="preserve">
+    <value>名前を付けて保存</value>
+  </data>
+  <data name="FileSaveFailed" xml:space="preserve">
+    <value>保存できませんでした</value>
+  </data>
+  <data name="FileUnusableNotice" xml:space="preserve">
+    <value>表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。</value>
+  </data>
 </root>

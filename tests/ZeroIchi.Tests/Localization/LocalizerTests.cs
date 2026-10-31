@@ -11,6 +11,12 @@ public sealed class LocalizerTests
     private static readonly CultureInfo Japanese = CultureInfo.GetCultureInfo("ja");
 
     [Fact]
+    public void Indexer_ReturnsTheResourceString()
+    {
+        Assert.Equal("ファイルを開く", Localizer.Instance["FileOpenTitle"]);
+    }
+
+    [Fact]
     public void Indexer_UnknownKey_ReturnsTheKey()
     {
         Assert.Equal("NoSuchKey", Localizer.Instance["NoSuchKey"]);
@@ -38,6 +44,38 @@ public sealed class LocalizerTests
         {
             Localizer.Instance.PropertyChanged -= onPropertyChanged;
             Localizer.Instance.CultureChanged -= onCultureChanged;
+            Localizer.Instance.SetCulture(Japanese);
+        }
+    }
+
+    [Fact]
+    public void Strings_UnderAnEnglishCulture_FallsBackToJapanese()
+    {
+        try
+        {
+            Localizer.Instance.SetCulture(English);
+
+            Assert.Equal("ファイルを開く", Strings.FileOpenTitle);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(Japanese);
+        }
+    }
+
+    [Fact]
+    public void FakeEnglishStrings_PrefixesTheValuesUnderEnglish()
+    {
+        using var _ = FakeEnglishStrings.Use();
+        try
+        {
+            Localizer.Instance.SetCulture(English);
+
+            Assert.Equal("en:ファイルを開く", Strings.FileOpenTitle);
+            Assert.Equal("en:ファイルを開く", Localizer.Instance["FileOpenTitle"]);
+        }
+        finally
+        {
             Localizer.Instance.SetCulture(Japanese);
         }
     }
