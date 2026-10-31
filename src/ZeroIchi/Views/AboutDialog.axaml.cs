@@ -1,8 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using ZeroIchi.Infrastructure;
+using ZeroIchi.Localization;
 using ZeroIchi.Models;
 
 namespace ZeroIchi.Views;
@@ -15,7 +17,7 @@ public sealed partial class AboutDialog : Window
     {
         InitializeComponent();
 
-        VersionText.Text = $"バージョン {AppVersion.Current}";
+        VersionText.Text = string.Format(CultureInfo.CurrentCulture, Strings.AboutVersion, AppVersion.Current);
         RepositoryLink.Click += async (_, _) => await Launcher.TryLaunchUriAsync(RepositoryUri);
         LicensesButton.Click += async (_, _) => await LicensesDialog.ShowAsync(this);
         OkButton.Click += (_, _) => Close();

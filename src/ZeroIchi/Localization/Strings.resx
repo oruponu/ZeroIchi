@@ -76,4 +76,7 @@
   <data name="FileUnusableNotice" xml:space="preserve">
     <value>表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。</value>
   </data>
+  <data name="AboutVersion" xml:space="preserve">
+    <value>バージョン {0}</value>
+  </data>
 </root>
