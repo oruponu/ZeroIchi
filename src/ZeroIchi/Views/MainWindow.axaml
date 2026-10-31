@@ -5,6 +5,7 @@
         xmlns:controls="using:ZeroIchi.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:fs="using:ZeroIchi.Models.FileStructure"
+        xmlns:l="using:ZeroIchi.Localization"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:ZeroIchi.ViewModels"
         Title="{Binding Title}"
@@ -112,67 +113,67 @@
                   ColumnDefinitions="Auto,*,Auto"
                   DockPanel.Dock="Top">
                 <Menu Grid.Column="0" chrome:WindowDecorationProperties.ElementRole="User">
-                    <MenuItem Header="ファイル(_F)">
+                    <MenuItem Header="{l:Localize MenuFile}">
                         <MenuItem Command="{Binding NewFileCommand}"
-                                  Header="新規(_N)"
+                                  Header="{l:Localize MenuFileNew}"
                                   InputGesture="Ctrl+N"/>
                         <MenuItem Command="{Binding OpenFileCommand}"
-                                  Header="開く(_O)..."
+                                  Header="{l:Localize MenuFileOpen}"
                                   InputGesture="Ctrl+O"/>
                         <MenuItem Command="{Binding SaveFileCommand}"
-                                  Header="保存(_S)"
+                                  Header="{l:Localize MenuFileSave}"
                                   InputGesture="Ctrl+S"/>
                         <MenuItem Command="{Binding SaveAsFileCommand}"
-                                  Header="名前を付けて保存(_A)..."
+                                  Header="{l:Localize MenuFileSaveAs}"
                                   InputGesture="Ctrl+Shift+S"/>
                         <Separator/>
-                        <MenuItem Command="{Binding ExitCommand}" Header="終了(_X)"/>
+                        <MenuItem Command="{Binding ExitCommand}" Header="{l:Localize MenuFileExit}"/>
                     </MenuItem>
-                    <MenuItem Header="編集(_E)">
+                    <MenuItem Header="{l:Localize MenuEdit}">
                         <MenuItem Command="{Binding UndoCommand}"
-                                  Header="元に戻す(_U)"
+                                  Header="{l:Localize MenuEditUndo}"
                                   InputGesture="Ctrl+Z"
                                   IsEnabled="{Binding CanUndo}"/>
                         <MenuItem Command="{Binding RedoCommand}"
-                                  Header="やり直し(_R)"
+                                  Header="{l:Localize MenuEditRedo}"
                                   InputGesture="Ctrl+Y"
                                   IsEnabled="{Binding CanRedo}"/>
                         <Separator/>
                         <MenuItem Command="{Binding CutCommand}"
-                                  Header="切り取り(_T)"
+                                  Header="{l:Localize MenuEditCut}"
                                   InputGesture="Ctrl+X"/>
                         <MenuItem Command="{Binding CopyCommand}"
-                                  Header="コピー(_C)"
+                                  Header="{l:Localize MenuEditCopy}"
                                   InputGesture="Ctrl+C"/>
                         <MenuItem Command="{Binding PasteCommand}"
-                                  Header="貼り付け(_P)"
+                                  Header="{l:Localize MenuEditPaste}"
                                   InputGesture="Ctrl+V"/>
                         <Separator/>
                         <MenuItem Command="{Binding SelectAllCommand}"
-                                  Header="すべて選択(_A)"
+                                  Header="{l:Localize MenuEditSelectAll}"
                                   InputGesture="Ctrl+A"/>
                         <Separator/>
                         <MenuItem Command="{Binding OpenSearchCommand}"
-                                  Header="検索(_F)"
+                                  Header="{l:Localize MenuEditFind}"
                                   InputGesture="Ctrl+F"/>
                         <MenuItem Command="{Binding OpenGoToOffsetCommand}"
-                                  Header="アドレスに移動(_G)"
+                                  Header="{l:Localize MenuEditGoTo}"
                                   InputGesture="Ctrl+G"/>
                     </MenuItem>
-                    <MenuItem Header="表示(_V)">
+                    <MenuItem Header="{l:Localize MenuView}">
                         <MenuItem Command="{Binding ToggleStructureTreeCommand}"
-                                  Header="ファイル構造(_S)"
+                                  Header="{l:Localize MenuViewFileStructure}"
                                   InputGesture="Ctrl+T"
                                   IsChecked="{Binding IsStructureTreeVisible, Mode=OneWay}"
                                   ToggleType="CheckBox"/>
                         <MenuItem Command="{Binding ToggleInspectorCommand}"
-                                  Header="インスペクター(_I)"
+                                  Header="{l:Localize MenuViewInspector}"
                                   InputGesture="Ctrl+I"
                                   IsChecked="{Binding IsInspectorVisible, Mode=OneWay}"
                                   ToggleType="CheckBox"/>
                     </MenuItem>
-                    <MenuItem Header="ヘルプ(_H)">
-                        <MenuItem Command="{Binding ShowAboutCommand}" Header="バージョン情報(_A)..."/>
+                    <MenuItem Header="{l:Localize MenuHelp}">
+                        <MenuItem Command="{Binding ShowAboutCommand}" Header="{l:Localize MenuHelpAbout}"/>
                     </MenuItem>
                 </Menu>
 
@@ -253,11 +254,11 @@
                                        FontSize="11"
                                        Foreground="#9D9D9D"
                                        IsVisible="{Binding IsStructureParsing}"
-                                       Text="解析中"/>
+                                       Text="{l:Localize StructureParsing}"/>
                             <TextBlock VerticalAlignment="Center"
                                        FontSize="12"
                                        Foreground="#D4D4D4"
-                                       Text="ファイル構造"/>
+                                       Text="{l:Localize StructureTitle}"/>
                         </DockPanel>
                         <Border Classes="pane-divider" DockPanel.Dock="Top"/>
                         <ListBox x:Name="StructureTreeList"
@@ -330,7 +331,7 @@
                             IsVisible="{Binding IsGoToOffsetVisible}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBox x:Name="GoToOffsetTextBox"
-                                     PlaceholderText="アドレス"
+                                     PlaceholderText="{l:Localize GoToOffsetPlaceholder}"
                                      Text="{Binding GoToOffsetText, Mode=TwoWay}"/>
                             <Border Classes="search-mode-group">
                                 <StackPanel Orientation="Horizontal" Spacing="1">
@@ -353,14 +354,14 @@
                                        TextAlignment="Center"/>
                             <Button Classes="search-button"
                                     Command="{Binding GoToOffsetCommand}"
-                                    ToolTip.Tip="移動 (Enter)">
+                                    ToolTip.Tip="{l:Localize GoToOffsetGo}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
                                            Text="&#xE76C;"/>
                             </Button>
                             <Button Classes="search-button"
                                     Command="{Binding CloseGoToOffsetCommand}"
-                                    ToolTip.Tip="閉じる (Esc)">
+                                    ToolTip.Tip="{l:Localize CloseEsc}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
                                            Text="&#xE8BB;"/>
@@ -373,7 +374,7 @@
                             IsVisible="{Binding IsSearchVisible}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBox x:Name="SearchTextBox"
-                                     PlaceholderText="検索"
+                                     PlaceholderText="{l:Localize SearchPlaceholder}"
                                      Text="{Binding SearchText, Mode=TwoWay}"/>
                             <Border Classes="search-mode-group">
                                 <StackPanel Orientation="Horizontal" Spacing="1">
@@ -399,24 +400,24 @@
                                        Classes.searching="{Binding IsSearching}"
                                        FontSize="11"
                                        Foreground="#A0A0A0"
-                                       Text="検索中"/>
+                                       Text="{l:Localize SearchSearching}"/>
                             <Button Classes="search-button"
                                     Command="{Binding FindPreviousCommand}"
-                                    ToolTip.Tip="前を検索 (Shift+F3)">
+                                    ToolTip.Tip="{l:Localize SearchPrevious}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
                                            Text="&#xE70E;"/>
                             </Button>
                             <Button Classes="search-button"
                                     Command="{Binding FindNextCommand}"
-                                    ToolTip.Tip="次を検索 (F3)">
+                                    ToolTip.Tip="{l:Localize SearchNext}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
                                            Text="&#xE70D;"/>
                             </Button>
                             <Button Classes="search-button"
                                     Command="{Binding CloseSearchCommand}"
-                                    ToolTip.Tip="閉じる (Esc)">
+                                    ToolTip.Tip="{l:Localize CloseEsc}">
                                 <TextBlock FontFamily="Segoe MDL2 Assets"
                                            FontSize="10"
                                            Text="&#xE8BB;"/>
@@ -447,7 +448,7 @@
                             <TextBlock VerticalAlignment="Center"
                                        FontSize="12"
                                        Foreground="#D4D4D4"
-                                       Text="インスペクター"/>
+                                       Text="{l:Localize InspectorTitle}"/>
                         </DockPanel>
 
                         <Border Classes="pane-divider" DockPanel.Dock="Top"/>
