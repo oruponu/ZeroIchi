@@ -1,6 +1,9 @@
 using Avalonia.Threading;
+using System.Globalization;
 using System.Text;
+using ZeroIchi.Localization;
 using ZeroIchi.Services;
+using ZeroIchi.Tests.Localization;
 using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Tests.ViewModels;
@@ -365,6 +368,30 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
             Assert.Equal("", vm.SaveProgressText);
         }
         finally { await CleanUpAsync(vm); }
+    });
+
+    [Fact]
+    public Task CultureChange_DuringASave_RebuildsTheProgressText() => HeadlessTestApp.RunAsync(async () =>
+    {
+        using var fakeStrings = FakeEnglishStrings.Use();
+        var (vm, _, _) = await OpenDeletedAsync(saveBusyDelay: TimeSpan.FromMilliseconds(20),
+            saveProgressInterval: TimeSpan.FromHours(1));
+        try
+        {
+            _ = vm.SaveFileCommand.ExecuteAsync(null);
+            await WaitForSaveGateAsync();
+            await HeadlessTestApp.WaitUntilAsync(() => vm.SaveProgressText == "保存中 0%");
+
+            Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
+
+            Assert.StartsWith("en:保存中 ", vm.SaveProgressText);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("ja"));
+            OpenSaveGates();
+            await CleanUpAsync(vm);
+        }
     });
 
     [Fact]

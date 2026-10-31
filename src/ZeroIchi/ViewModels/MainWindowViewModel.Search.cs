@@ -25,6 +25,8 @@ public partial class MainWindowViewModel
     private (SearchDirection Direction, long From)? _pendingSearchMove;
     private int _searchPauseCount;
     private SearchDirection? _pausedSearchDirection;
+    private Func<string>? _searchStatusFormat;
+    private Func<string>? _goToOffsetErrorFormat;
 
     internal TimeSpan SearchFlushInterval { get; init; } = TimeSpan.FromMilliseconds(100);
 
@@ -49,7 +51,7 @@ public partial class MainWindowViewModel
     {
         if (IsSearchVisible) CloseSearch();
         IsGoToOffsetVisible = true;
-        GoToOffsetError = "";
+        SetGoToOffsetError(null);
         GoToOffsetFocusRequested?.Invoke(this, EventArgs.Empty);
     }
 
@@ -58,7 +60,7 @@ public partial class MainWindowViewModel
     {
         IsGoToOffsetVisible = false;
         GoToOffsetText = "";
-        GoToOffsetError = "";
+        SetGoToOffsetError(null);
     }
 
     [RelayCommand]
@@ -73,15 +75,16 @@ public partial class MainWindowViewModel
 
         if (!OffsetText.TryParse(text, IsHexGoToOffset, out var offset))
         {
-            GoToOffsetError = Strings.GoToOffsetInvalid;
+            SetGoToOffsetError(() => Strings.GoToOffsetInvalid);
             return;
         }
 
         if (offset < 0 || offset >= buffer.Length)
         {
             var last = buffer.Length - 1;
-            GoToOffsetError = buffer.Length == 0 ? Strings.GoToOffsetOutOfRangeEmpty
-                : string.Format(CultureInfo.CurrentCulture, Strings.GoToOffsetOutOfRange, IsHexGoToOffset ? $"{last:X}" : $"{last}");
+            var range = IsHexGoToOffset ? $"{last:X}" : $"{last}";
+            SetGoToOffsetError(buffer.Length == 0 ? () => Strings.GoToOffsetOutOfRangeEmpty
+                : () => string.Format(CultureInfo.CurrentCulture, Strings.GoToOffsetOutOfRange, range));
             return;
         }
 
@@ -91,7 +94,13 @@ public partial class MainWindowViewModel
         CloseGoToOffset();
     }
 
-    partial void OnIsHexGoToOffsetChanged(bool value) => GoToOffsetError = "";
+    partial void OnIsHexGoToOffsetChanged(bool value) => SetGoToOffsetError(null);
+
+    private void SetGoToOffsetError(Func<string>? format)
+    {
+        _goToOffsetErrorFormat = format;
+        GoToOffsetError = format?.Invoke() ?? "";
+    }
 
     [RelayCommand]
     private void OpenSearch()
@@ -173,7 +182,7 @@ public partial class MainWindowViewModel
         SearchMatchLength = 0;
         CurrentSearchMatchOffset = -1;
         CurrentSearchMatchIndex = -1;
-        SearchStatusText = "";
+        SetSearchStatus(null);
         IsSearching = false;
     }
 
@@ -193,7 +202,7 @@ public partial class MainWindowViewModel
         if (pattern is null || pattern.Length == 0)
         {
             ClearSearchResults();
-            if (IsHexSearch) SearchStatusText = Strings.SearchInvalidHex;
+            if (IsHexSearch) SetSearchStatus(() => Strings.SearchInvalidHex);
             return;
         }
 
@@ -274,7 +283,7 @@ public partial class MainWindowViewModel
         {
             if (cancellationToken.IsCancellationRequested || _searchSet != set) return;
             ClearSearchResults();
-            SearchStatusText = Strings.SearchFailed;
+            SetSearchStatus(() => Strings.SearchFailed);
         }
     }
 
@@ -330,11 +339,15 @@ public partial class MainWindowViewModel
         if (index < 0) index = -1;
         CurrentSearchMatchIndex = index;
 
-        if (index >= 0)
-            SearchStatusText = $"{index + 1}/{count}{truncated}";
-        else if (count > 0)
-            SearchStatusText = $"-/{count}{truncated}";
-        else
-            SearchStatusText = set.IsComplete ? "0/0" : "";
+        var text = index >= 0 ? $"{index + 1}/{count}{truncated}"
+            : count > 0 ? $"-/{count}{truncated}"
+            : set.IsComplete ? "0/0" : "";
+        SetSearchStatus(() => text);
+    }
+
+    private void SetSearchStatus(Func<string>? format)
+    {
+        _searchStatusFormat = format;
+        SearchStatusText = format?.Invoke() ?? "";
     }
 }

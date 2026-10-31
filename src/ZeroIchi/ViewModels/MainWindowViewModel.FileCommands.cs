@@ -11,6 +11,7 @@ namespace ZeroIchi.ViewModels;
 public partial class MainWindowViewModel
 {
     private bool _isCloseRequested;
+    private SaveProgress? _shownSaveProgress;
 
     private bool IsNotSaving() => !IsSaving;
 
@@ -137,10 +138,12 @@ public partial class MainWindowViewModel
         var delay = SaveBusyDelay;
         while (await Task.WhenAny(saving, Task.Delay(delay)) != saving)
         {
+            _shownSaveProgress = progress;
             SaveProgressText = progress.Text;
             delay = SaveProgressInterval;
         }
 
+        _shownSaveProgress = null;
         SaveProgressText = "";
         await saving;
     }

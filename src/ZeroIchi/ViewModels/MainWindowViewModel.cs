@@ -24,6 +24,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private bool _isSyncingSelection;
     private int _replacingDocumentCount;
+    private Func<string>? _statusBarPositionFormat;
 
     public MainWindowViewModel(IDialogService dialog, IClipboardService clipboard, IWindowService window)
     {
@@ -31,6 +32,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _clipboard = clipboard;
         _window = window;
         Document = BinaryDocument.CreateNew();
+        Localizer.Instance.CultureChanged += OnCultureChanged;
+    }
+
+    private void OnCultureChanged(object? sender, EventArgs e)
+    {
+        if (_goToOffsetErrorFormat is { } goToOffsetError) GoToOffsetError = goToOffsetError();
+        if (_searchStatusFormat is { } searchStatus) SearchStatusText = searchStatus();
+        if (_statusBarPositionFormat is { } statusBarPosition) StatusBarPositionText = statusBarPosition();
+        if (_shownSaveProgress is { } saveProgress) SaveProgressText = saveProgress.Text;
+        OnPropertyChanged(nameof(GoToOffsetError));
+        OnPropertyChanged(nameof(SearchStatusText));
+        OnPropertyChanged(nameof(StatusBarPositionText));
+        OnPropertyChanged(nameof(SaveProgressText));
+
+        foreach (var item in StructureTreeItems)
+            item.RefreshText();
     }
 
     [ObservableProperty]
@@ -220,7 +237,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var buffer = Document?.Buffer;
         if (buffer is null)
         {
-            StatusBarPositionText = "";
+            SetStatusBarPosition(null);
             StatusBarFileTypeText = "";
             StatusBarSizeText = "";
             return;
@@ -228,15 +245,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         if (SelectionLength > 1)
         {
-            var selEnd = SelectionStart + SelectionLength - 1;
-            StatusBarPositionText = string.Format(CultureInfo.CurrentCulture, Strings.StatusBarSelection, $"{SelectionStart:X8}", $"{selEnd:X8}", SelectionLength);
+            var start = $"{SelectionStart:X8}";
+            var end = $"{SelectionStart + SelectionLength - 1:X8}";
+            var length = SelectionLength;
+            SetStatusBarPosition(() => string.Format(CultureInfo.CurrentCulture, Strings.StatusBarSelection, start, end, length));
         }
         else
         {
-            StatusBarPositionText = $"{CursorPosition:X8}";
+            var position = $"{CursorPosition:X8}";
+            SetStatusBarPosition(() => position);
         }
 
         StatusBarSizeText = FileSizeText.Format(buffer.Length);
+    }
+
+    private void SetStatusBarPosition(Func<string>? format)
+    {
+        _statusBarPositionFormat = format;
+        StatusBarPositionText = format?.Invoke() ?? "";
     }
 
     private void UpdateFileType(ByteBuffer buffer) =>
