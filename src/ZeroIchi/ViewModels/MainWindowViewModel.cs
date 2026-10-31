@@ -2,8 +2,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Runtime;
 using System.Threading.Tasks;
+using ZeroIchi.Localization;
 using ZeroIchi.Models;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure;
@@ -227,7 +229,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (SelectionLength > 1)
         {
             var selEnd = SelectionStart + SelectionLength - 1;
-            StatusBarPositionText = $"{SelectionStart:X8} - {selEnd:X8} ({SelectionLength} バイト)";
+            StatusBarPositionText = string.Format(CultureInfo.CurrentCulture, Strings.StatusBarSelection, $"{SelectionStart:X8}", $"{selEnd:X8}", SelectionLength);
         }
         else
         {

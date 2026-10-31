@@ -148,4 +148,10 @@
   <data name="FileStructureErrorStackLimit" xml:space="preserve">
     <value>入れ子が深すぎてスタックが不足</value>
   </data>
+  <data name="StatusBarSelection" xml:space="preserve">
+    <value>{0} - {1} ({2} バイト)</value>
+  </data>
+  <data name="SaveProgress" xml:space="preserve">
+    <value>保存中 {0}%</value>
+  </data>
 </root>

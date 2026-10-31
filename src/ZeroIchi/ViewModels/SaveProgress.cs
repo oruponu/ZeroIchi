@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using System.Threading;
+using ZeroIchi.Localization;
 
 namespace ZeroIchi.ViewModels;
 
@@ -14,6 +16,6 @@ internal sealed class SaveProgress(long total) : IProgress<long>
     internal static string FormatText(long written, long total)
     {
         var percent = total <= 0 ? 100 : Math.Clamp(written * 100 / total, 0, 100);
-        return $"保存中 {percent}%";
+        return string.Format(CultureInfo.CurrentCulture, Strings.SaveProgress, percent);
     }
 }
