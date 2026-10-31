@@ -1,9 +1,13 @@
 using Avalonia.Media;
+using System.Globalization;
+using ZeroIchi.Localization;
 using ZeroIchi.Models.FileStructure;
+using ZeroIchi.Tests.Localization;
 using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Tests.ViewModels;
 
+[Collection(HeadlessTestApp.Collection)]
 public sealed class StructureTreeItemTests
 {
     private static StructureTreeItem Item(string description = "", string? error = null, bool hasRange = true,
@@ -87,6 +91,53 @@ public sealed class StructureTreeItemTests
 
         Assert.IsAssignableFrom<IImmutableBrush>(item.DescriptionForeground);
         Assert.IsAssignableFrom<IImmutableBrush>(Item("5", "broken").DescriptionForeground);
+    }
+
+    [Fact]
+    public void RefreshText_RaisesNameAndDescription()
+    {
+        var item = Item("5");
+        var names = new List<string?>();
+        item.PropertyChanged += (_, e) => names.Add(e.PropertyName);
+
+        item.RefreshText();
+
+        Assert.Contains(nameof(StructureTreeItem.Name), names);
+        Assert.Contains(nameof(StructureTreeItem.Description), names);
+    }
+
+    [Fact]
+    public void Texts_FollowTheCulture()
+    {
+        var unparsed = new StructureTreeItem(new FileStructureNode
+        {
+            Name = "",
+            Offset = 0,
+            Length = 1,
+            IsUnparsed = true,
+        }, 0);
+        var incompleteWithError = new StructureTreeItem(new FileStructureNode
+        {
+            Name = "n",
+            Offset = 0,
+            Length = 0,
+            IsIncomplete = true,
+            Error = FileStructureError.EndOfData(1, false, 4, 2, "Unexpected end of stream"),
+        }, 0);
+
+        using var _ = FakeEnglishStrings.Use();
+        try
+        {
+            Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
+
+            Assert.Equal("en:未解析", unparsed.Name);
+            Assert.StartsWith("en:(未完了)  ", incompleteWithError.Description);
+            Assert.Contains("en:データ不足: en:位置 0x1 で", incompleteWithError.Description);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("ja"));
+        }
     }
 
     [Fact]

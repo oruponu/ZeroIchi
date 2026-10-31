@@ -79,4 +79,73 @@
   <data name="AboutVersion" xml:space="preserve">
     <value>バージョン {0}</value>
   </data>
+  <data name="StructureUnparsed" xml:space="preserve">
+    <value>未解析</value>
+  </data>
+  <data name="StructureIncomplete" xml:space="preserve">
+    <value>(未完了)</value>
+  </data>
+  <data name="FileStructurePosition" xml:space="preserve">
+    <value>位置 0x{0}</value>
+  </data>
+  <data name="FileStructureConvertedPosition" xml:space="preserve">
+    <value>変換後のデータの位置 0x{0}</value>
+  </data>
+  <data name="FileStructureErrorEndOfData" xml:space="preserve">
+    <value>データ不足: {0} で {1} バイト必要 (残り {2} バイト)</value>
+  </data>
+  <data name="FileStructureErrorMissingTerminator" xml:space="preserve">
+    <value>終端 {0} が見つからずデータの末尾に到達 ({1} から)</value>
+  </data>
+  <data name="FileStructureErrorContentsMismatch" xml:space="preserve">
+    <value>固定値の不一致: 期待 {0}、実際 {1}</value>
+  </data>
+  <data name="FileStructureErrorValidEq" xml:space="preserve">
+    <value>検証エラー: 期待 {0}、実際 {1}</value>
+  </data>
+  <data name="FileStructureErrorValidMin" xml:space="preserve">
+    <value>検証エラー: {0} は最小値 {1} 未満</value>
+  </data>
+  <data name="FileStructureErrorValidMax" xml:space="preserve">
+    <value>検証エラー: {0} は最大値 {1} を超過</value>
+  </data>
+  <data name="FileStructureErrorValidAnyOf" xml:space="preserve">
+    <value>検証エラー: 許可されていない値 {0}</value>
+  </data>
+  <data name="FileStructureErrorValidInEnum" xml:space="preserve">
+    <value>検証エラー: 列挙型 {0} に未定義の値 {1}</value>
+  </data>
+  <data name="FileStructureErrorValidExpr" xml:space="preserve">
+    <value>検証エラー: 条件を満たさない値 {0}</value>
+  </data>
+  <data name="FileStructureErrorEndianSwitch" xml:space="preserve">
+    <value>エンディアンの決定に失敗: {0} に一致する case なし</value>
+  </data>
+  <data name="FileStructureErrorSeek" xml:space="preserve">
+    <value>{0} への移動に失敗 (データの末尾 0x{1})</value>
+  </data>
+  <data name="FileStructureErrorZlib" xml:space="preserve">
+    <value>zlib の展開に失敗: {0}</value>
+  </data>
+  <data name="FileStructureErrorNative" xml:space="preserve">
+    <value>{0} の解析に失敗: {1}</value>
+  </data>
+  <data name="FileStructureErrorNodeBudget" xml:space="preserve">
+    <value>ノード数の上限 ({0}) に到達</value>
+  </data>
+  <data name="FileStructureErrorNestingLimit" xml:space="preserve">
+    <value>型の入れ子の上限 ({0}) に到達</value>
+  </data>
+  <data name="FileStructureErrorLoadLimit" xml:space="preserve">
+    <value>メモリに読み込む量の上限 ({0} バイト) に到達</value>
+  </data>
+  <data name="FileStructureErrorBytesLoadLimit" xml:space="preserve">
+    <value>バイト列 ({0} バイト) が読み込みの上限 ({1} バイト) を超過</value>
+  </data>
+  <data name="FileStructureErrorDecompressLimit" xml:space="preserve">
+    <value>展開後の大きさの上限 ({0} バイト) に到達</value>
+  </data>
+  <data name="FileStructureErrorStackLimit" xml:space="preserve">
+    <value>入れ子が深すぎてスタックが不足</value>
+  </data>
 </root>

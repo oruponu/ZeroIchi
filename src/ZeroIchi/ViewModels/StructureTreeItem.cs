@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Windows.Input;
+using ZeroIchi.Localization;
 using ZeroIchi.Models.FileStructure;
 
 namespace ZeroIchi.ViewModels;
@@ -24,14 +25,14 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
     public string Key { get; init; } = "";
     public bool HasChildren { get; } = node.HasChildren;
 
-    public string Name => Node.IsUnparsed ? "未解析" : Node.Name;
+    public string Name => Node.IsUnparsed ? Strings.StructureUnparsed : Node.Name;
 
     public string Description
     {
         get
         {
             var text = Node.Description;
-            if (Node.IsIncomplete) text = text.Length == 0 ? "(未完了)" : $"{text} (未完了)";
+            if (Node.IsIncomplete) text = text.Length == 0 ? Strings.StructureIncomplete : $"{text} {Strings.StructureIncomplete}";
             if (Node.Error is not { } error) return text;
             var message = FileStructureErrorText.Format(error);
             return text.Length == 0 ? message : $"{text}  {message}";
@@ -50,6 +51,12 @@ public sealed partial class StructureTreeItem(FileStructureNode node, int depth,
     };
 
     public ICommand? ToggleExpandCommand { get; init; }
+
+    internal void RefreshText()
+    {
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(Description));
+    }
 
     public string ExpandIcon => IsExpanded ? "\u25bc" : "\u25b6";
 }
