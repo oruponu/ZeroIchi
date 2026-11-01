@@ -103,7 +103,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial long SelectionLength { get; set; }
 
     [ObservableProperty]
-    public partial string StatusBarPositionText { get; set; } = "00000000";
+    public partial string StatusBarPositionText { get; private set; } = "00000000";
 
     [ObservableProperty]
     public partial string StatusBarFileTypeText { get; set; } = "";
@@ -119,7 +119,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial string GoToOffsetText { get; set; } = "";
 
     [ObservableProperty]
-    public partial string GoToOffsetError { get; set; } = "";
+    public partial string GoToOffsetError { get; private set; } = "";
 
     [ObservableProperty]
     public partial bool IsHexGoToOffset { get; set; } = true;
@@ -147,7 +147,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial long CurrentSearchMatchOffset { get; set; } = -1;
 
     [ObservableProperty]
-    public partial string SearchStatusText { get; set; } = "";
+    public partial string SearchStatusText { get; private set; } = "";
 
     [ObservableProperty]
     public partial bool IsSearching { get; set; }
