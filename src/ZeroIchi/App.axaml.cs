@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using ZeroIchi.Infrastructure;
 using ZeroIchi.Localization;
+using ZeroIchi.Models;
 using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
@@ -29,6 +30,8 @@ public sealed partial class App : Application
     {
         _ = Task.Run(KsyFormatRegistry.Default.Preload);
         _ = Task.Run(MainWindowViewModel.WarmUpFileTypeDetection);
+        var settings = new SettingsManager(new JsonSettingsStore(JsonSettingsStore.DefaultPath));
+        Localizer.Instance.SetCulture(LanguageSetting.Resolve(settings.Current.Language));
         var fontFamily = CreateDefaultFontFamily();
         Resources["DefaultFontFamily"] = fontFamily;
         Resources["ContentControlThemeFontFamily"] = fontFamily;
@@ -38,6 +41,7 @@ public sealed partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var services = new ServiceCollection();
+            services.AddSingleton(settings);
             services.AddSingleton<MainWindow>();
             services.AddSingleton<Window>(sp => sp.GetRequiredService<MainWindow>());
             services.AddSingleton<IShellWindow>(sp => sp.GetRequiredService<MainWindow>());
