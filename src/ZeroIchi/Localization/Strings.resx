@@ -59,231 +59,231 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="FileNewFailed" xml:space="preserve">
-    <value>新しいファイルを作成できませんでした</value>
+    <value>Could not create a new file</value>
   </data>
   <data name="FileOpenTitle" xml:space="preserve">
-    <value>ファイルを開く</value>
+    <value>Open File</value>
   </data>
   <data name="FileOpenFailed" xml:space="preserve">
-    <value>ファイルを開けませんでした</value>
+    <value>Could not open the file</value>
   </data>
   <data name="FileSaveAsTitle" xml:space="preserve">
-    <value>名前を付けて保存</value>
+    <value>Save As</value>
   </data>
   <data name="FileSaveFailed" xml:space="preserve">
-    <value>保存できませんでした</value>
+    <value>Could not save the file</value>
   </data>
   <data name="FileUnusableNotice" xml:space="preserve">
-    <value>表示中のファイルを読み取れなくなったため閉じました。ファイルが正しく保存されていない可能性があります。開き直して内容を確認してください。</value>
+    <value>The file was closed because it could no longer be read. It may not have been saved correctly. Reopen it and check its contents.</value>
   </data>
   <data name="AboutVersion" xml:space="preserve">
-    <value>バージョン {0}</value>
+    <value>Version {0}</value>
   </data>
   <data name="StructureUnparsed" xml:space="preserve">
-    <value>未解析</value>
+    <value>Not parsed</value>
   </data>
   <data name="StructureIncomplete" xml:space="preserve">
-    <value>(未完了)</value>
+    <value>(incomplete)</value>
   </data>
   <data name="FileStructurePosition" xml:space="preserve">
-    <value>位置 0x{0}</value>
+    <value>offset 0x{0}</value>
   </data>
   <data name="FileStructureConvertedPosition" xml:space="preserve">
-    <value>変換後のデータの位置 0x{0}</value>
+    <value>offset 0x{0} in the converted data</value>
   </data>
   <data name="FileStructureErrorEndOfData" xml:space="preserve">
-    <value>データ不足: {0} で {1} バイト必要 (残り {2} バイト)</value>
+    <value>Not enough data at {0}: needed {1}, remaining {2}</value>
   </data>
   <data name="FileStructureErrorMissingTerminator" xml:space="preserve">
-    <value>終端 {0} が見つからずデータの末尾に到達 ({1} から)</value>
+    <value>Reached the end of data without finding terminator {0} (from {1})</value>
   </data>
   <data name="FileStructureErrorContentsMismatch" xml:space="preserve">
-    <value>固定値の不一致: 期待 {0}、実際 {1}</value>
+    <value>Contents mismatch: expected {0}, actual {1}</value>
   </data>
   <data name="FileStructureErrorValidEq" xml:space="preserve">
-    <value>検証エラー: 期待 {0}、実際 {1}</value>
+    <value>Validation error: expected {0}, actual {1}</value>
   </data>
   <data name="FileStructureErrorValidMin" xml:space="preserve">
-    <value>検証エラー: {0} は最小値 {1} 未満</value>
+    <value>Validation error: {0} is less than the minimum {1}</value>
   </data>
   <data name="FileStructureErrorValidMax" xml:space="preserve">
-    <value>検証エラー: {0} は最大値 {1} を超過</value>
+    <value>Validation error: {0} exceeds the maximum {1}</value>
   </data>
   <data name="FileStructureErrorValidAnyOf" xml:space="preserve">
-    <value>検証エラー: 許可されていない値 {0}</value>
+    <value>Validation error: {0} is not an allowed value</value>
   </data>
   <data name="FileStructureErrorValidInEnum" xml:space="preserve">
-    <value>検証エラー: 列挙型 {0} に未定義の値 {1}</value>
+    <value>Validation error: {1} is not defined in enum {0}</value>
   </data>
   <data name="FileStructureErrorValidExpr" xml:space="preserve">
-    <value>検証エラー: 条件を満たさない値 {0}</value>
+    <value>Validation error: {0} does not satisfy the condition</value>
   </data>
   <data name="FileStructureErrorEndianSwitch" xml:space="preserve">
-    <value>エンディアンの決定に失敗: {0} に一致する case なし</value>
+    <value>Could not determine endianness: no case matches {0}</value>
   </data>
   <data name="FileStructureErrorSeek" xml:space="preserve">
-    <value>{0} への移動に失敗 (データの末尾 0x{1})</value>
+    <value>Could not seek to {0} (end of data is 0x{1})</value>
   </data>
   <data name="FileStructureErrorZlib" xml:space="preserve">
-    <value>zlib の展開に失敗: {0}</value>
+    <value>zlib decompression failed: {0}</value>
   </data>
   <data name="FileStructureErrorNative" xml:space="preserve">
-    <value>{0} の解析に失敗: {1}</value>
+    <value>Could not parse {0}: {1}</value>
   </data>
   <data name="FileStructureErrorNodeBudget" xml:space="preserve">
-    <value>ノード数の上限 ({0}) に到達</value>
+    <value>Reached the node limit ({0})</value>
   </data>
   <data name="FileStructureErrorNestingLimit" xml:space="preserve">
-    <value>型の入れ子の上限 ({0}) に到達</value>
+    <value>Reached the type nesting limit ({0})</value>
   </data>
   <data name="FileStructureErrorLoadLimit" xml:space="preserve">
-    <value>メモリに読み込む量の上限 ({0} バイト) に到達</value>
+    <value>Reached the in-memory load limit ({0} bytes)</value>
   </data>
   <data name="FileStructureErrorBytesLoadLimit" xml:space="preserve">
-    <value>バイト列 ({0} バイト) が読み込みの上限 ({1} バイト) を超過</value>
+    <value>Byte array ({0} bytes) exceeds the load limit ({1} bytes)</value>
   </data>
   <data name="FileStructureErrorDecompressLimit" xml:space="preserve">
-    <value>展開後の大きさの上限 ({0} バイト) に到達</value>
+    <value>Reached the decompressed size limit ({0} bytes)</value>
   </data>
   <data name="FileStructureErrorStackLimit" xml:space="preserve">
-    <value>入れ子が深すぎてスタックが不足</value>
+    <value>Nesting too deep; ran out of stack</value>
   </data>
   <data name="StatusBarSelection" xml:space="preserve">
-    <value>{0} - {1} ({2} バイト)</value>
+    <value>{0} - {1} (length {2})</value>
   </data>
   <data name="SaveProgress" xml:space="preserve">
-    <value>保存中 {0}%</value>
+    <value>Saving {0}%</value>
   </data>
   <data name="GoToOffsetInvalid" xml:space="preserve">
-    <value>無効な値</value>
+    <value>Invalid value</value>
   </data>
   <data name="GoToOffsetOutOfRangeEmpty" xml:space="preserve">
-    <value>範囲外 (空のファイル)</value>
+    <value>Out of range (empty file)</value>
   </data>
   <data name="GoToOffsetOutOfRange" xml:space="preserve">
-    <value>範囲外 (0 - {0})</value>
+    <value>Out of range (0 - {0})</value>
   </data>
   <data name="SearchInvalidHex" xml:space="preserve">
-    <value>無効な16進数</value>
+    <value>Invalid hex</value>
   </data>
   <data name="SearchFailed" xml:space="preserve">
-    <value>検索できませんでした</value>
+    <value>Search failed</value>
   </data>
   <data name="MenuFile" xml:space="preserve">
-    <value>ファイル(_F)</value>
+    <value>_File</value>
   </data>
   <data name="MenuFileNew" xml:space="preserve">
-    <value>新規(_N)</value>
+    <value>_New</value>
   </data>
   <data name="MenuFileOpen" xml:space="preserve">
-    <value>開く(_O)...</value>
+    <value>_Open...</value>
   </data>
   <data name="MenuFileSave" xml:space="preserve">
-    <value>保存(_S)</value>
+    <value>_Save</value>
   </data>
   <data name="MenuFileSaveAs" xml:space="preserve">
-    <value>名前を付けて保存(_A)...</value>
+    <value>Save _As...</value>
   </data>
   <data name="MenuFileExit" xml:space="preserve">
-    <value>終了(_X)</value>
+    <value>E_xit</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
-    <value>編集(_E)</value>
+    <value>_Edit</value>
   </data>
   <data name="MenuEditUndo" xml:space="preserve">
-    <value>元に戻す(_U)</value>
+    <value>_Undo</value>
   </data>
   <data name="MenuEditRedo" xml:space="preserve">
-    <value>やり直し(_R)</value>
+    <value>_Redo</value>
   </data>
   <data name="MenuEditCut" xml:space="preserve">
-    <value>切り取り(_T)</value>
+    <value>Cu_t</value>
   </data>
   <data name="MenuEditCopy" xml:space="preserve">
-    <value>コピー(_C)</value>
+    <value>_Copy</value>
   </data>
   <data name="MenuEditPaste" xml:space="preserve">
-    <value>貼り付け(_P)</value>
+    <value>_Paste</value>
   </data>
   <data name="MenuEditSelectAll" xml:space="preserve">
-    <value>すべて選択(_A)</value>
+    <value>Select _All</value>
   </data>
   <data name="MenuEditFind" xml:space="preserve">
-    <value>検索(_F)</value>
+    <value>_Find</value>
   </data>
   <data name="MenuEditGoTo" xml:space="preserve">
-    <value>アドレスに移動(_G)</value>
+    <value>_Go to Address</value>
   </data>
   <data name="MenuView" xml:space="preserve">
-    <value>表示(_V)</value>
+    <value>_View</value>
   </data>
   <data name="MenuViewFileStructure" xml:space="preserve">
-    <value>ファイル構造(_S)</value>
+    <value>File _Structure</value>
   </data>
   <data name="MenuViewInspector" xml:space="preserve">
-    <value>インスペクター(_I)</value>
+    <value>_Inspector</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>ヘルプ(_H)</value>
+    <value>_Help</value>
   </data>
   <data name="MenuHelpAbout" xml:space="preserve">
-    <value>バージョン情報(_A)...</value>
+    <value>_About ZeroIchi...</value>
   </data>
   <data name="StructureTitle" xml:space="preserve">
-    <value>ファイル構造</value>
+    <value>File Structure</value>
   </data>
   <data name="StructureParsing" xml:space="preserve">
-    <value>解析中</value>
+    <value>Parsing</value>
   </data>
   <data name="InspectorTitle" xml:space="preserve">
-    <value>インスペクター</value>
+    <value>Inspector</value>
   </data>
   <data name="GoToOffsetPlaceholder" xml:space="preserve">
-    <value>アドレス</value>
+    <value>Address</value>
   </data>
   <data name="GoToOffsetGo" xml:space="preserve">
-    <value>移動 (Enter)</value>
+    <value>Go (Enter)</value>
   </data>
   <data name="SearchPlaceholder" xml:space="preserve">
-    <value>検索</value>
+    <value>Search</value>
   </data>
   <data name="SearchSearching" xml:space="preserve">
-    <value>検索中</value>
+    <value>Searching</value>
   </data>
   <data name="SearchPrevious" xml:space="preserve">
-    <value>前を検索 (Shift+F3)</value>
+    <value>Find Previous (Shift+F3)</value>
   </data>
   <data name="SearchNext" xml:space="preserve">
-    <value>次を検索 (F3)</value>
+    <value>Find Next (F3)</value>
   </data>
   <data name="CloseEsc" xml:space="preserve">
-    <value>閉じる (Esc)</value>
+    <value>Close (Esc)</value>
   </data>
   <data name="AboutTitle" xml:space="preserve">
-    <value>バージョン情報</value>
+    <value>About ZeroIchi</value>
   </data>
   <data name="AboutLicenseNotice" xml:space="preserve">
-    <value>MIT License のもとで公開されています。</value>
+    <value>Released under the MIT License.</value>
   </data>
   <data name="AboutLicensesButton" xml:space="preserve">
-    <value>ライセンス</value>
+    <value>Licenses</value>
   </data>
   <data name="LicensesTitle" xml:space="preserve">
-    <value>ライセンス</value>
+    <value>Licenses</value>
   </data>
   <data name="LicensesClose" xml:space="preserve">
-    <value>閉じる</value>
+    <value>Close</value>
   </data>
   <data name="SaveChangesMessage" xml:space="preserve">
-    <value>変更内容を保存しますか？</value>
+    <value>Do you want to save your changes?</value>
   </data>
   <data name="SaveChangesSave" xml:space="preserve">
-    <value>保存する</value>
+    <value>Save</value>
   </data>
   <data name="SaveChangesDiscard" xml:space="preserve">
-    <value>保存しない</value>
+    <value>Don't Save</value>
   </data>
   <data name="SaveChangesCancel" xml:space="preserve">
-    <value>キャンセル</value>
+    <value>Cancel</value>
   </data>
 </root>

@@ -11,7 +11,6 @@ public sealed class LocalizeExtensionTests
     [Fact]
     public Task Binding_ReReadsTheStringWhenTheCultureChanges() => HeadlessTestApp.RunAsync(async () =>
     {
-        using var _ = FakeEnglishStrings.Use();
         var dialog = new AboutDialog();
         dialog.Show();
         Dispatcher.UIThread.RunJobs();
@@ -22,7 +21,7 @@ public sealed class LocalizeExtensionTests
             Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
             Dispatcher.UIThread.RunJobs();
 
-            Assert.Equal("en:バージョン情報", dialog.Title);
+            Assert.Equal("About ZeroIchi", dialog.Title);
         }
         finally
         {

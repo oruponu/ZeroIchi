@@ -23,16 +23,15 @@ public sealed class TextFlyoutStringsTests
     [Fact]
     public Task Attach_UpdatesTheStringsWhenTheCultureChanges() => HeadlessTestApp.RunAsync(() =>
     {
-        using var _ = FakeEnglishStrings.Use();
         var resources = new ResourceDictionary();
         TextFlyoutStrings.Attach(resources);
         try
         {
             Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
 
-            Assert.Equal("en:切り取り(_T)", resources["StringTextFlyoutCutText"]);
-            Assert.Equal("en:コピー(_C)", resources["StringTextFlyoutCopyText"]);
-            Assert.Equal("en:貼り付け(_P)", resources["StringTextFlyoutPasteText"]);
+            Assert.Equal("Cu_t", resources["StringTextFlyoutCutText"]);
+            Assert.Equal("_Copy", resources["StringTextFlyoutCopyText"]);
+            Assert.Equal("_Paste", resources["StringTextFlyoutPasteText"]);
         }
         finally
         {

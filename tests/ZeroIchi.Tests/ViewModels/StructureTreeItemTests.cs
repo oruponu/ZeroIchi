@@ -2,7 +2,6 @@ using Avalonia.Media;
 using System.Globalization;
 using ZeroIchi.Localization;
 using ZeroIchi.Models.FileStructure;
-using ZeroIchi.Tests.Localization;
 using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Tests.ViewModels;
@@ -125,14 +124,13 @@ public sealed class StructureTreeItemTests
             Error = FileStructureError.EndOfData(1, false, 4, 2, "Unexpected end of stream"),
         }, 0);
 
-        using var _ = FakeEnglishStrings.Use();
         try
         {
             Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
 
-            Assert.Equal("en:未解析", unparsed.Name);
-            Assert.StartsWith("en:(未完了)  ", incompleteWithError.Description);
-            Assert.Contains("en:データ不足: en:位置 0x1 で", incompleteWithError.Description);
+            Assert.Equal("Not parsed", unparsed.Name);
+            Assert.StartsWith("(incomplete)  ", incompleteWithError.Description);
+            Assert.Contains("Not enough data at offset 0x1:", incompleteWithError.Description);
         }
         finally
         {

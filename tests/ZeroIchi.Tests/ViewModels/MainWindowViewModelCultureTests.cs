@@ -4,7 +4,6 @@ using System.Text;
 using ZeroIchi.Localization;
 using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
-using ZeroIchi.Tests.Localization;
 using ZeroIchi.ViewModels;
 using static ZeroIchi.Tests.ViewModelTestFactory;
 
@@ -42,7 +41,6 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     [Fact]
     public Task CultureChange_RebuildsTheLiveTexts() => HeadlessTestApp.RunAsync(async () =>
     {
-        using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
         await vm.OpenFileAsync(CreateTestFile(new byte[16]));
         try
@@ -57,9 +55,9 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
 
             SwitchToEnglish();
 
-            Assert.Equal("en:無効な値", vm.GoToOffsetError);
-            Assert.Equal("en:無効な16進数", vm.SearchStatusText);
-            Assert.Equal("en:00000000 - 00000003 (4 バイト)", vm.StatusBarPositionText);
+            Assert.Equal("Invalid value", vm.GoToOffsetError);
+            Assert.Equal("Invalid hex", vm.SearchStatusText);
+            Assert.Equal("00000000 - 00000003 (length 4)", vm.StatusBarPositionText);
             Assert.Contains(nameof(MainWindowViewModel.GoToOffsetError), names);
             Assert.Contains(nameof(MainWindowViewModel.SearchStatusText), names);
             Assert.Contains(nameof(MainWindowViewModel.StatusBarPositionText), names);
@@ -77,7 +75,6 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
         const string yaml = "meta:\n  id: zi\nseq:\n  - id: magic\n    contents: ZI\n  - id: len\n    type: u1\n";
         var registry = new KsyFormatRegistry();
         registry.Register(KsyModelBuilder.Parse(yaml).Format!);
-        using var _ = FakeEnglishStrings.Use();
         var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService())
         {
             KsyFormats = registry,
@@ -95,8 +92,8 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
 
             SwitchToEnglish();
 
-            Assert.Equal("en:(未完了)  en:データ不足: en:位置 0x2 で 1 バイト必要 (残り 0 バイト)", len.Description);
-            Assert.Equal("en:未解析", unparsed.Name);
+            Assert.Equal("(incomplete)  Not enough data at offset 0x2: needed 1, remaining 0", len.Description);
+            Assert.Equal("Not parsed", unparsed.Name);
             Assert.Contains(nameof(StructureTreeItem.Description), lenNames);
             Assert.Contains(nameof(StructureTreeItem.Name), unparsedNames);
         }
@@ -110,7 +107,6 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     [Fact]
     public Task CultureChange_AfterTheGoToOffsetErrorIsCleared_KeepsItEmpty() => HeadlessTestApp.RunAsync(async () =>
     {
-        using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
         await vm.OpenFileAsync(CreateTestFile(new byte[16]));
         try
@@ -134,7 +130,6 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     [Fact]
     public Task CultureChange_WhenNotSaving_KeepsTheProgressTextEmpty() => HeadlessTestApp.RunAsync(async () =>
     {
-        using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
         await vm.OpenFileAsync(CreateTestFile(new byte[16]));
         try
@@ -153,7 +148,6 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     [Fact]
     public Task CultureChange_WithoutADocument_KeepsTheStatusBarEmpty() => HeadlessTestApp.RunAsync(() =>
     {
-        using var _ = FakeEnglishStrings.Use();
         var vm = CreateViewModel();
         vm.SelectionLength = 4;
         vm.Document = null;

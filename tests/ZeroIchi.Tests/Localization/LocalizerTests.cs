@@ -50,31 +50,23 @@ public sealed class LocalizerTests
     });
 
     [Fact]
-    public Task Strings_UnderAnEnglishCulture_FallsBackToJapanese() => HeadlessTestApp.RunAsync(() =>
-    {
-        try
-        {
-            Localizer.Instance.SetCulture(English);
-
-            Assert.Equal("ファイルを開く", Strings.FileOpenTitle);
-        }
-        finally
-        {
-            Localizer.Instance.SetCulture(Japanese);
-        }
-        return Task.CompletedTask;
-    });
+    public Task Strings_UnderEnglish_ReturnsEnglish() => AssertFileOpenTitleAsync(English, "Open File");
 
     [Fact]
-    public Task FakeEnglishStrings_PrefixesTheValuesUnderEnglish() => HeadlessTestApp.RunAsync(() =>
+    public Task Strings_UnderAnUnsupportedCulture_ReturnsEnglish() =>
+        AssertFileOpenTitleAsync(CultureInfo.GetCultureInfo("de-DE"), "Open File");
+
+    [Fact]
+    public Task Strings_UnderJapaneseJapan_ReturnsJapanese() =>
+        AssertFileOpenTitleAsync(CultureInfo.GetCultureInfo("ja-JP"), "ファイルを開く");
+
+    private static Task AssertFileOpenTitleAsync(CultureInfo culture, string expected) => HeadlessTestApp.RunAsync(() =>
     {
-        using var _ = FakeEnglishStrings.Use();
         try
         {
-            Localizer.Instance.SetCulture(English);
+            Localizer.Instance.SetCulture(culture);
 
-            Assert.Equal("en:ファイルを開く", Strings.FileOpenTitle);
-            Assert.Equal("en:ファイルを開く", Localizer.Instance["FileOpenTitle"]);
+            Assert.Equal(expected, Strings.FileOpenTitle);
         }
         finally
         {

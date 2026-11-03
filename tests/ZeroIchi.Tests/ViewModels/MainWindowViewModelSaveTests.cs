@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Text;
 using ZeroIchi.Localization;
 using ZeroIchi.Services;
-using ZeroIchi.Tests.Localization;
 using ZeroIchi.ViewModels;
 
 namespace ZeroIchi.Tests.ViewModels;
@@ -373,7 +372,6 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
     [Fact]
     public Task CultureChange_DuringASave_RebuildsTheProgressText() => HeadlessTestApp.RunAsync(async () =>
     {
-        using var fakeStrings = FakeEnglishStrings.Use();
         var (vm, _, _) = await OpenDeletedAsync(saveBusyDelay: TimeSpan.FromMilliseconds(20),
             saveProgressInterval: TimeSpan.FromHours(1));
         try
@@ -384,7 +382,7 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
 
             Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
 
-            Assert.StartsWith("en:保存中 ", vm.SaveProgressText);
+            Assert.StartsWith("Saving ", vm.SaveProgressText);
         }
         finally
         {
