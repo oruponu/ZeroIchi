@@ -70,6 +70,26 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     });
 
     [Fact]
+    public Task CultureChange_RebuildsTheUntitledTitle() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var vm = CreateViewModel();
+        try
+        {
+            var names = RecordPropertyNames(vm);
+
+            SwitchToEnglish();
+
+            Assert.Equal("Untitled - ZeroIchi", vm.Title);
+            Assert.Contains(nameof(MainWindowViewModel.Title), names);
+        }
+        finally
+        {
+            SwitchToJapanese();
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
     public Task CultureChange_RebuildsTheStructureTreeItemTexts() => HeadlessTestApp.RunAsync(async () =>
     {
         const string yaml = "meta:\n  id: zi\nseq:\n  - id: magic\n    contents: ZI\n  - id: len\n    type: u1\n";

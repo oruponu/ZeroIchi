@@ -286,4 +286,7 @@
   <data name="SaveChangesCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="DocumentUntitled" xml:space="preserve">
+    <value>Untitled</value>
+  </data>
 </root>

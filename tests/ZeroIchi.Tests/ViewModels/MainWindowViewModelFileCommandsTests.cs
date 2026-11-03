@@ -54,6 +54,20 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
     }
 
     [Fact]
+    public async Task Title_NewDocument_IsUntitled()
+    {
+        var (vm, _) = CreateViewModel();
+        try
+        {
+            Assert.Equal("無題 - ZeroIchi", vm.Title);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
     public async Task OpenFile_WhenModifiedAndCancelled_KeepsDocument()
     {
         var (vm, dialog) = CreateViewModel();

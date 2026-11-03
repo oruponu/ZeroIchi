@@ -32,6 +32,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _clipboard = clipboard;
         _window = window;
         Document = BinaryDocument.CreateNew();
+        UpdateTitle();
         Localizer.Instance.CultureChanged += OnCultureChanged;
     }
 
@@ -41,6 +42,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (_searchStatusFormat is { } searchStatus) SearchStatusText = searchStatus();
         if (_statusBarPositionFormat is { } statusBarPosition) StatusBarPositionText = statusBarPosition();
         if (_shownSaveProgress is { } saveProgress) SaveProgressText = saveProgress.Text;
+        UpdateTitle();
         OnPropertyChanged(nameof(GoToOffsetError));
         OnPropertyChanged(nameof(SearchStatusText));
         OnPropertyChanged(nameof(StatusBarPositionText));
@@ -82,7 +84,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial bool CanRedo { get; set; }
 
     [ObservableProperty]
-    public partial string Title { get; set; } = "Untitled - ZeroIchi";
+    public partial string Title { get; set; } = "";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CopyCommand))]

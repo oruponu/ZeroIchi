@@ -198,6 +198,9 @@ public partial class MainWindowViewModel
         }
 
         var modified = Document.IsModified ? "*" : "";
-        Title = $"{modified}{Document.FileName} - ZeroIchi";
+        Title = $"{modified}{DisplayFileName(Document)} - ZeroIchi";
     }
+
+    private static string DisplayFileName(BinaryDocument document) =>
+        document.IsNew ? Strings.DocumentUntitled : document.FileName;
 }

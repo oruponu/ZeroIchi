@@ -35,7 +35,7 @@ public sealed class MainWindowViewModelDocumentChangedTests : IDisposable
 
             Assert.Equal(version + 1, vm.DataVersion);
             Assert.True(vm.CanUndo);
-            Assert.Equal("*Untitled - ZeroIchi", vm.Title);
+            Assert.Equal("*無題 - ZeroIchi", vm.Title);
         }
         finally
         {
