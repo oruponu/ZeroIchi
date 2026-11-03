@@ -50,6 +50,59 @@ public sealed class LocalizerTests
     });
 
     [Fact]
+    public Task GetObservable_PublishesTheStringAndRepublishesItWhenTheCultureChanges() => HeadlessTestApp.RunAsync(() =>
+    {
+        var values = new List<string>();
+        using var subscription = Localizer.Instance.GetObservable("FileOpenTitle").Subscribe(new Recorder(values));
+        try
+        {
+            Localizer.Instance.SetCulture(English);
+
+            Assert.Equal(["ファイルを開く", "Open File"], values);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(Japanese);
+        }
+        return Task.CompletedTask;
+    });
+
+    [Fact]
+    public Task GetObservable_AfterDispose_StopsPublishing() => HeadlessTestApp.RunAsync(() =>
+    {
+        var values = new List<string>();
+        var subscription = Localizer.Instance.GetObservable("FileOpenTitle").Subscribe(new Recorder(values));
+        subscription.Dispose();
+        try
+        {
+            Localizer.Instance.SetCulture(English);
+
+            Assert.Equal(["ファイルを開く"], values);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(Japanese);
+        }
+        return Task.CompletedTask;
+    });
+
+    [Fact]
+    public void GetObservable_UnknownKey_PublishesTheKey()
+    {
+        var values = new List<string>();
+        using var _ = Localizer.Instance.GetObservable("NoSuchKey").Subscribe(new Recorder(values));
+
+        Assert.Equal(["NoSuchKey"], values);
+    }
+
+    private sealed class Recorder(List<string> values) : IObserver<string>
+    {
+        public void OnNext(string value) => values.Add(value);
+        public void OnError(Exception error) => throw error;
+        public void OnCompleted() { }
+    }
+
+    [Fact]
     public Task Strings_UnderEnglish_ReturnsEnglish() => AssertFileOpenTitleAsync(English, "Open File");
 
     [Fact]

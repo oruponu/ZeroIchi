@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Globalization;
+using System.Threading;
 
 namespace ZeroIchi.Localization;
 
@@ -28,5 +29,25 @@ public sealed class Localizer : INotifyPropertyChanged
         Strings.Culture = culture;
         PropertyChanged?.Invoke(this, IndexerChangedArgs);
         CultureChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public IObservable<string> GetObservable(string key) => new LocalizedStringObservable(this, key);
+
+    private sealed class LocalizedStringObservable(Localizer localizer, string key) : IObservable<string>
+    {
+        public IDisposable Subscribe(IObserver<string> observer)
+        {
+            EventHandler onCultureChanged = (_, _) => observer.OnNext(localizer[key]);
+            localizer.CultureChanged += onCultureChanged;
+            observer.OnNext(localizer[key]);
+            return new Subscription(() => localizer.CultureChanged -= onCultureChanged);
+        }
+    }
+
+    private sealed class Subscription(Action unsubscribe) : IDisposable
+    {
+        private Action? _unsubscribe = unsubscribe;
+
+        public void Dispose() => Interlocked.Exchange(ref _unsubscribe, null)?.Invoke();
     }
 }
