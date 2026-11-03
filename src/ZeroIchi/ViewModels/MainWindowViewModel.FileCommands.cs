@@ -98,7 +98,7 @@ public partial class MainWindowViewModel
     {
         if (!CanStartSave() || Document is null) return;
 
-        var path = await _dialog.PickSaveFileAsync(Strings.FileSaveAsTitle, Document.FileName);
+        var path = await _dialog.PickSaveFileAsync(Strings.FileSaveAsTitle, DisplayFileName(Document));
         if (path is null || !CanStartSave()) return;
 
         await RunSaveAsync(Document, (d, p) => d.SaveAsAsync(path, p));

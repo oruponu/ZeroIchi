@@ -34,9 +34,14 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         public string? SaveFilePath { get; set; }
         public int SaveChangesDialogCount { get; private set; }
         public int ErrorCount { get; private set; }
+        public string? SuggestedFileName { get; private set; }
 
         public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
-        public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => Task.FromResult(SaveFilePath);
+        public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName)
+        {
+            SuggestedFileName = suggestedFileName;
+            return Task.FromResult(SaveFilePath);
+        }
 
         public Task<SaveChangesResult> ShowSaveChangesDialogAsync()
         {
@@ -60,6 +65,22 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
         try
         {
             Assert.Equal("無題 - ZeroIchi", vm.Title);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SaveAs_NewDocument_SuggestsTheUntitledName()
+    {
+        var (vm, dialog) = CreateViewModel();
+        try
+        {
+            await vm.SaveAsFileCommand.ExecuteAsync(null);
+
+            Assert.Equal("無題", dialog.SuggestedFileName);
         }
         finally
         {
