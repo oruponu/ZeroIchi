@@ -37,6 +37,7 @@ public sealed class MainWindowViewModelCloseTests : IDisposable
             return Task.CompletedTask;
         }
 
+        public Task ShowSettingsAsync() => Task.CompletedTask;
         public Task ShowAboutAsync() => Task.CompletedTask;
     }
 

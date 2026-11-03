@@ -40,6 +40,7 @@ public sealed class MainWindowSaveTests : IDisposable
             return Task.CompletedTask;
         }
 
+        public Task ShowSettingsAsync() => Task.CompletedTask;
         public Task ShowAboutAsync() => Task.CompletedTask;
     }
 

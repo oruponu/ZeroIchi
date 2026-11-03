@@ -26,6 +26,8 @@ public sealed class MainWindowViewModelAboutTests
         public Task<SaveChangesResult> ShowSaveChangesDialogAsync() => Task.FromResult(SaveChangesResult.Discard);
         public Task ShowErrorAsync(string message, string detail) => Task.CompletedTask;
 
+        public Task ShowSettingsAsync() => Task.CompletedTask;
+
         public Task ShowAboutAsync()
         {
             AboutCount++;

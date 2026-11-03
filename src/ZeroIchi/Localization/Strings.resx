@@ -295,6 +295,9 @@
   <data name="SettingsSaveFailed" xml:space="preserve">
     <value>Could not save the settings</value>
   </data>
+  <data name="MenuFileSettings" xml:space="preserve">
+    <value>Se_ttings...</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Settings</value>
   </data>

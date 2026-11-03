@@ -189,6 +189,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private Task ShowSettingsAsync() => _dialog.ShowSettingsAsync();
+
+    [RelayCommand]
     private Task ShowAboutAsync() => _dialog.ShowAboutAsync();
 
     partial void OnCursorPositionChanged(long value)

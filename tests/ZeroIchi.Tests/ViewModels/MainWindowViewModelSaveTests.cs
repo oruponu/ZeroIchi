@@ -51,6 +51,7 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
             return Task.CompletedTask;
         }
 
+        public Task ShowSettingsAsync() => Task.CompletedTask;
         public Task ShowAboutAsync() => Task.CompletedTask;
     }
 

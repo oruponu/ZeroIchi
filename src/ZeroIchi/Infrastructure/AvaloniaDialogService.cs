@@ -1,12 +1,14 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using System.Threading.Tasks;
+using ZeroIchi.Models;
 using ZeroIchi.Services;
+using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
 
 namespace ZeroIchi.Infrastructure;
 
-public sealed class AvaloniaDialogService(Window window, IShellWindow shell) : IDialogService
+public sealed class AvaloniaDialogService(Window window, IShellWindow shell, SettingsManager settings) : IDialogService
 {
     public async Task<string?> PickOpenFileAsync(string title)
     {
@@ -51,6 +53,25 @@ public sealed class AvaloniaDialogService(Window window, IShellWindow shell) : I
         try
         {
             await ErrorDialog.ShowAsync(window, message, detail);
+        }
+        finally
+        {
+            shell.SetModalOverlayVisible(false);
+        }
+    }
+
+    public async Task ShowSettingsAsync()
+    {
+        shell.SetModalOverlayVisible(true);
+        try
+        {
+            var dialog = new SettingsDialog();
+            Window errorOwner = dialog;
+            using var vm = new SettingsDialogViewModel(settings, (message, detail) => ErrorDialog.ShowAsync(errorOwner, message, detail));
+            dialog.DataContext = vm;
+            await dialog.ShowDialog(window);
+            errorOwner = window;
+            await vm.SaveIfChangedAsync();
         }
         finally
         {

@@ -411,6 +411,7 @@ public sealed class MainWindowViewModelStructureUpdateTests : IDisposable
         public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => Task.FromResult(SavePath);
         public Task<SaveChangesResult> ShowSaveChangesDialogAsync() => Task.FromResult(SaveChangesResult.Discard);
         public Task ShowErrorAsync(string message, string detail) { ErrorCount++; return Task.CompletedTask; }
+        public Task ShowSettingsAsync() => Task.CompletedTask;
         public Task ShowAboutAsync() => Task.CompletedTask;
     }
 }

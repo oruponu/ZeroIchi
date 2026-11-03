@@ -98,6 +98,7 @@
         <KeyBinding Command="{Binding OpenGoToOffsetCommand}" Gesture="Ctrl+G"/>
         <KeyBinding Command="{Binding ToggleStructureTreeCommand}" Gesture="Ctrl+T"/>
         <KeyBinding Command="{Binding ToggleInspectorCommand}" Gesture="Ctrl+I"/>
+        <KeyBinding Command="{Binding ShowSettingsCommand}" Gesture="Ctrl+OemComma"/>
         <KeyBinding Command="{Binding FindNextCommand}" Gesture="F3"/>
         <KeyBinding Command="{Binding FindPreviousCommand}" Gesture="Shift+F3"/>
         <KeyBinding Command="{Binding CloseOverlayCommand}" Gesture="Escape"/>
@@ -126,6 +127,10 @@
                         <MenuItem Command="{Binding SaveAsFileCommand}"
                                   Header="{l:Localize MenuFileSaveAs}"
                                   InputGesture="Ctrl+Shift+S"/>
+                        <Separator/>
+                        <MenuItem Command="{Binding ShowSettingsCommand}"
+                                  Header="{l:Localize MenuFileSettings}"
+                                  InputGesture="Ctrl+OemComma"/>
                         <Separator/>
                         <MenuItem Command="{Binding ExitCommand}" Header="{l:Localize MenuFileExit}"/>
                     </MenuItem>
