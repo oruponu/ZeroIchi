@@ -9,6 +9,7 @@ namespace ZeroIchi.Localization;
 public sealed class Localizer : INotifyPropertyChanged
 {
     private static readonly PropertyChangedEventArgs IndexerChangedArgs = new("Item");
+    private static readonly PropertyChangedEventArgs CultureChangedArgs = new(nameof(Culture));
 
     public static Localizer Instance { get; } = new();
 
@@ -30,6 +31,7 @@ public sealed class Localizer : INotifyPropertyChanged
         Dispatcher.UIThread.VerifyAccess();
         Strings.Culture = culture;
         PropertyChanged?.Invoke(this, IndexerChangedArgs);
+        PropertyChanged?.Invoke(this, CultureChangedArgs);
         CultureChanged?.Invoke(this, EventArgs.Empty);
     }
 

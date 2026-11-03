@@ -38,6 +38,7 @@ public sealed class LocalizerTests
             Assert.Equal("en-US", Strings.Culture!.Name);
             Assert.Equal(English, Localizer.Instance.Culture);
             Assert.Contains("Item", names);
+            Assert.Contains(nameof(Localizer.Culture), names);
             Assert.Equal(1, cultureChangedCount);
         }
         finally
