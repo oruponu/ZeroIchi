@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -26,6 +27,7 @@ public sealed class Localizer : INotifyPropertyChanged
 
     public void SetCulture(CultureInfo culture)
     {
+        Dispatcher.UIThread.VerifyAccess();
         Strings.Culture = culture;
         PropertyChanged?.Invoke(this, IndexerChangedArgs);
         CultureChanged?.Invoke(this, EventArgs.Empty);

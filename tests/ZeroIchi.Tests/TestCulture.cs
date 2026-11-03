@@ -7,5 +7,5 @@ namespace ZeroIchi.Tests;
 internal static class TestCulture
 {
     [ModuleInitializer]
-    internal static void Initialize() => Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("ja"));
+    internal static void Initialize() => Strings.Culture = CultureInfo.GetCultureInfo("ja");
 }

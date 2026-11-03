@@ -50,6 +50,21 @@ public sealed class LocalizerTests
     });
 
     [Fact]
+    public Task SetCulture_FromAnotherThread_ThrowsAndKeepsTheCulture() => HeadlessTestApp.RunAsync(async () =>
+    {
+        try
+        {
+            await Task.Run(() => Assert.Throws<InvalidOperationException>(() => Localizer.Instance.SetCulture(English)));
+
+            Assert.Equal("ja", Strings.Culture!.Name);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(Japanese);
+        }
+    });
+
+    [Fact]
     public Task GetObservable_PublishesTheStringAndRepublishesItWhenTheCultureChanges() => HeadlessTestApp.RunAsync(() =>
     {
         var values = new List<string>();
