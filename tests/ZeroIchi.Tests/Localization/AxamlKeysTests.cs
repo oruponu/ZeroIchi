@@ -6,8 +6,16 @@ namespace ZeroIchi.Tests.Localization;
 
 public sealed partial class AxamlKeysTests
 {
-    [GeneratedRegex(@"\{l:Localize\s+(\w+)\}")]
-    private static partial Regex KeyPattern();
+    [GeneratedRegex(@"\{l:Localize\s+(\w+)\s*\}")]
+    internal static partial Regex KeyPattern();
+
+    [Theory]
+    [InlineData("{l:Localize MenuFile}")]
+    [InlineData("{l:Localize MenuFile }")]
+    public void KeyPattern_MatchesTheKey(string text)
+    {
+        Assert.Equal("MenuFile", KeyPattern().Match(text).Groups[1].Value);
+    }
 
     [Fact]
     public void AllAxamlKeys_ExistInTheResources()
