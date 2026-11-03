@@ -295,4 +295,13 @@
   <data name="SettingsSaveFailed" xml:space="preserve">
     <value>Could not save the settings</value>
   </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="SettingsClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
 </root>

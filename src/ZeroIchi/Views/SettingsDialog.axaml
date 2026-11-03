@@ -1,0 +1,54 @@
+<Window x:Class="ZeroIchi.Views.SettingsDialog"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="using:ZeroIchi.Localization"
+        xmlns:vm="using:ZeroIchi.ViewModels"
+        Title="{l:Localize SettingsTitle}"
+        x:DataType="vm:SettingsDialogViewModel"
+        Background="Transparent"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <StyleInclude Source="avares://ZeroIchi/Views/DialogStyles.axaml"/>
+    </Window.Styles>
+
+    <Border MinWidth="368"
+            MaxWidth="468"
+            Classes="dialog">
+        <DockPanel>
+            <StackPanel Margin="24,20" DockPanel.Dock="Top">
+                <TextBlock Margin="0,0,0,16"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Text="{l:Localize SettingsTitle}"/>
+                <TextBlock Margin="0,0,0,8" Text="{l:Localize SettingsLanguage}"/>
+                <ComboBox x:Name="LanguageComboBox"
+                          MinWidth="240"
+                          ItemsSource="{Binding Languages}"
+                          SelectedItem="{Binding SelectedLanguage}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LanguageOption">
+                            <TextBlock Text="{Binding DisplayName}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+
+            <Border Classes="dialog-footer" DockPanel.Dock="Bottom">
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <Button x:Name="CloseButton"
+                            MinWidth="120"
+                            HorizontalContentAlignment="Center"
+                            Classes="accent"
+                            Content="{l:Localize SettingsClose}"
+                            IsDefault="True"/>
+                </StackPanel>
+            </Border>
+        </DockPanel>
+    </Border>
+</Window>
