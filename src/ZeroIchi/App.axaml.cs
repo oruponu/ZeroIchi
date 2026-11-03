@@ -32,9 +32,8 @@ public sealed partial class App : Application
         _ = Task.Run(MainWindowViewModel.WarmUpFileTypeDetection);
         var settings = new SettingsManager(new JsonSettingsStore(JsonSettingsStore.DefaultPath));
         Localizer.Instance.SetCulture(LanguageSetting.Resolve(settings.Current.Language));
-        var fontFamily = CreateDefaultFontFamily();
-        Resources["DefaultFontFamily"] = fontFamily;
-        Resources["ContentControlThemeFontFamily"] = fontFamily;
+        ApplyDefaultFontFamily();
+        Localizer.Instance.CultureChanged += (_, _) => ApplyDefaultFontFamily();
         TextFlyoutStrings.Attach(Resources);
         PopupCorners.Register();
 
@@ -62,14 +61,25 @@ public sealed partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private static FontFamily CreateDefaultFontFamily()
+    internal static CultureInfo SelectFontFallbackCulture(CultureInfo displayCulture, CultureInfo systemCulture) =>
+        displayCulture.TwoLetterISOLanguageName == "ja" ? displayCulture : systemCulture;
+
+    private void ApplyDefaultFontFamily()
+    {
+        var fontFamily = CreateDefaultFontFamily(
+            SelectFontFallbackCulture(Localizer.Instance.Culture, CultureInfo.CurrentUICulture));
+        Resources["DefaultFontFamily"] = fontFamily;
+        Resources["ContentControlThemeFontFamily"] = fontFamily;
+    }
+
+    private static FontFamily CreateDefaultFontFamily(CultureInfo culture)
     {
         var names = new List<string> { "Inter" };
         foreach (var codepoint in CjkFallbackCodepoints)
         {
             if (FontManager.Current.TryMatchCharacter(
                     codepoint, FontStyle.Normal, FontWeight.Normal, FontStretch.Normal,
-                    null, CultureInfo.CurrentUICulture, out var matched)
+                    null, culture, out var matched)
                 && !names.Contains(matched.FontFamily.Name))
             {
                 names.Add(matched.FontFamily.Name);
