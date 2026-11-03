@@ -289,4 +289,10 @@
   <data name="DocumentUntitled" xml:space="preserve">
     <value>無題</value>
   </data>
+  <data name="SettingsLanguageSystem" xml:space="preserve">
+    <value>システムの設定に従う</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>設定を保存できませんでした</value>
+  </data>
 </root>

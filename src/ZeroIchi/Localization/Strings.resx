@@ -289,4 +289,10 @@
   <data name="DocumentUntitled" xml:space="preserve">
     <value>Untitled</value>
   </data>
+  <data name="SettingsLanguageSystem" xml:space="preserve">
+    <value>Use system setting</value>
+  </data>
+  <data name="SettingsSaveFailed" xml:space="preserve">
+    <value>Could not save the settings</value>
+  </data>
 </root>
