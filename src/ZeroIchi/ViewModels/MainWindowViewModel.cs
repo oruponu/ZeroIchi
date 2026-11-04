@@ -127,6 +127,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public partial bool IsHexGoToOffset { get; set; } = true;
 
     [ObservableProperty]
+    public partial bool IsInsertMode { get; set; }
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CloseOverlayCommand))]
     public partial bool IsSearchVisible { get; set; }
 
@@ -208,6 +211,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         EndPendingNibble();
         UpdateUndoRedoState();
     }
+
+    partial void OnIsInsertModeChanged(bool value) => EndPendingNibble();
 
     partial void OnSelectionStartChanged(long value) => UpdateStatusBar();
     partial void OnSelectionLengthChanged(long value) => UpdateStatusBar();

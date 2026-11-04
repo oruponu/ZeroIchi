@@ -10,7 +10,7 @@ public partial class MainWindowViewModel
     private IEditCommand? _pendingNibbleCommand;
 
     public void OnByteModified(long index, byte value, long cursorPositionAfter,
-        ByteInputPart part = ByteInputPart.Whole)
+        bool isInsert = false, ByteInputPart part = ByteInputPart.Whole)
     {
         if (Document is null || IsSaving) return;
 
@@ -21,6 +21,7 @@ public partial class MainWindowViewModel
             IEditCommand replacement = pending switch
             {
                 AppendByteCommand => new AppendByteCommand(Document, value, pending.CursorPositionBefore, cursorPositionAfter),
+                InsertBytesCommand => new InsertBytesCommand(Document, index, [value], pending.CursorPositionBefore, cursorPositionAfter),
                 _ => new WriteByteCommand(Document, index, value, pending.CursorPositionBefore, cursorPositionAfter),
             };
             _pendingNibbleCommand = null;
@@ -33,6 +34,10 @@ public partial class MainWindowViewModel
         {
             command = new AppendByteCommand(Document, value, CursorPosition, cursorPositionAfter);
         }
+        else if (isInsert && part != ByteInputPart.LowNibble)
+        {
+            command = new InsertBytesCommand(Document, index, [value], CursorPosition, cursorPositionAfter);
+        }
         else
         {
             command = new WriteByteCommand(Document, index, value, CursorPosition, cursorPositionAfter);
@@ -43,6 +48,9 @@ public partial class MainWindowViewModel
     }
 
     private void EndPendingNibble() => _pendingNibbleCommand = null;
+
+    [RelayCommand]
+    private void ToggleInsertMode() => IsInsertMode = !IsInsertMode;
 
     public void OnBytesDeleted(long index, long count, long cursorPositionAfter)
     {
