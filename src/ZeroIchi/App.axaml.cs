@@ -33,7 +33,6 @@ public sealed partial class App : Application
         var settings = new SettingsManager(new JsonSettingsStore(JsonSettingsStore.DefaultPath));
         Localizer.Instance.SetCulture(LanguageSetting.Resolve(settings.Current.Language));
         ApplyDefaultFontFamily();
-        Localizer.Instance.CultureChanged += (_, _) => ApplyDefaultFontFamily();
         TextFlyoutStrings.Attach(Resources);
         PopupCorners.Register();
 
