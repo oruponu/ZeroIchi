@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Input;
 using Avalonia.Threading;
 using System;
+using ZeroIchi.Models;
 
 namespace ZeroIchi.Controls;
 
@@ -297,35 +298,26 @@ public partial class HexViewControl
         var pos = CursorPosition;
         var dataLength = buffer.Length;
 
-        if (pos == dataLength)
+        if (pos == dataLength || !_editingHighNibble)
         {
-            var newValue = (byte)(nibble << 4);
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue, pos));
+            var highValue = pos == dataLength
+                ? (byte)(nibble << 4)
+                : (byte)((nibble << 4) | (buffer.ReadByte(pos) & 0x0F));
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, highValue, pos, ByteInputPart.HighNibble));
             _editingHighNibble = true;
             EnsureCursorVisible();
             return;
         }
 
-        var currentByte = buffer.ReadByte(pos);
+        var lowValue = (byte)((buffer.ReadByte(pos) & 0xF0) | nibble);
+        var newPos = Math.Min(maxIndex, pos + 1);
+        RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, lowValue, newPos, ByteInputPart.LowNibble));
+        _editingHighNibble = false;
 
-        if (!_editingHighNibble)
-        {
-            var newValue = (byte)((nibble << 4) | (currentByte & 0x0F));
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue, pos));
-            _editingHighNibble = true;
-        }
-        else
-        {
-            var newValue = (byte)((currentByte & 0xF0) | nibble);
-            var newPos = Math.Min(maxIndex, pos + 1);
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, newValue, newPos));
-            _editingHighNibble = false;
-
-            CursorPosition = newPos;
-            SelectionStart = newPos;
-            SelectionLength = newPos < maxIndex ? 1 : 0;
-            EnsureCursorVisible();
-        }
+        CursorPosition = newPos;
+        SelectionStart = newPos;
+        SelectionLength = newPos < maxIndex ? 1 : 0;
+        EnsureCursorVisible();
     }
 
     private void HandleDelete(Key key, long dataLength)

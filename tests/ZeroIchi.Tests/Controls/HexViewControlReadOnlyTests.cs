@@ -32,7 +32,7 @@ public sealed class HexViewControlReadOnlyTests : IDisposable
         control.Bind(HexViewControl.CursorPositionProperty,
             new ReflectionBinding(nameof(vm.CursorPosition)) { Source = vm, Mode = BindingMode.TwoWay });
         control.AddHandler(HexViewControl.ByteModifiedEvent,
-            (_, e) => vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter));
+            (_, e) => vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter, part: e.Part));
         control.AddHandler(HexViewControl.BytesDeletedEvent,
             (_, e) => vm.OnBytesDeleted(e.Index, e.Count, e.CursorPositionAfter));
         return (vm, control);

@@ -32,7 +32,7 @@ public sealed class HexViewControlNibbleStateTests : IDisposable
         control.Bind(HexViewControl.CursorPositionProperty,
             new ReflectionBinding(nameof(vm.CursorPosition)) { Source = vm, Mode = BindingMode.TwoWay });
         control.AddHandler(HexViewControl.ByteModifiedEvent,
-            (_, e) => vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter));
+            (_, e) => vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter, part: e.Part));
         return (vm, control);
     }
 

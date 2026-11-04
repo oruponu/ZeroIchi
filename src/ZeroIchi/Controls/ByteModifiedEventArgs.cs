@@ -1,12 +1,14 @@
 using Avalonia.Interactivity;
+using ZeroIchi.Models;
 
 namespace ZeroIchi.Controls;
 
 public sealed class ByteModifiedEventArgs(
-    RoutedEvent routedEvent, object source, long index, byte value, long cursorPositionAfter)
+    RoutedEvent routedEvent, object source, long index, byte value, long cursorPositionAfter, ByteInputPart part)
     : RoutedEventArgs(routedEvent, source)
 {
     public long Index { get; } = index;
     public byte Value { get; } = value;
     public long CursorPositionAfter { get; } = cursorPositionAfter;
+    public ByteInputPart Part { get; } = part;
 }
