@@ -186,6 +186,36 @@ public sealed class PieceTable
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - index);
 
+        var range = SplitRange(index, count);
+        Piece[] newPieces = [.. range.Left, .. range.Right];
+
+        ReplacePieces(range.StartPieceIndex, range.OldPieces.Length, newPieces, -count);
+        return CreateEdit(range.StartPieceIndex, range.OldPieces, newPieces, -count, range.RemovedPieces);
+    }
+
+    public PieceTableEdit ReplaceBytes(long index, long count, byte[] bytes)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - index);
+        if (bytes.Length == 0) throw new ArgumentException("Bytes to insert must not be empty.", nameof(bytes));
+
+        var range = SplitRange(index, count);
+
+        var addOffset = _addBuffer.Length;
+        _addBuffer.Append(bytes);
+        var insertPiece = new Piece(PieceSource.Add, addOffset, bytes.Length);
+        Piece[] newPieces = [.. range.Left, insertPiece, .. range.Right];
+
+        var lengthDelta = bytes.Length - count;
+        ReplacePieces(range.StartPieceIndex, range.OldPieces.Length, newPieces, lengthDelta);
+        return CreateEdit(range.StartPieceIndex, range.OldPieces, newPieces, lengthDelta, range.RemovedPieces);
+    }
+
+    private readonly record struct SplitPieceRange(
+        int StartPieceIndex, Piece[] OldPieces, Piece[] RemovedPieces, Piece[] Left, Piece[] Right);
+
+    private SplitPieceRange SplitRange(long index, long count)
+    {
         var (startPi, startOffset) = FindPiece(index);
         var endLogical = index + count;
 
@@ -212,25 +242,12 @@ public sealed class PieceTable
             removedPieces[i] = piece with { Offset = piece.Offset + start, Length = end - start };
         }
 
-        var hasLeft = startOffset > 0;
-        var hasRight = endPi < _pieces.Count && endOffsetInPiece < _pieces[endPi].Length;
-        var newPieces = new Piece[(hasLeft ? 1 : 0) + (hasRight ? 1 : 0)];
-        var idx = 0;
+        Piece[] left = startOffset > 0 ? [_pieces[startPi] with { Length = startOffset }] : [];
+        Piece[] right = endPi < _pieces.Count && endOffsetInPiece < _pieces[endPi].Length
+            ? [_pieces[endPi] with { Offset = _pieces[endPi].Offset + endOffsetInPiece, Length = _pieces[endPi].Length - endOffsetInPiece }]
+            : [];
 
-        if (hasLeft)
-        {
-            var first = _pieces[startPi];
-            newPieces[idx++] = first with { Length = startOffset };
-        }
-
-        if (hasRight)
-        {
-            var last = _pieces[endPi];
-            newPieces[idx] = last with { Offset = last.Offset + endOffsetInPiece, Length = last.Length - endOffsetInPiece };
-        }
-
-        ReplacePieces(startPi, oldPieceCount, newPieces, -count);
-        return CreateEdit(startPi, oldPieces, newPieces, -count, removedPieces);
+        return new SplitPieceRange(startPi, oldPieces, removedPieces, left, right);
     }
 
     public PieceTableEdit AppendByte(byte value)
