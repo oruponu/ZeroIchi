@@ -41,7 +41,15 @@ public sealed class Localizer : INotifyPropertyChanged
     {
         public IDisposable Subscribe(IObserver<string> observer)
         {
-            EventHandler onCultureChanged = (_, _) => observer.OnNext(localizer[key]);
+            var target = new WeakReference<IObserver<string>>(observer);
+            EventHandler? onCultureChanged = null;
+            onCultureChanged = (_, _) =>
+            {
+                if (target.TryGetTarget(out var alive))
+                    alive.OnNext(localizer[key]);
+                else
+                    localizer.CultureChanged -= onCultureChanged;
+            };
             localizer.CultureChanged += onCultureChanged;
             observer.OnNext(localizer[key]);
             return new Subscription(() => localizer.CultureChanged -= onCultureChanged);

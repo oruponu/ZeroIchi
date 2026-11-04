@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using ZeroIchi.Localization;
 
 namespace ZeroIchi.Tests.Localization;
@@ -101,6 +102,48 @@ public sealed class LocalizerTests
         }
         return Task.CompletedTask;
     });
+
+    [Fact]
+    public void GetObservable_DoesNotKeepTheObserverAlive()
+    {
+        var observer = SubscribeWithoutKeepingTheObserver();
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(observer.TryGetTarget(out _));
+    }
+
+    [Fact]
+    public Task GetObservable_AfterGarbageCollection_KeepsPublishingToALiveObserver() => HeadlessTestApp.RunAsync(() =>
+    {
+        var values = new List<string>();
+        var observer = new Recorder(values);
+        _ = Localizer.Instance.GetObservable("FileOpenTitle").Subscribe(observer);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        try
+        {
+            Localizer.Instance.SetCulture(English);
+
+            Assert.Equal(["ファイルを開く", "Open File"], values);
+            GC.KeepAlive(observer);
+        }
+        finally
+        {
+            Localizer.Instance.SetCulture(Japanese);
+        }
+        return Task.CompletedTask;
+    });
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference<Recorder> SubscribeWithoutKeepingTheObserver()
+    {
+        var observer = new Recorder([]);
+        _ = Localizer.Instance.GetObservable("FileOpenTitle").Subscribe(observer);
+        return new WeakReference<Recorder>(observer);
+    }
 
     [Fact]
     public void GetObservable_UnknownKey_PublishesTheKey()

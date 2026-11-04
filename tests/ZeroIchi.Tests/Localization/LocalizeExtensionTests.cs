@@ -17,6 +17,8 @@ public sealed class LocalizeExtensionTests
         try
         {
             Assert.Equal("バージョン情報", dialog.Title);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             Localizer.Instance.SetCulture(CultureInfo.GetCultureInfo("en-US"));
             Dispatcher.UIThread.RunJobs();
