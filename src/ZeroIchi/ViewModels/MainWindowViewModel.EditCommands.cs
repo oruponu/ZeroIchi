@@ -7,9 +7,26 @@ namespace ZeroIchi.ViewModels;
 
 public partial class MainWindowViewModel
 {
-    public void OnByteModified(long index, byte value, long cursorPositionAfter)
+    private IEditCommand? _pendingNibbleCommand;
+
+    public void OnByteModified(long index, byte value, long cursorPositionAfter,
+        ByteInputPart part = ByteInputPart.Whole)
     {
         if (Document is null || IsSaving) return;
+
+        if (part == ByteInputPart.LowNibble && _pendingNibbleCommand is { } pending
+            && ReferenceEquals(pending.Document, Document))
+        {
+            // Rebuild the same kind of command as the high nibble so an append stays an append after the undo
+            IEditCommand replacement = pending switch
+            {
+                AppendByteCommand => new AppendByteCommand(Document, value, pending.CursorPositionBefore, cursorPositionAfter),
+                _ => new WriteByteCommand(Document, index, value, pending.CursorPositionBefore, cursorPositionAfter),
+            };
+            _pendingNibbleCommand = null;
+            Document.ReplaceLastCommand(pending, replacement);
+            return;
+        }
 
         IEditCommand command;
         if (index == Document.Buffer.Length)
@@ -22,12 +39,16 @@ public partial class MainWindowViewModel
         }
 
         Document.ExecuteCommand(command);
+        _pendingNibbleCommand = part == ByteInputPart.HighNibble ? command : null;
     }
+
+    private void EndPendingNibble() => _pendingNibbleCommand = null;
 
     public void OnBytesDeleted(long index, long count, long cursorPositionAfter)
     {
         if (Document is null || IsSaving) return;
 
+        EndPendingNibble();
         var command = new DeleteBytesCommand(Document, index, count, CursorPosition, cursorPositionAfter);
         Document.ExecuteCommand(command);
     }
@@ -37,6 +58,7 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
+        EndPendingNibble();
         var command = Document.Undo();
         if (command is null) return;
 
@@ -49,6 +71,7 @@ public partial class MainWindowViewModel
     {
         if (Document is null) return;
 
+        EndPendingNibble();
         var command = Document.Redo();
         if (command is null) return;
 
@@ -110,6 +133,7 @@ public partial class MainWindowViewModel
         await WriteClipboardAsync(bytes);
         if (IsSaving || Document != document || DataVersion != version) return;
 
+        EndPendingNibble();
         var command = new DeleteBytesCommand(document, start, bytes.Length, cursorPositionBefore, cursorPositionAfter: start);
         document.ExecuteCommand(command);
 
@@ -128,6 +152,7 @@ public partial class MainWindowViewModel
 
         if (bytes is null || bytes.Length == 0 || IsSaving) return;
 
+        EndPendingNibble();
         var insertIndex = CursorPosition;
         var cursorPositionAfter = insertIndex + bytes.Length;
         var insertCommand = new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition, cursorPositionAfter);

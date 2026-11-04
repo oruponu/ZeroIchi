@@ -196,19 +196,25 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     partial void OnCursorPositionChanged(long value)
     {
+        EndPendingNibble();
         UpdateStatusBar();
         UpdateInspector();
         if (!_isSyncingSelection)
             SyncStructureTreeSelection(value);
     }
 
-    partial void OnIsSavingChanged(bool value) => UpdateUndoRedoState();
+    partial void OnIsSavingChanged(bool value)
+    {
+        EndPendingNibble();
+        UpdateUndoRedoState();
+    }
 
     partial void OnSelectionStartChanged(long value) => UpdateStatusBar();
     partial void OnSelectionLengthChanged(long value) => UpdateStatusBar();
 
     partial void OnDocumentChanged(BinaryDocument? oldValue, BinaryDocument? newValue)
     {
+        EndPendingNibble();
         if (oldValue is not null)
             oldValue.Changed -= OnDocumentContentChanged;
         if (newValue is not null)
