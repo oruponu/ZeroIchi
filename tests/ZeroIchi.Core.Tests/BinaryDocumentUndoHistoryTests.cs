@@ -42,6 +42,21 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
     }
 
     [Fact]
+    public void UndoRedo_Replace_SwitchesBetweenStates()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3, 4, 5, 6]));
+
+        doc.ExecuteCommand(new ReplaceBytesCommand(doc, 1, 3, [0xAA], cursorPositionBefore: 1, cursorPositionAfter: 2));
+        Assert.Equal([1, 0xAA, 5, 6], doc.Buffer.SliceToArray(0, (int)doc.FileSize));
+
+        doc.Undo();
+        Assert.Equal([1, 2, 3, 4, 5, 6], doc.Buffer.SliceToArray(0, (int)doc.FileSize));
+
+        doc.Redo();
+        Assert.Equal([1, 0xAA, 5, 6], doc.Buffer.SliceToArray(0, (int)doc.FileSize));
+    }
+
+    [Fact]
     public void Save_KeepsUndoAndRedoHistory()
     {
         var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3]));

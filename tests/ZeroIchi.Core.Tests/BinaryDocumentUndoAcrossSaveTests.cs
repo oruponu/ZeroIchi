@@ -34,6 +34,10 @@ public sealed class BinaryDocumentUndoAcrossSaveTests : IDisposable
     private static void Delete(BinaryDocument doc, long index, long count) =>
         doc.ExecuteCommand(new DeleteBytesCommand(doc, index, count, cursorPositionBefore: index, cursorPositionAfter: index));
 
+    private static void Replace(BinaryDocument doc, long index, long count, byte[] bytes) =>
+        doc.ExecuteCommand(new ReplaceBytesCommand(doc, index, count, bytes,
+            cursorPositionBefore: index, cursorPositionAfter: index + bytes.Length));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference TrackPieceTable(BinaryDocument doc) => new(doc.CurrentPieceTable);
 
@@ -181,6 +185,55 @@ public sealed class BinaryDocumentUndoAcrossSaveTests : IDisposable
 
         Assert.Equal(addBufferLength, doc.CurrentPieceTable.AddBufferLength);
         Assert.Equal(Sequence(16), ReadAll(doc));
+    }
+
+    [Fact]
+    public async Task Save_ThenUndoReplace_RestoresReplacedBytes()
+    {
+        var path = CreateTestFile([1, 2, 3, 4, 5, 6]);
+        using var doc = BinaryDocument.Open(path);
+        Replace(doc, 1, 3, [0xAA, 0xBB]);
+        doc.Save();
+
+        doc.Undo();
+
+        Assert.Equal([1, 2, 3, 4, 5, 6], ReadAll(doc));
+        Assert.True(doc.IsModified);
+        Assert.Equal([1, 0xAA, 0xBB, 5, 6], await File.ReadAllBytesAsync(path));
+
+        doc.Redo();
+
+        Assert.Equal([1, 0xAA, 0xBB, 5, 6], ReadAll(doc));
+    }
+
+    [Fact]
+    public void Save_ThenUndoRedoReplaceRepeatedly_DoesNotGrowAddBuffer()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile(Sequence(16)));
+        Replace(doc, 4, 8, [0xAA, 0xBB]);
+        doc.Save();
+        doc.Undo();
+        doc.Redo();
+        var addBufferLength = doc.CurrentPieceTable.AddBufferLength;
+
+        for (var i = 0; i < 3; i++)
+        {
+            doc.Undo();
+            doc.Redo();
+        }
+
+        Assert.Equal(addBufferLength, doc.CurrentPieceTable.AddBufferLength);
+        Assert.Equal([0, 1, 2, 3, 0xAA, 0xBB, 12, 13, 14, 15], ReadAll(doc));
+    }
+
+    [Fact]
+    public void ReplaceCommand_RetainedLength_IsReplacedCount()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile([1, 2, 3, 4]));
+
+        var command = new ReplaceBytesCommand(doc, 1, 3, [0xAA], cursorPositionBefore: 1, cursorPositionAfter: 2);
+
+        Assert.Equal(3, command.RetainedLength);
     }
 
     [Fact]

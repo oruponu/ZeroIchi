@@ -92,6 +92,12 @@ public sealed class BinaryDocument : IDisposable
         return _pieceTable.InsertBytes(index, bytes);
     }
 
+    public PieceTableEdit ReplaceBytes(long index, long count, byte[] bytes)
+    {
+        ThrowIfSaving();
+        return _pieceTable.ReplaceBytes(index, count, bytes);
+    }
+
     public PieceTableEdit DeleteBytes(long index, long count)
     {
         ThrowIfSaving();
