@@ -300,10 +300,11 @@ public partial class HexViewControl
 
         if (pos == dataLength || !_editingHighNibble)
         {
-            var highValue = pos == dataLength
+            var isInsert = IsInsertMode && pos < dataLength;
+            var highValue = pos == dataLength || isInsert
                 ? (byte)(nibble << 4)
                 : (byte)((nibble << 4) | (buffer.ReadByte(pos) & 0x0F));
-            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, highValue, pos, ByteInputPart.HighNibble));
+            RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, highValue, pos, isInsert, ByteInputPart.HighNibble));
             _editingHighNibble = true;
             EnsureCursorVisible();
             return;
@@ -311,7 +312,7 @@ public partial class HexViewControl
 
         var lowValue = (byte)((buffer.ReadByte(pos) & 0xF0) | nibble);
         var newPos = Math.Min(maxIndex, pos + 1);
-        RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, lowValue, newPos, ByteInputPart.LowNibble));
+        RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, lowValue, newPos, false, ByteInputPart.LowNibble));
         _editingHighNibble = false;
 
         CursorPosition = newPos;

@@ -35,8 +35,9 @@ public sealed class HexViewControlEditingTests : IDisposable
             new ReflectionBinding(nameof(vm.SelectionStart)) { Source = vm, Mode = BindingMode.TwoWay });
         control.Bind(HexViewControl.SelectionLengthProperty,
             new ReflectionBinding(nameof(vm.SelectionLength)) { Source = vm, Mode = BindingMode.TwoWay });
+        control.Bind(HexViewControl.IsInsertModeProperty, new ReflectionBinding(nameof(vm.IsInsertMode)) { Source = vm });
         control.AddHandler(HexViewControl.ByteModifiedEvent,
-            (_, e) => vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter, part: e.Part));
+            (_, e) => vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter, e.IsInsert, e.Part));
         control.AddHandler(HexViewControl.BytesDeletedEvent,
             (_, e) => vm.OnBytesDeleted(e.Index, e.Count, e.CursorPositionAfter));
         return (vm, control);
@@ -47,6 +48,9 @@ public sealed class HexViewControlEditingTests : IDisposable
 
     private static void Type(HexViewControl control, string text)
         => control.RaiseEvent(new TextInputEventArgs { RoutedEvent = InputElement.TextInputEvent, Text = text });
+
+    private static void PressKey(HexViewControl control, Key key, KeyModifiers modifiers = KeyModifiers.None)
+        => control.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key, KeyModifiers = modifiers });
 
     [Fact]
     public Task Overwrite_TwoNibbles_SingleUndoRestoresByte() => HeadlessTestApp.RunAsync(async () =>
@@ -59,6 +63,36 @@ public sealed class HexViewControlEditingTests : IDisposable
 
             Assert.Equal([0xAB, 0x22], ReadAll(vm));
             Assert.Equal(1, vm.CursorPosition);
+
+            vm.UndoCommand.Execute(null);
+
+            Assert.Equal([0x11, 0x22], ReadAll(vm));
+            Assert.False(vm.CanUndo);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task InsertMode_TwoNibbles_InsertsOneByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            vm.IsInsertMode = true;
+            vm.CursorPosition = 1;
+
+            Type(control, "a");
+
+            Assert.Equal([0x11, 0xA0, 0x22], ReadAll(vm));
+            Assert.Equal(1, vm.CursorPosition);
+
+            Type(control, "b");
+
+            Assert.Equal([0x11, 0xAB, 0x22], ReadAll(vm));
+            Assert.Equal(2, vm.CursorPosition);
 
             vm.UndoCommand.Execute(null);
 
@@ -86,6 +120,74 @@ public sealed class HexViewControlEditingTests : IDisposable
             vm.UndoCommand.Execute(null);
 
             Assert.Equal([0x11, 0x22], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task InsertMode_AtEnd_Appends() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            vm.IsInsertMode = true;
+            vm.CursorPosition = 2;
+            Type(control, "ab");
+
+            Assert.Equal([0x11, 0x22, 0xAB], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task SwitchingToInsertAfterHighNibble_StartsNewByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            Type(control, "a");
+            Assert.Equal([0xA1, 0x22], ReadAll(vm));
+
+            vm.IsInsertMode = true;
+            Type(control, "b");
+
+            Assert.Equal([0xB0, 0xA1, 0x22], ReadAll(vm));
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal([0xA1, 0x22], ReadAll(vm));
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal([0x11, 0x22], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task SwitchingToOverwriteAfterHighNibble_StartsNewByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            vm.IsInsertMode = true;
+            Type(control, "a");
+            Assert.Equal([0xA0, 0x11, 0x22], ReadAll(vm));
+
+            vm.IsInsertMode = false;
+            Type(control, "b");
+
+            Assert.Equal([0xB0, 0x11, 0x22], ReadAll(vm));
+
+            vm.UndoCommand.Execute(null);
+            Assert.Equal([0xA0, 0x11, 0x22], ReadAll(vm));
         }
         finally
         {

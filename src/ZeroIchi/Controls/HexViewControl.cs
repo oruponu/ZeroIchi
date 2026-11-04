@@ -48,6 +48,9 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     public static readonly StyledProperty<bool> IsReadOnlyProperty =
         AvaloniaProperty.Register<HexViewControl, bool>(nameof(IsReadOnly));
 
+    public static readonly StyledProperty<bool> IsInsertModeProperty =
+        AvaloniaProperty.Register<HexViewControl, bool>(nameof(IsInsertMode));
+
     public static readonly StyledProperty<double> TopOverlayHeightProperty =
         AvaloniaProperty.Register<HexViewControl, double>(nameof(TopOverlayHeight));
 
@@ -182,6 +185,12 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         set => SetValue(IsReadOnlyProperty, value);
     }
 
+    public bool IsInsertMode
+    {
+        get => GetValue(IsInsertModeProperty);
+        set => SetValue(IsInsertModeProperty, value);
+    }
+
     public double TopOverlayHeight
     {
         get => GetValue(TopOverlayHeightProperty);
@@ -230,7 +239,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
         {
             EnsureCursorVisible();
         }
-        else if (change.Property == IsReadOnlyProperty)
+        else if (change.Property == IsReadOnlyProperty || change.Property == IsInsertModeProperty)
         {
             _editingHighNibble = false;
         }

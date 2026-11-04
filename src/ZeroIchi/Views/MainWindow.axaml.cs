@@ -183,7 +183,7 @@ public sealed partial class MainWindow : Window, IShellWindow
     {
         if (DataContext is MainWindowViewModel vm)
         {
-            vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter, part: e.Part);
+            vm.OnByteModified(e.Index, e.Value, e.CursorPositionAfter, e.IsInsert, e.Part);
         }
     }
 
