@@ -199,4 +199,57 @@ public sealed class BinaryDocumentUndoHistoryTests : IDisposable
         Assert.False(doc.CanUndo);
         Assert.Null(doc.Undo());
     }
+
+    [Fact]
+    public void ReplaceLastCommand_WriteByte_UndoRestoresOriginalInOneStep()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile([0x11, 0x22]));
+        var first = new WriteByteCommand(doc, 0, 0xA1, cursorPositionBefore: 0, cursorPositionAfter: 0);
+        doc.ExecuteCommand(first);
+        var changed = 0;
+        doc.Changed += (_, _) => changed++;
+
+        doc.ReplaceLastCommand(first, new WriteByteCommand(doc, 0, 0xAB, cursorPositionBefore: 0, cursorPositionAfter: 1));
+
+        Assert.Equal([0xAB, 0x22], doc.Buffer.SliceToArray(0, 2));
+        Assert.Equal(1, changed);
+
+        var undone = doc.Undo();
+
+        Assert.Equal([0x11, 0x22], doc.Buffer.SliceToArray(0, 2));
+        Assert.False(doc.CanUndo);
+        Assert.Equal(0, undone!.CursorPositionBefore);
+    }
+
+    [Fact]
+    public void ReplaceLastCommand_InsertedByte_UndoRemovesIt()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile([0x11, 0x22]));
+        var first = new InsertBytesCommand(doc, 1, [0xA0], cursorPositionBefore: 1, cursorPositionAfter: 1);
+        doc.ExecuteCommand(first);
+
+        doc.ReplaceLastCommand(first, new InsertBytesCommand(doc, 1, [0xAB], cursorPositionBefore: 1, cursorPositionAfter: 2));
+
+        Assert.Equal([0x11, 0xAB, 0x22], doc.Buffer.SliceToArray(0, (int)doc.FileSize));
+
+        doc.Undo();
+
+        Assert.Equal([0x11, 0x22], doc.Buffer.SliceToArray(0, (int)doc.FileSize));
+        Assert.False(doc.CanUndo);
+    }
+
+    [Fact]
+    public void ReplaceLastCommand_FromAnotherDocument_Throws()
+    {
+        using var doc = BinaryDocument.Open(CreateTestFile([0x11, 0x22]));
+        using var other = BinaryDocument.Open(CreateTestFile([0x33]));
+        var first = new WriteByteCommand(doc, 0, 0xA1, cursorPositionBefore: 0, cursorPositionAfter: 0);
+        doc.ExecuteCommand(first);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            doc.ReplaceLastCommand(first, new WriteByteCommand(other, 0, 0xAB, cursorPositionBefore: 0, cursorPositionAfter: 1)));
+
+        Assert.Equal([0xA1, 0x22], doc.Buffer.SliceToArray(0, 2));
+        Assert.Equal(0x33, other.Buffer.ReadByte(0));
+    }
 }

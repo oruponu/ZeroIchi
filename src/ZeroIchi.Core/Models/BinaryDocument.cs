@@ -128,6 +128,16 @@ public sealed class BinaryDocument : IDisposable
         OnChanged();
     }
 
+    public void ReplaceLastCommand(IEditCommand expected, IEditCommand replacement)
+    {
+        ThrowIfSaving();
+        if (!ReferenceEquals(expected.Document, this) || !ReferenceEquals(replacement.Document, this))
+            throw new InvalidOperationException();
+
+        _undoRedoManager.ReplaceLast(expected, replacement);
+        OnChanged();
+    }
+
     public IEditCommand? Undo()
     {
         ThrowIfSaving();

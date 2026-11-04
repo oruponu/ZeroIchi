@@ -30,6 +30,26 @@ public sealed class UndoRedoManager
         _redoStack.Clear();
     }
 
+    public void ReplaceLast(IEditCommand expected, IEditCommand replacement)
+    {
+        if (_undoList.Count == 0 || !ReferenceEquals(_undoList[^1], expected))
+            throw new InvalidOperationException("The command to replace is not the last one in the undo history.");
+
+        expected.Undo();
+        try
+        {
+            replacement.Execute();
+        }
+        catch
+        {
+            expected.Execute();
+            throw;
+        }
+
+        _undoList[^1] = replacement;
+        _redoStack.Clear();
+    }
+
     public IEditCommand? Undo()
     {
         if (_undoList.Count == 0) return null;
