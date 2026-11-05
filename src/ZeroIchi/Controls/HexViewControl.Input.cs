@@ -384,7 +384,7 @@ public partial class HexViewControl
         long deleteIndex;
         long deleteCount;
 
-        if (selectionLength > 0)
+        if (selectionLength >= 2)
         {
             deleteIndex = selectionStart;
             // The selection may include the virtual cell just past EOF, so clamp it to the data length

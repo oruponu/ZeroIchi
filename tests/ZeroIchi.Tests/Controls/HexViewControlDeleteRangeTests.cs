@@ -20,6 +20,10 @@ public sealed class HexViewControlDeleteRangeTests
     [InlineData(Key.Delete, 0, 0, 5, 16, 5, 1)]
     // Backspace without a selection → the byte before the cursor
     [InlineData(Key.Back, 0, 0, 5, 16, 4, 1)]
+    // Backspace with only the cursor byte selected → the byte before the cursor
+    [InlineData(Key.Back, 5, 1, 5, 16, 4, 1)]
+    // Delete with only the cursor byte selected → the byte at the cursor
+    [InlineData(Key.Delete, 5, 1, 5, 16, 5, 1)]
     // Deleting a selection beyond 2GB
     [InlineData(Key.Delete, 0x80000000L, 0x40000000L, 0x80000000L, 0xC0000000L, 0x80000000L, 0x40000000L)]
     // End of a 3GB file + virtual cell selected → clamped to the end of the data
@@ -44,6 +48,8 @@ public sealed class HexViewControlDeleteRangeTests
     [InlineData(Key.Delete, 0, 0, 16, 16)]
     // Backspace at the start without a selection
     [InlineData(Key.Back, 0, 0, 0, 16)]
+    // Backspace at the start with only the cursor byte selected
+    [InlineData(Key.Back, 0, 1, 0, 16)]
     // Only the virtual cell at the end of a 3GB file selected
     [InlineData(Key.Delete, 0xC0000000L, 1L, 0xC0000000L, 0xC0000000L)]
     public void GetDeleteRange_ReturnsNull_WhenNothingToDelete(
