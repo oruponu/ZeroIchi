@@ -113,6 +113,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private Size _scrollViewport;
     private bool _isDragging;
     private bool _editingHighNibble;
+    private bool _highNibbleInserted;
     private HexViewPane _activePane;
 
     internal HexViewPane ActivePane => _activePane;

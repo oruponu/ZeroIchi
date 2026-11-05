@@ -170,6 +170,70 @@ public sealed class HexViewControlEditingTests : IDisposable
     });
 
     [Fact]
+    public Task InsertMode_HighNibbleThenBackspace_RemovesHalfTypedByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            vm.IsInsertMode = true;
+            vm.CursorPosition = 1;
+            Type(control, "4");
+            Assert.Equal([0x11, 0x40, 0x22, 0x33], ReadAll(vm));
+
+            PressKey(control, Key.Back);
+
+            Assert.Equal([0x11, 0x22, 0x33], ReadAll(vm));
+            Assert.Equal(1, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task AtEnd_HighNibbleThenBackspace_RemovesHalfTypedByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            vm.CursorPosition = 2;
+            Type(control, "a");
+            Assert.Equal([0x11, 0x22, 0xA0], ReadAll(vm));
+
+            PressKey(control, Key.Back);
+
+            Assert.Equal([0x11, 0x22], ReadAll(vm));
+            Assert.Equal(2, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task Overwrite_HighNibbleThenBackspace_DeletesPreviousByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            vm.CursorPosition = 1;
+            Type(control, "4");
+            Assert.Equal([0x11, 0x42, 0x33], ReadAll(vm));
+
+            PressKey(control, Key.Back);
+
+            Assert.Equal([0x42, 0x33], ReadAll(vm));
+            Assert.Equal(0, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
     public Task SwitchingToInsertAfterHighNibble_StartsNewByte() => HeadlessTestApp.RunAsync(async () =>
     {
         var (vm, control) = await OpenAsync([0x11, 0x22]);

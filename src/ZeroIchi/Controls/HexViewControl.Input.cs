@@ -347,6 +347,7 @@ public partial class HexViewControl
                 : (byte)((nibble << 4) | (buffer.ReadByte(pos) & 0x0F));
             RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, highValue, pos, isInsert, ByteInputPart.HighNibble));
             _editingHighNibble = true;
+            _highNibbleInserted = isInsert || pos == dataLength;
             EnsureCursorVisible();
             return;
         }
@@ -364,7 +365,9 @@ public partial class HexViewControl
 
     private void HandleDelete(Key key, long dataLength)
     {
-        var range = GetDeleteRange(key, SelectionStart, SelectionLength, CursorPosition, dataLength);
+        var range = key == Key.Back && _editingHighNibble && _highNibbleInserted && SelectionLength < 2
+            ? (CursorPosition, 1L)
+            : GetDeleteRange(key, SelectionStart, SelectionLength, CursorPosition, dataLength);
         if (range is null) return;
 
         var (deleteIndex, deleteCount) = range.Value;
