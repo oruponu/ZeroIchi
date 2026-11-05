@@ -148,6 +148,12 @@
   <data name="FileStructureErrorStackLimit" xml:space="preserve">
     <value>入れ子が深すぎてスタックが不足</value>
   </data>
+  <data name="StatusBarInsertMode" xml:space="preserve">
+    <value>挿入</value>
+  </data>
+  <data name="StatusBarOverwriteMode" xml:space="preserve">
+    <value>上書き</value>
+  </data>
   <data name="StatusBarSelection" xml:space="preserve">
     <value>{0} - {1} ({2} バイト)</value>
   </data>

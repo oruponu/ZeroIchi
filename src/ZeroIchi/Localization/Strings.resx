@@ -148,6 +148,12 @@
   <data name="FileStructureErrorStackLimit" xml:space="preserve">
     <value>Nesting too deep; ran out of stack</value>
   </data>
+  <data name="StatusBarInsertMode" xml:space="preserve">
+    <value>Insert</value>
+  </data>
+  <data name="StatusBarOverwriteMode" xml:space="preserve">
+    <value>Overwrite</value>
+  </data>
   <data name="StatusBarSelection" xml:space="preserve">
     <value>{0} - {1} (length {2})</value>
   </data>

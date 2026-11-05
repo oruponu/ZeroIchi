@@ -83,4 +83,25 @@ public sealed class MainWindowInsertModeTests : IDisposable
             await CloseAsync(vm, window);
         }
     });
+
+    [Fact]
+    public Task StatusBar_ShowsCurrentMode() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync();
+        try
+        {
+            Assert.True(window.OverwriteModeText.IsVisible);
+            Assert.False(window.InsertModeText.IsVisible);
+
+            vm.IsInsertMode = true;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.False(window.OverwriteModeText.IsVisible);
+            Assert.True(window.InsertModeText.IsVisible);
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
 }
