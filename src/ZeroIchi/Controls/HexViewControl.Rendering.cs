@@ -159,8 +159,10 @@ public partial class HexViewControl
         var above = HighlightMask(byteOffset - BytesPerLine, cursor, selStart, selEnd, dataLength);
         var below = HighlightMask(byteOffset + BytesPerLine, cursor, selStart, selEnd, dataLength);
         var cursorMask = cursor - byteOffset is >= 0 and < BytesPerLine ? 1 << (int)(cursor - byteOffset) : 0;
-        FillCellRuns(context, SelectionBgBrush, y, highlighted & ~cursorMask, highlighted, above, below);
-        FillCellRuns(context, CursorBgBrush, y, highlighted & cursorMask, highlighted, above, below);
+        FillCellRuns(context, SelectionBgBrush, SelectionBgBrush, y, highlighted & ~cursorMask, highlighted, above, below);
+        var asciiActive = _activePane == HexViewPane.Ascii;
+        FillCellRuns(context, asciiActive ? SelectionBgBrush : CursorBgBrush, asciiActive ? CursorBgBrush : SelectionBgBrush,
+            y, highlighted & cursorMask, highlighted, above, below);
     }
 
     // Bit i is set when byte i of the row is the cursor (including the cell past the end) or selected
@@ -182,7 +184,7 @@ public partial class HexViewControl
     private static bool IsSet(int mask, int column) => (mask & (1 << column)) != 0;
 
     // Hex cells are not joined across the boundary between bytes 7 and 8
-    private void FillCellRuns(DrawingContext context, IBrush brush, double y,
+    private void FillCellRuns(DrawingContext context, IBrush hexBrush, IBrush asciiBrush, double y,
         int cells, int joined, int above, int below)
     {
         for (var first = 0; first < BytesPerLine; first++)
@@ -205,7 +207,7 @@ public partial class HexViewControl
                 FillHexRun(first, last, left && first != 8, right && last != 7);
             }
 
-            FillRun(new Rect(AsciiCellX(first), y, (last - first + 1) * _asciiCellWidth, _rowHeight),
+            FillRun(asciiBrush, new Rect(AsciiCellX(first), y, (last - first + 1) * _asciiCellWidth, _rowHeight),
                 first, last, left, right);
 
             first = last;
@@ -214,9 +216,9 @@ public partial class HexViewControl
         return;
 
         void FillHexRun(int from, int to, bool hasLeft, bool hasRight) =>
-            FillRun(new Rect(HexCellRect(from, y).TopLeft, HexCellRect(to, y).BottomRight), from, to, hasLeft, hasRight);
+            FillRun(hexBrush, new Rect(HexCellRect(from, y).TopLeft, HexCellRect(to, y).BottomRight), from, to, hasLeft, hasRight);
 
-        void FillRun(Rect rect, int from, int to, bool hasLeft, bool hasRight)
+        void FillRun(IBrush brush, Rect rect, int from, int to, bool hasLeft, bool hasRight)
         {
             var r = HighlightCornerRadius;
             FillRoundedRect(context, brush, rect,

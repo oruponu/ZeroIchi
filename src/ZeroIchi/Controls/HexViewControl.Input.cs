@@ -100,6 +100,7 @@ public partial class HexViewControl
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 
+        SetActivePane(ToContentX(point.X) >= _asciiStartX ? HexViewPane.Ascii : HexViewPane.Hex);
         _editingHighNibble = false;
 
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
@@ -247,6 +248,10 @@ public partial class HexViewControl
             case Key.PageDown:
                 newPos = Math.Min(maxIndex, newPos + visibleLines * BytesPerLine);
                 break;
+            case Key.Tab:
+                SetActivePane(_activePane == HexViewPane.Hex ? HexViewPane.Ascii : HexViewPane.Hex);
+                e.Handled = true;
+                return;
             case Key.Delete:
             case Key.Back:
                 if (!IsReadOnly) HandleDelete(e.Key, dataLength);
@@ -288,6 +293,16 @@ public partial class HexViewControl
                 e.Handled = true;
             }
         }
+    }
+
+    private void SetActivePane(HexViewPane pane)
+    {
+        if (_activePane == pane) return;
+
+        _activePane = pane;
+        _editingHighNibble = false;
+        EnsureCursorVisible();
+        InvalidateVisual();
     }
 
     private void HandleHexInput(int nibble, long maxIndex)

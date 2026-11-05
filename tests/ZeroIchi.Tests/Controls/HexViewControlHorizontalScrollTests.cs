@@ -150,4 +150,55 @@ public sealed class HexViewControlHorizontalScrollTests : IDisposable
             await CloseAsync(vm, window);
         }
     });
+
+    private static bool IsAsciiColumnStartVisible(MainWindow window)
+    {
+        var scrollable = (IScrollable)window.HexView;
+        return window.HexView.AsciiStartX > scrollable.Offset.X
+            && window.HexView.AsciiStartX < scrollable.Offset.X + scrollable.Viewport.Width;
+    }
+
+    [Fact]
+    public Task Tab_ScrollsAsciiCursorIntoView() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync(800);
+        try
+        {
+            Click(window, 120);
+            var scrollable = (IScrollable)window.HexView;
+            Assert.Equal(0, scrollable.Offset.X);
+            Assert.False(IsAsciiColumnStartVisible(window));
+
+            Press(window, Key.Tab);
+
+            Assert.True(scrollable.Offset.X > 0);
+            Assert.True(IsAsciiColumnStartVisible(window));
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
+
+    [Fact]
+    public Task Tab_BackToHex_ScrollsHexCursorIntoView() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync(800);
+        try
+        {
+            Click(window, 120);
+            Press(window, Key.Home);
+            var scrollable = (IScrollable)window.HexView;
+            Press(window, Key.Tab);
+            Assert.True(scrollable.Offset.X > 0);
+
+            Press(window, Key.Tab);
+
+            Assert.Equal(0, scrollable.Offset.X);
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
 }

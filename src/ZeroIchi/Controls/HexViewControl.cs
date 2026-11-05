@@ -113,6 +113,18 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
     private Size _scrollViewport;
     private bool _isDragging;
     private bool _editingHighNibble;
+    private HexViewPane _activePane;
+
+    internal HexViewPane ActivePane => _activePane;
+
+    internal double AsciiStartX
+    {
+        get
+        {
+            EnsureMetrics();
+            return _asciiStartX;
+        }
+    }
     internal long HoveredByteIndex { get; private set; } = -1;
     private Avalonia.Threading.DispatcherTimer? _autoScrollTimer;
     private Point _lastPointerPosition;
@@ -219,6 +231,7 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
             SelectionStart = 0;
             SelectionLength = 0;
             _editingHighNibble = false;
+            _activePane = HexViewPane.Hex;
             _scrollOffset = default;
             _metricsValid = false;
             InvalidateScrollable();
@@ -395,15 +408,14 @@ public sealed partial class HexViewControl : Control, ILogicalScrollable
             y = cursorY + _rowHeight - viewHeight;
 
         var column = (int)(CursorPosition % BytesPerLine);
-        var hexRect = HexCellRect(column, 0);
-        var asciiLeft = AsciiCellX(column);
+        var (cellLeft, cellRight) = _activePane == HexViewPane.Ascii
+            ? (AsciiCellX(column), AsciiCellX(column) + _asciiCellWidth)
+            : (HexCellRect(column, 0).Left, HexCellRect(column, 0).Right);
         var viewLeft = x + ContentLeft;
         var viewRight = x + _scrollViewport.Width;
 
-        bool IsVisible(double left, double right) => left >= viewLeft && right <= viewRight;
-
-        if (!IsVisible(hexRect.Left, hexRect.Right) && !IsVisible(asciiLeft, asciiLeft + _asciiCellWidth))
-            x = hexRect.Left < viewLeft ? hexRect.Left - ContentLeft : hexRect.Right - _scrollViewport.Width;
+        if (cellLeft < viewLeft || cellRight > viewRight)
+            x = cellLeft < viewLeft ? cellLeft - ContentLeft : cellRight - _scrollViewport.Width;
 
         if (x != _scrollOffset.X || y != _scrollOffset.Y)
             ((IScrollable)this).Offset = new Vector(x, y);

@@ -215,4 +215,43 @@ public sealed class HexViewControlEditingTests : IDisposable
             await vm.DisposeDocumentAsync();
         }
     });
+
+    [Fact]
+    public Task Tab_DropsHalfTypedByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            Type(control, "a");
+            Assert.Equal(0xA1, vm.Document!.Buffer.ReadByte(0));
+
+            PressKey(control, Key.Tab);
+            PressKey(control, Key.Tab);
+            Type(control, "b");
+
+            Assert.Equal(0xB1, vm.Document.Buffer.ReadByte(0));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task ShiftTab_TogglesPane() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22]);
+        try
+        {
+            PressKey(control, Key.Tab, KeyModifiers.Shift);
+            Assert.Equal(HexViewPane.Ascii, control.ActivePane);
+
+            PressKey(control, Key.Tab, KeyModifiers.Shift);
+            Assert.Equal(HexViewPane.Hex, control.ActivePane);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
 }
