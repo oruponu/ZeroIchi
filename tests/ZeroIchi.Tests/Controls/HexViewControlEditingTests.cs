@@ -217,6 +217,127 @@ public sealed class HexViewControlEditingTests : IDisposable
     });
 
     [Fact]
+    public Task AsciiPane_TypesPrintableChars_OneUndoStepEach() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            PressKey(control, Key.Tab);
+            Type(control, "Hi");
+
+            Assert.Equal([0x48, 0x69, 0x33], ReadAll(vm));
+            Assert.Equal(2, vm.CursorPosition);
+
+            vm.UndoCommand.Execute(null);
+
+            Assert.Equal([0x48, 0x22, 0x33], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task AsciiPane_IgnoresNonAsciiAndControlChars() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            PressKey(control, Key.Tab);
+            Type(control, "日");
+            Type(control, "\u007F");
+            Type(control, "\u0001");
+
+            Assert.Equal([0x11, 0x22, 0x33], ReadAll(vm));
+            Assert.False(vm.Document!.IsModified);
+            Assert.Equal(0, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task AsciiPane_MixedText_SkipsOnlyUnsupportedChars() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            PressKey(control, Key.Tab);
+            Type(control, "a日b");
+
+            Assert.Equal([0x61, 0x62, 0x33], ReadAll(vm));
+            Assert.Equal(2, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task AsciiPane_InsertMode_InsertsByte() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            vm.IsInsertMode = true;
+            vm.CursorPosition = 1;
+            PressKey(control, Key.Tab);
+            Type(control, "A");
+
+            Assert.Equal([0x11, 0x41, 0x22, 0x33], ReadAll(vm));
+            Assert.Equal(2, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task AsciiPane_AtEnd_Appends() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            vm.CursorPosition = 3;
+            PressKey(control, Key.Tab);
+            Type(control, "z");
+
+            Assert.Equal([0x11, 0x22, 0x33, 0x7A], ReadAll(vm));
+            Assert.Equal(4, vm.CursorPosition);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
+    public Task AsciiPane_ReadOnly_IgnoresInputButSwitchesPane() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, control) = await OpenAsync([0x11, 0x22, 0x33]);
+        try
+        {
+            control.IsReadOnly = true;
+            PressKey(control, Key.Tab);
+
+            Assert.Equal(HexViewPane.Ascii, control.ActivePane);
+
+            Type(control, "a");
+
+            Assert.Equal([0x11, 0x22, 0x33], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    });
+
+    [Fact]
     public Task Tab_DropsHalfTypedByte() => HeadlessTestApp.RunAsync(async () =>
     {
         var (vm, control) = await OpenAsync([0x11, 0x22]);

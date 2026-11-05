@@ -287,12 +287,37 @@ public partial class HexViewControl
 
         foreach (var c in text)
         {
-            if (ParseHexDigit(c) is { } nibble)
+            if (_activePane == HexViewPane.Ascii)
+            {
+                if (c is >= ' ' and <= '~')
+                {
+                    HandleAsciiInput((byte)c);
+                    e.Handled = true;
+                }
+            }
+            else if (ParseHexDigit(c) is { } nibble)
             {
                 HandleHexInput(nibble, buffer.Length);
                 e.Handled = true;
             }
         }
+    }
+
+    private void HandleAsciiInput(byte value)
+    {
+        var buffer = Buffer;
+        if (buffer is null) return;
+
+        var pos = CursorPosition;
+        var isInsert = IsInsertMode && pos < buffer.Length;
+        var newPos = pos + 1;
+        RaiseEvent(new ByteModifiedEventArgs(ByteModifiedEvent, this, pos, value, newPos, isInsert, ByteInputPart.Whole));
+        _editingHighNibble = false;
+
+        CursorPosition = newPos;
+        SelectionStart = newPos;
+        SelectionLength = newPos < (Buffer?.Length ?? 0) ? 1 : 0;
+        EnsureCursorVisible();
     }
 
     private void SetActivePane(HexViewPane pane)

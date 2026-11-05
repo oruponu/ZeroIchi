@@ -181,6 +181,28 @@ public sealed class HexViewControlHorizontalScrollTests : IDisposable
     });
 
     [Fact]
+    public Task TypingInAsciiPane_KeepsAsciiCursorInView() => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync(800);
+        try
+        {
+            Click(window, 120);
+            Press(window, Key.Home);
+            Press(window, Key.Tab);
+
+            window.KeyTextInput("abcdefghijklmnop");
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(0, window.HexView.CursorPosition % 16);
+            Assert.True(IsAsciiColumnStartVisible(window));
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
+
+    [Fact]
     public Task Tab_BackToHex_ScrollsHexCursorIntoView() => HeadlessTestApp.RunAsync(async () =>
     {
         var (vm, window) = await ShowAsync(800);
