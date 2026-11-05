@@ -205,6 +205,9 @@
   <data name="MenuEditPaste" xml:space="preserve">
     <value>_Paste</value>
   </data>
+  <data name="MenuEditInsertMode" xml:space="preserve">
+    <value>_Insert Mode</value>
+  </data>
   <data name="MenuEditSelectAll" xml:space="preserve">
     <value>Select _All</value>
   </data>

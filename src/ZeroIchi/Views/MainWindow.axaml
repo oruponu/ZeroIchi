@@ -158,6 +158,12 @@
                                   Header="{l:Localize MenuEditSelectAll}"
                                   InputGesture="Ctrl+A"/>
                         <Separator/>
+                        <MenuItem Command="{Binding ToggleInsertModeCommand}"
+                                  Header="{l:Localize MenuEditInsertMode}"
+                                  InputGesture="Insert"
+                                  IsChecked="{Binding IsInsertMode, Mode=OneWay}"
+                                  ToggleType="CheckBox"/>
+                        <Separator/>
                         <MenuItem Command="{Binding OpenSearchCommand}"
                                   Header="{l:Localize MenuEditFind}"
                                   InputGesture="Ctrl+F"/>
@@ -322,6 +328,7 @@
                                                      CursorPosition="{Binding CursorPosition}"
                                                      DataVersion="{Binding DataVersion}"
                                                      Document="{Binding Document}"
+                                                     IsInsertMode="{Binding IsInsertMode}"
                                                      IsReadOnly="{Binding IsSaving}"
                                                      SearchMatchLength="{Binding SearchMatchLength}"
                                                      SearchMatchOffsets="{Binding SearchMatchOffsets}"

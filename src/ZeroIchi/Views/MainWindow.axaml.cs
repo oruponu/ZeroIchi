@@ -43,6 +43,7 @@ public sealed partial class MainWindow : Window, IShellWindow
         AddEditKeyBinding(Key.X, KeyModifiers.Control, vm => vm.CutCommand);
         AddEditKeyBinding(Key.V, KeyModifiers.Control, vm => vm.PasteCommand);
         AddEditKeyBinding(Key.A, KeyModifiers.Control, vm => vm.SelectAllCommand);
+        AddEditKeyBinding(Key.Insert, KeyModifiers.None, vm => vm.ToggleInsertModeCommand);
     }
 
     private void AddEditKeyBinding(Key key, KeyModifiers modifiers, Func<MainWindowViewModel, ICommand> selectCommand)
