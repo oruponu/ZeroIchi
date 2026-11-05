@@ -100,7 +100,6 @@ public partial class HexViewControl
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
 
-        SetActivePane(ToContentX(point.X) >= _asciiStartX ? HexViewPane.Ascii : HexViewPane.Hex);
         _editingHighNibble = false;
 
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
@@ -113,6 +112,8 @@ public partial class HexViewControl
             SelectionStart = byteIndex;
             SelectionLength = Buffer is { } b && byteIndex < b.Length ? 1 : 0;
         }
+
+        SetActivePane(ToContentX(point.X) >= _asciiStartX ? HexViewPane.Ascii : HexViewPane.Hex);
 
         _isDragging = true;
         e.Pointer.Capture(this);

@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -106,6 +107,33 @@ public sealed class HexViewControlPaneTests : IDisposable
             Dispatcher.UIThread.RunJobs();
 
             Assert.Equal(HexViewPane.Ascii, window.HexView.ActivePane);
+        }
+        finally
+        {
+            await CloseAsync(vm, window);
+        }
+    });
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public Task ClickInOtherPane_AfterScrolling_KeepsScrollOffset(bool clickAscii) => HeadlessTestApp.RunAsync(async () =>
+    {
+        var (vm, window) = await ShowAsync();
+        try
+        {
+            var scrollable = (IScrollable)window.HexView;
+            scrollable.Offset = new Vector(0, 3000);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(3000, scrollable.Offset.Y);
+
+            var x = clickAscii ? window.HexView.AsciiStartX + 2 : 120;
+            var point = window.HexView.TranslatePoint(new Point(x, 200), window)!.Value;
+            window.MouseDown(point, MouseButton.Left);
+            window.MouseUp(point, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(new Vector(0, 3000), scrollable.Offset);
         }
         finally
         {
