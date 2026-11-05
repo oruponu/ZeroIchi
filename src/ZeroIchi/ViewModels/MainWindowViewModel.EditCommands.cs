@@ -161,10 +161,15 @@ public partial class MainWindowViewModel
         if (bytes is null || bytes.Length == 0 || IsSaving) return;
 
         EndPendingNibble();
-        var insertIndex = CursorPosition;
+        var replaceCount = SelectionLength >= 2
+            ? CopyRange.EffectiveLength(SelectionLength, SelectionStart, Document.Buffer.Length)
+            : 0;
+        var insertIndex = replaceCount > 0 ? SelectionStart : CursorPosition;
         var cursorPositionAfter = insertIndex + bytes.Length;
-        var insertCommand = new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition, cursorPositionAfter);
-        Document.ExecuteCommand(insertCommand);
+        EditCommand command = replaceCount > 0
+            ? new ReplaceBytesCommand(Document, insertIndex, replaceCount, bytes, CursorPosition, cursorPositionAfter)
+            : new InsertBytesCommand(Document, insertIndex, bytes, CursorPosition, cursorPositionAfter);
+        Document.ExecuteCommand(command);
 
         CursorPosition = cursorPositionAfter;
         SelectByteAtCursor();

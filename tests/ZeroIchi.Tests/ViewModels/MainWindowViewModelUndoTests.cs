@@ -266,6 +266,8 @@ public sealed class MainWindowViewModelUndoTests : IDisposable
             await vm.CopyCommand.ExecuteAsync(null);
 
             vm.CursorPosition = 3;
+            vm.SelectionStart = 3;
+            vm.SelectionLength = 1;
             await vm.PasteCommand.ExecuteAsync(null);
             Assert.Equal(5, vm.CursorPosition);
 

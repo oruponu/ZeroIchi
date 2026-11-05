@@ -242,6 +242,76 @@ public sealed class MainWindowViewModelClipboardTests : IDisposable
     }
 
     [Fact]
+    public async Task Paste_WithRangeSelection_ReplacesSelectionInOneUndoStep()
+    {
+        var (vm, clipboard) = await OpenAsync([0, 1, 2, 3, 4, 5]);
+        try
+        {
+            await clipboard.SetBytesAsync([0xAA, 0xBB], null);
+            vm.CursorPosition = 1;
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 3;
+
+            await vm.PasteCommand.ExecuteAsync(null);
+
+            Assert.Equal([0, 0xAA, 0xBB, 4, 5], ReadAll(vm));
+            Assert.Equal(3, vm.CursorPosition);
+
+            vm.UndoCommand.Execute(null);
+
+            Assert.Equal([0, 1, 2, 3, 4, 5], ReadAll(vm));
+            Assert.False(vm.CanUndo);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Paste_WithSelectionIncludingEndCell_ReplacesUpToEnd()
+    {
+        var (vm, clipboard) = await OpenAsync([0, 1, 2]);
+        try
+        {
+            await clipboard.SetBytesAsync([0xAA, 0xBB], null);
+            vm.CursorPosition = 1;
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 3;
+
+            await vm.PasteCommand.ExecuteAsync(null);
+
+            Assert.Equal([0, 0xAA, 0xBB], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Paste_WithCursorByteOnly_InsertsInOverwriteMode()
+    {
+        var (vm, clipboard) = await OpenAsync([0, 1, 2]);
+        try
+        {
+            await clipboard.SetBytesAsync([0xAA], null);
+            vm.IsInsertMode = false;
+            vm.CursorPosition = 1;
+            vm.SelectionStart = 1;
+            vm.SelectionLength = 1;
+
+            await vm.PasteCommand.ExecuteAsync(null);
+
+            Assert.Equal([0, 0xAA, 1, 2], ReadAll(vm));
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
     public async Task CopyThenPaste_InsertsCopiedBytes_EvenIfOtherAppLeftHexText()
     {
         var (vm, clipboard) = await OpenAsync([0x01, 0x02, 0x03]);
@@ -252,6 +322,8 @@ public sealed class MainWindowViewModelClipboardTests : IDisposable
             vm.SelectionLength = 2;
             await vm.CopyCommand.ExecuteAsync(null);
             vm.CursorPosition = 0;
+            vm.SelectionStart = 0;
+            vm.SelectionLength = 1;
 
             await vm.PasteCommand.ExecuteAsync(null);
 
