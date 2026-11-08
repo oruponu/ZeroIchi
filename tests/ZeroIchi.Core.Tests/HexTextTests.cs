@@ -40,9 +40,44 @@ public sealed class HexTextTests
     }
 
     [Theory]
+    [InlineData("DEADBEEF", new byte[] { 0xDE, 0xAD, 0xBE, 0xEF })]
+    [InlineData("deadbeef 01", new byte[] { 0xDE, 0xAD, 0xBE, 0xEF, 0x01 })]
+    [InlineData("0010", new byte[] { 0x00, 0x10 })]
+    public void Parse_SplitsUnseparatedHexIntoBytePairs(string text, byte[] expected)
+    {
+        Assert.Equal(expected, HexText.Parse(text));
+    }
+
+    [Theory]
+    [InlineData("0xFF", new byte[] { 0xFF })]
+    [InlineData("0XfF", new byte[] { 0xFF })]
+    [InlineData("0xF", new byte[] { 0x0F })]
+    [InlineData("0xDEADBEEF", new byte[] { 0xDE, 0xAD, 0xBE, 0xEF })]
+    [InlineData("0x10 0x20", new byte[] { 0x10, 0x20 })]
+    public void Parse_AcceptsHexPrefix(string text, byte[] expected)
+    {
+        Assert.Equal(expected, HexText.Parse(text));
+    }
+
+    [Theory]
+    [InlineData("de-ad-be-ef", new byte[] { 0xDE, 0xAD, 0xBE, 0xEF })]
+    [InlineData("de:ad:be:ef", new byte[] { 0xDE, 0xAD, 0xBE, 0xEF })]
+    [InlineData("0xDE, 0xAD,0xBE", new byte[] { 0xDE, 0xAD, 0xBE })]
+    public void Parse_AcceptsCommaHyphenAndColonSeparators(string text, byte[] expected)
+    {
+        Assert.Equal(expected, HexText.Parse(text));
+    }
+
+    [Theory]
     [InlineData("hello")]
     [InlineData("10 2G")]
     [InlineData("100")]
+    [InlineData("DEADBEE")]
+    [InlineData("0x")]
+    [InlineData("0xABC")]
+    [InlineData("0x0x10")]
+    [InlineData("x10")]
+    [InlineData("+10")]
     public void Parse_ReturnsNull_WhenAnyTokenIsNotAByte(string text)
     {
         Assert.Null(HexText.Parse(text));
