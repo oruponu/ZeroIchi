@@ -71,11 +71,27 @@ public sealed class SaveChangesDialogTests
     });
 
     [Fact]
+    public Task ShowAsync_ShowsTheFileNameInTheMessage() => HeadlessTestApp.RunAsync(() =>
+    {
+        var owner = new Window();
+        owner.Show();
+        _ = SaveChangesDialog.ShowAsync(owner, "sample.bin");
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.IsType<SaveChangesDialog>(Assert.Single(owner.OwnedWindows));
+
+        Assert.Equal("sample.bin への変更内容を保存しますか？", dialog.MessageText.Text);
+
+        dialog.Close();
+        owner.Close();
+        return Task.CompletedTask;
+    });
+
+    [Fact]
     public Task Choosing_WaitsForTheCloseAnimationAndKeepsTheResult() => HeadlessTestApp.RunAsync(async () =>
     {
         var owner = new Window();
         owner.Show();
-        var result = SaveChangesDialog.ShowAsync(owner);
+        var result = SaveChangesDialog.ShowAsync(owner, "sample.bin");
         Dispatcher.UIThread.RunJobs();
         var dialog = Assert.IsType<SaveChangesDialog>(Assert.Single(owner.OwnedWindows));
         await HeadlessTestApp.WaitUntilAsync(() => ((Control)dialog.Content!).Opacity == 1);

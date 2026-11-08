@@ -178,7 +178,7 @@ public partial class MainWindowViewModel
         if (Document is not { IsModified: true })
             return true;
 
-        var result = await _dialog.ShowSaveChangesDialogAsync();
+        var result = await _dialog.ShowSaveChangesDialogAsync(DisplayFileName(Document));
 
         if (result == SaveChangesResult.Save)
         {

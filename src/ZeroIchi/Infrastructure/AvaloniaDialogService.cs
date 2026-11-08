@@ -34,12 +34,12 @@ public sealed class AvaloniaDialogService(Window window, IShellWindow shell, Set
         return file?.TryGetLocalPath();
     }
 
-    public async Task<SaveChangesResult> ShowSaveChangesDialogAsync()
+    public async Task<SaveChangesResult> ShowSaveChangesDialogAsync(string fileName)
     {
         shell.SetModalOverlayVisible(true);
         try
         {
-            return await SaveChangesDialog.ShowAsync(window);
+            return await SaveChangesDialog.ShowAsync(window, fileName);
         }
         finally
         {

@@ -284,7 +284,7 @@
     <value>Close</value>
   </data>
   <data name="SaveChangesMessage" xml:space="preserve">
-    <value>Do you want to save your changes?</value>
+    <value>Do you want to save changes to {0}?</value>
   </data>
   <data name="SaveChangesSave" xml:space="preserve">
     <value>Save</value>

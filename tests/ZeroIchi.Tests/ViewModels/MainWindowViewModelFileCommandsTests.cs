@@ -43,9 +43,12 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
             return Task.FromResult(SaveFilePath);
         }
 
-        public Task<SaveChangesResult> ShowSaveChangesDialogAsync()
+        public string? SaveChangesFileName { get; private set; }
+
+        public Task<SaveChangesResult> ShowSaveChangesDialogAsync(string fileName)
         {
             SaveChangesDialogCount++;
+            SaveChangesFileName = fileName;
             return Task.FromResult(SaveChangesAnswer);
         }
 
@@ -247,6 +250,44 @@ public sealed class MainWindowViewModelFileCommandsTests : IDisposable
             await vm.DisposeDocumentAsync();
         }
         Assert.Equal([0xFF, 2, 3], await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task ConfirmDiscardChanges_AsksWithTheFileName()
+    {
+        var path = CreateTestFile([1, 2, 3]);
+        var (vm, dialog) = CreateViewModel();
+        await vm.OpenFileAsync(path);
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            await vm.ConfirmDiscardChangesAsync();
+
+            Assert.Equal(Path.GetFileName(path), dialog.SaveChangesFileName);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task ConfirmDiscardChanges_NewDocument_AsksWithTheUntitledName()
+    {
+        var (vm, dialog) = CreateViewModel();
+        try
+        {
+            vm.OnByteModified(0, 0xFF, cursorPositionAfter: 1);
+
+            await vm.ConfirmDiscardChangesAsync();
+
+            Assert.Equal("無題", dialog.SaveChangesFileName);
+        }
+        finally
+        {
+            await vm.DisposeDocumentAsync();
+        }
     }
 
     [Fact]

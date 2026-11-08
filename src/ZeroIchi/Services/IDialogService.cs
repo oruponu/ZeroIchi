@@ -8,7 +8,7 @@ public interface IDialogService
 {
     Task<string?> PickOpenFileAsync(string title);
     Task<string?> PickSaveFileAsync(string title, string? suggestedFileName);
-    Task<SaveChangesResult> ShowSaveChangesDialogAsync();
+    Task<SaveChangesResult> ShowSaveChangesDialogAsync(string fileName);
     Task ShowErrorAsync(string message, string detail);
     Task ShowSettingsAsync();
     Task ShowAboutAsync();

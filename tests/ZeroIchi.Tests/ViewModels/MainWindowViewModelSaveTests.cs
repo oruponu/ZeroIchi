@@ -37,7 +37,7 @@ public sealed class MainWindowViewModelSaveTests : IDisposable
         public Task<string?> PickOpenFileAsync(string title) => Task.FromResult<string?>(null);
         public Task<string?> PickSaveFileAsync(string title, string? suggestedFileName) => PickSaveFile();
 
-        public Task<SaveChangesResult> ShowSaveChangesDialogAsync()
+        public Task<SaveChangesResult> ShowSaveChangesDialogAsync(string fileName)
         {
             SaveChangesDialogCount++;
             SaveChangesDialogShowing?.Invoke();

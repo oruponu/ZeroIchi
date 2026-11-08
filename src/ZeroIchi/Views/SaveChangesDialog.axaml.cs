@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
+using ZeroIchi.Localization;
 using ZeroIchi.Services;
 
 namespace ZeroIchi.Views;
@@ -43,9 +45,10 @@ public sealed partial class SaveChangesDialog : Window
         }
     }
 
-    public static async Task<SaveChangesResult> ShowAsync(Window owner, Action<bool>? setOverlay = null)
+    public static async Task<SaveChangesResult> ShowAsync(Window owner, string fileName, Action<bool>? setOverlay = null)
     {
         var dialog = new SaveChangesDialog();
+        dialog.MessageText.Text = string.Format(CultureInfo.CurrentCulture, Strings.SaveChangesMessage, fileName);
         setOverlay?.Invoke(true);
 
         try
