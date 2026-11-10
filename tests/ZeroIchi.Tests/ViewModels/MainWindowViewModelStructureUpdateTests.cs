@@ -93,10 +93,7 @@ public sealed class MainWindowViewModelStructureUpdateTests : IDisposable
     {
         var natives = new KsyNativeTypeRegistry();
         if (gate is not null) natives.Register(gate);
-        var registry = new KsyFormatRegistry();
-        foreach (var yaml in yamls)
-            registry.Register(KsyModelBuilder.Parse(yaml, "main", null, natives).Format!);
-        return registry;
+        return KsyTestRegistry.Create([.. yamls.Select(yaml => KsyModelBuilder.Parse(yaml, "main", null, natives).Format!)]);
     }
 
     internal string Write(string name, byte[] content)

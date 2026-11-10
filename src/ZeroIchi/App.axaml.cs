@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using ZeroIchi.Infrastructure;
 using ZeroIchi.Localization;
 using ZeroIchi.Models;
-using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Services;
 using ZeroIchi.ViewModels;
 using ZeroIchi.Views;
@@ -28,7 +27,6 @@ public sealed partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        _ = Task.Run(KsyFormatRegistry.Default.Preload);
         _ = Task.Run(MainWindowViewModel.WarmUpFileTypeDetection);
         var settings = new SettingsManager(new JsonSettingsStore(JsonSettingsStore.DefaultPath));
         Localizer.Instance.SetCulture(LanguageSetting.Resolve(settings.Current.Language));

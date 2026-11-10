@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using ZeroIchi.Localization;
-using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
 using ZeroIchi.ViewModels;
 using static ZeroIchi.Tests.ViewModelTestFactory;
@@ -93,8 +92,7 @@ public sealed class MainWindowViewModelCultureTests : IDisposable
     public Task CultureChange_RebuildsTheStructureTreeItemTexts() => HeadlessTestApp.RunAsync(async () =>
     {
         const string yaml = "meta:\n  id: zi\nseq:\n  - id: magic\n    contents: ZI\n  - id: len\n    type: u1\n";
-        var registry = new KsyFormatRegistry();
-        registry.Register(KsyModelBuilder.Parse(yaml).Format!);
+        var registry = KsyTestRegistry.Create(KsyModelBuilder.Parse(yaml).Format!);
         var vm = new MainWindowViewModel(new StubDialogService(), new StubClipboardService(), new StubWindowService())
         {
             KsyFormats = registry,

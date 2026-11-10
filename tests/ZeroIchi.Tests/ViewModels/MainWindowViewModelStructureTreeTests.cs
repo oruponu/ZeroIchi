@@ -1,5 +1,4 @@
 using System.Text;
-using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
 using ZeroIchi.ViewModels;
 using static ZeroIchi.Tests.ViewModelTestFactory;
@@ -31,9 +30,7 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
 
     private async Task<MainWindowViewModel> OpenAsync(string fileName, byte[] content, params string[] yamls)
     {
-        var registry = new KsyFormatRegistry();
-        foreach (var yaml in yamls)
-            registry.Register(KsyModelBuilder.Parse(yaml).Format!);
+        var registry = KsyTestRegistry.Create([.. yamls.Select(yaml => KsyModelBuilder.Parse(yaml).Format!)]);
 
         var path = Path.Combine(_tempDir, fileName);
         File.WriteAllBytes(path, content);
@@ -64,22 +61,6 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
     }
 
     [Fact]
-    public async Task OpenFile_KsyDefinitionDetectedByTheFileExtension()
-    {
-        const string yaml = "meta:\n  id: ext\n  file-extension: zz\nseq:\n  - id: first\n    type: u1\n";
-
-        var vm = await OpenAsync("a.zz", [7, 8], yaml);
-        try
-        {
-            Assert.Equal("first", Names(vm));
-        }
-        finally
-        {
-            await vm.DisposeDocumentAsync();
-        }
-    }
-
-    [Fact]
     public async Task OpenFile_NoKsyMatch_LeavesTheTreeEmpty()
     {
         byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -96,21 +77,27 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         }
     }
 
+    private static readonly byte[] Png =
+    [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0, 0, 0, 13, .. "IHDR"u8, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, .. "IEND"u8, 0, 0, 0, 0,
+    ];
+
+    private async Task<MainWindowViewModel> OpenWithTheBuiltinFormatsAsync(string fileName, byte[] content)
+    {
+        var path = Path.Combine(_tempDir, fileName);
+        File.WriteAllBytes(path, content);
+        var vm = CreateViewModel();
+        await vm.OpenFileAsync(path);
+        await vm.StructureUpdate;
+        return vm;
+    }
+
     [Fact]
     public async Task OpenFile_PngUsesTheBuiltinDefinitionByDefault()
     {
-        byte[] png =
-        [
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-            0, 0, 0, 13, .. "IHDR"u8, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, .. "IEND"u8, 0, 0, 0, 0,
-        ];
-        var path = Path.Combine(_tempDir, "a.png");
-        File.WriteAllBytes(path, png);
-        var vm = CreateViewModel();
-
-        await vm.OpenFileAsync(path);
-        await vm.StructureUpdate;
+        var vm = await OpenWithTheBuiltinFormatsAsync("a.png", Png);
         try
         {
             Assert.Equal("magic,ihdr_len,ihdr_type,ihdr,ihdr_crc,chunks", Names(vm));
@@ -118,6 +105,23 @@ public sealed class MainWindowViewModelStructureTreeTests : IDisposable
         finally
         {
             await vm.DisposeDocumentAsync();
+        }
+    }
+
+    [Fact]
+    public async Task OpenFile_IgnoresTheFileExtension()
+    {
+        var png = await OpenWithTheBuiltinFormatsAsync("a.txt", Png);
+        var unknown = await OpenWithTheBuiltinFormatsAsync("b.png", new byte[16]);
+        try
+        {
+            Assert.Equal("magic,ihdr_len,ihdr_type,ihdr,ihdr_crc,chunks", Names(png));
+            Assert.Empty(unknown.StructureTreeItems);
+        }
+        finally
+        {
+            await png.DisposeDocumentAsync();
+            await unknown.DisposeDocumentAsync();
         }
     }
 

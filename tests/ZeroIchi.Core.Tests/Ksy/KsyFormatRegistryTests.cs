@@ -1,6 +1,8 @@
+using System.Text;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure.Ksy;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
+using ZeroIchi.Models.FileTypes;
 using ZeroIchi.Tests.Ksy.Model;
 
 namespace ZeroIchi.Tests.Ksy;
@@ -59,83 +61,129 @@ public sealed class KsyFormatRegistryTests
         Assert.Contains("-zeroichi-magic", KsyTestLoader.SingleError($"meta:\n  id: x\n  -zeroichi-magic: {value}\n").Message);
     }
 
-    [Fact]
-    public void Detect_PrefersLongestMatchingMagic_ThenRegistrationOrder()
-    {
-        var registry = new KsyFormatRegistry();
-        var shortMagic = Format("meta:\n  id: short_magic\nseq:\n  - id: m\n    contents: [1]\n");
-        var longMagic = Format("meta:\n  id: long_magic\nseq:\n  - id: m\n    contents: [1, 2]\n");
-        var sameLength = Format("meta:\n  id: same_length\nseq:\n  - id: m\n    contents: [1, 2]\n");
-        registry.Register(shortMagic);
-        registry.Register(longMagic);
-        registry.Register(sameLength);
+    private static MimeTypeEntry Type(string name, string? parent, string value) =>
+        new(name, parent, [], [new MimeMagic(50, TikaMagicParser.Parse("string", "0", value, null, null, [], out _))]);
 
-        Assert.Same(longMagic, registry.Detect(Bytes(1, 2, 3), null));
-        Assert.Same(shortMagic, registry.Detect(Bytes(1, 9), null));
-        Assert.Null(registry.Detect(Bytes(9), null));
+    private static Func<FileTypeDetector> Detector(params MimeTypeEntry[] types)
+    {
+        var detector = new FileTypeDetector(types);
+        return () => detector;
+    }
+
+    private static ByteBuffer Text(string text) => new ArrayByteBuffer(Encoding.ASCII.GetBytes(text));
+
+    private static KsyFormat Named(string id) => Format($"meta:\n  id: {id}\n");
+
+    [Fact]
+    public void Detect_UsesTheFormatMappedToTheDetectedType()
+    {
+        var registry = new KsyFormatRegistry(Detector(Type("x/a", null, "A")));
+        var format = Named("a");
+        registry.Register(format, "x/a");
+
+        Assert.Same(format, registry.Detect(Text("A1")));
     }
 
     [Fact]
-    public void Detect_MagicLongerThanFile_DoesNotMatch()
+    public void Detect_DescendantTypeUsesTheAncestorsFormat()
     {
-        var registry = new KsyFormatRegistry();
-        registry.Register(Format("meta:\n  id: x\nseq:\n  - id: m\n    contents: [1, 2]\n"));
+        var registry = new KsyFormatRegistry(Detector(Type("x/child", "x/parent", "PC"), Type("x/parent", null, "P")));
+        var format = Named("parent");
+        registry.Register(format, "x/parent");
 
-        Assert.Null(registry.Detect(Bytes(1), null));
+        Assert.Same(format, registry.Detect(Text("PC")));
     }
 
     [Fact]
-    public void Detect_WildcardBytesMatchAnything()
+    public void Detect_NearestMappedAncestorWins()
     {
-        var registry = new KsyFormatRegistry();
-        var format = Format("meta:\n  id: x\n  -zeroichi-magic: 01 ?? 03\n");
-        registry.Register(format);
+        var registry = new KsyFormatRegistry(Detector(Type("x/child", "x/parent", "PC"), Type("x/parent", null, "P")));
+        var parent = Named("parent");
+        var child = Named("child");
+        registry.Register(parent, "x/parent");
+        registry.Register(child, "x/child");
 
-        Assert.Same(format, registry.Detect(Bytes(1, 0xFF, 3), null));
+        Assert.Same(child, registry.Detect(Text("PC")));
+        Assert.Same(parent, registry.Detect(Text("PX")));
     }
 
     [Fact]
-    public void Detect_ExtensionIsUsedOnlyForFormatsWithoutMagic()
+    public void Detect_UnmappedOrUndetectedData_IsNull()
     {
-        var registry = new KsyFormatRegistry();
-        var withMagic = Format("meta:\n  id: with_magic\n  file-extension: bin\nseq:\n  - id: m\n    contents: [1]\n");
-        var withoutMagic = Format("meta:\n  id: without_magic\n  file-extension: [dat, BIN]\n");
-        registry.Register(withMagic);
-        registry.Register(withoutMagic);
+        var registry = new KsyFormatRegistry(Detector(Type("x/a", null, "A"), Type("x/b", null, "B")));
+        registry.Register(Named("a"), "x/a");
 
-        Assert.Same(withoutMagic, registry.Detect(Bytes(9), @"C:\files\sample.bin"));
-        Assert.Same(withoutMagic, registry.Detect(Bytes(9), "sample.DAT"));
-        Assert.Same(withMagic, registry.Detect(Bytes(1), "sample.dat"));
-        Assert.Null(registry.Detect(Bytes(9), "sample.txt"));
-        Assert.Null(registry.Detect(Bytes(9), null));
+        Assert.Null(registry.Detect(Text("B")));
+        Assert.Null(registry.Detect(Text("Q")));
+        Assert.Null(registry.Detect(Bytes()));
     }
 
     [Fact]
-    public void Formats_AreLoadedOnceAtTheFirstDetection()
+    public void Detect_DefinitionMagicMustMatch()
+    {
+        var registry = new KsyFormatRegistry(Detector(Type("x/p", null, "PC")));
+        var format = Format("meta:\n  id: p\nseq:\n  - id: m\n    contents: [0x50, 0x43, 0x44]\n");
+        registry.Register(format, "x/p");
+
+        Assert.Same(format, registry.Detect(Text("PCD")));
+        Assert.Null(registry.Detect(Text("PCX")));
+        Assert.Null(registry.Detect(Text("PC")));
+    }
+
+    [Fact]
+    public void Detect_LoadsAFormatOnlyWhenSelectedAndOnlyOnce()
+    {
+        var loaded = new List<string>();
+        var registry = new KsyFormatRegistry(Detector(Type("x/a", null, "A"), Type("x/b", null, "B")),
+            [new KsyFormatRoot("a", ["x/a"]), new KsyFormatRoot("b", ["x/b"])],
+            path =>
+            {
+                loaded.Add(path);
+                return Named(path);
+            });
+
+        Assert.Empty(loaded);
+        var first = registry.Detect(Text("A"));
+        var second = registry.Detect(Text("A"));
+
+        Assert.Equal(["a"], loaded);
+        Assert.NotNull(first);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void Detect_FormatThatFailsToLoad_IsNullAndIsNotRetried()
     {
         var loads = 0;
-        var format = Format("meta:\n  id: x\nseq:\n  - id: m\n    contents: [7]\n");
-        var registry = new KsyFormatRegistry(() =>
-        {
-            loads++;
-            return [format];
-        });
+        var registry = new KsyFormatRegistry(Detector(Type("x/a", null, "A")), [new KsyFormatRoot("a", ["x/a"])],
+            _ =>
+            {
+                loads++;
+                return null;
+            });
 
-        Assert.Equal(0, loads);
-        Assert.Same(format, registry.Detect(Bytes(7), null));
-        Assert.Null(registry.Detect(Bytes(8), null));
+        Assert.Null(registry.Detect(Text("A")));
+        Assert.Null(registry.Detect(Text("A")));
         Assert.Equal(1, loads);
     }
 
     [Fact]
-    public void Preload_LoadsTheFormatsOnlyOnce()
+    public void Detect_ConcurrentFirstDetections_LoadTheFormatOnce()
     {
         var loads = 0;
-        var registry = new KsyFormatRegistry(() => { loads++; return []; });
+        var format = Named("a");
+        var registry = new KsyFormatRegistry(Detector(Type("x/a", null, "A")), [new KsyFormatRoot("a", ["x/a"])],
+            _ =>
+            {
+                Interlocked.Increment(ref loads);
+                Thread.Sleep(50);
+                return format;
+            });
+        var results = new KsyFormat?[16];
 
-        registry.Preload();
-        registry.Detect(Bytes(1, 2), "a.bin");
+        Parallel.For(0, results.Length, i => results[i] = registry.Detect(Text("A")));
 
         Assert.Equal(1, loads);
+        Assert.All(results, result => Assert.Same(format, result));
     }
 }

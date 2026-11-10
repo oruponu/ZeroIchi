@@ -106,13 +106,12 @@ public partial class MainWindowViewModel
             UpdateFileType(document.Buffer);
             var snapshot = document.CreateSnapshot();
             var formats = KsyFormats;
-            var filePath = document.FilePath;
             var previous = _parseTail;
             var parse = Task.Run(async () =>
             {
                 await previous;
                 cancellationToken.ThrowIfCancellationRequested();
-                return StructureAnalysis.Analyze(formats, snapshot, filePath, cancellationToken);
+                return StructureAnalysis.Analyze(formats, snapshot, cancellationToken);
             });
             _parseTail = parse.ContinueWith(static _ => { }, TaskScheduler.Default);
             if (await Task.WhenAny(parse, Task.Delay(StructureBusyDelay, cancellationToken)) != parse

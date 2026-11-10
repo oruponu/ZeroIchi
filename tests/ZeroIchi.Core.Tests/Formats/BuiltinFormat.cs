@@ -18,8 +18,7 @@ internal static class BuiltinFormat
     public static FileStructureNode Parse(string root, byte[] data) =>
         KsyInterpreter.Parse(Formats.GetOrAdd(root, Load), new ArrayByteBuffer(data));
 
-    public static string? Detect(byte[] data, string? fileName = null) =>
-        KsyFormatRegistry.Default.Detect(new ArrayByteBuffer(data), fileName)?.Id;
+    public static string? Detect(byte[] data) => KsyFormatRegistry.Default.Detect(new ArrayByteBuffer(data))?.Id;
 
     public static string Errors(FileStructureNode root)
     {

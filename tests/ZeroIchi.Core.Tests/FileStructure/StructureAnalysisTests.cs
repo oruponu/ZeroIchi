@@ -17,17 +17,12 @@ public sealed class StructureAnalysisTests
             type: u1
         """;
 
-    private static KsyFormatRegistry Registry()
-    {
-        var registry = new KsyFormatRegistry();
-        registry.Register(KsyTestLoader.Load(Yaml));
-        return registry;
-    }
+    private static KsyFormatRegistry Registry() => KsyTestRegistry.Create(KsyTestLoader.Load(Yaml));
 
     [Fact]
     public void Analyze_MatchingFormat_ReturnsTheTreeAndTheColors()
     {
-        var analysis = StructureAnalysis.Analyze(Registry(), new ArrayByteBuffer("ZI\u0005"u8.ToArray()), "a.bin", CancellationToken.None);
+        var analysis = StructureAnalysis.Analyze(Registry(), new ArrayByteBuffer("ZI\u0005"u8.ToArray()), CancellationToken.None);
 
         Assert.NotNull(analysis);
         Assert.Equal("magic,len", string.Join(",", analysis.Root.Children.Select(c => c.Name)));
@@ -37,7 +32,7 @@ public sealed class StructureAnalysisTests
     [Fact]
     public void Analyze_NoMatchingFormat_ReturnsNull()
     {
-        Assert.Null(StructureAnalysis.Analyze(Registry(), new ArrayByteBuffer([1, 2, 3]), "a.bin", CancellationToken.None));
+        Assert.Null(StructureAnalysis.Analyze(Registry(), new ArrayByteBuffer([1, 2, 3]), CancellationToken.None));
     }
 
     [Fact]
@@ -47,6 +42,6 @@ public sealed class StructureAnalysisTests
         cts.Cancel();
 
         Assert.ThrowsAny<OperationCanceledException>(() =>
-            StructureAnalysis.Analyze(Registry(), new ArrayByteBuffer("ZI\u0005"u8.ToArray()), "a.bin", cts.Token));
+            StructureAnalysis.Analyze(Registry(), new ArrayByteBuffer("ZI\u0005"u8.ToArray()), cts.Token));
     }
 }

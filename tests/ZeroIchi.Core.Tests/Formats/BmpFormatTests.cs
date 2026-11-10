@@ -24,7 +24,7 @@ public sealed class BmpFormatTests
     [Fact]
     public void Default_DetectsBmpByItsSignature()
     {
-        Assert.Equal("bmp", Detect(Bmp([.. U4(12), .. U2(1), .. U2(1), .. U2(1), .. U2(1)], [0, 0, 0, 255, 255, 255], [0x80, 0, 0, 0])));
+        Assert.Equal("bmp", Detect(Bmp(InfoHeader(40, 8, 0, 2), [0, 0, 0, 0, 255, 255, 255, 0], [1, 0, 0, 0])));
     }
 
     [Fact]

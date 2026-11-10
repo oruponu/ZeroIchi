@@ -1,46 +1,47 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using ZeroIchi.Models.Buffers;
 using ZeroIchi.Models.FileStructure.Ksy.Model;
+using ZeroIchi.Models.FileTypes;
 
 namespace ZeroIchi.Models.FileStructure.Ksy;
 
 public sealed class KsyFormatRegistry
 {
-    private readonly Lazy<List<KsyFormat>> _formats;
+    private readonly Func<FileTypeDetector> _detector;
+    private readonly Dictionary<string, Lazy<KsyFormat?>> _formats = new(StringComparer.Ordinal);
 
-    public KsyFormatRegistry() : this(() => [])
+    internal KsyFormatRegistry(Func<FileTypeDetector> detector) => _detector = detector;
+
+    internal KsyFormatRegistry(Func<FileTypeDetector> detector, IEnumerable<KsyFormatRoot> roots,
+        Func<string, KsyFormat?> load) : this(detector)
     {
+        foreach (var root in roots)
+        {
+            var format = new Lazy<KsyFormat?>(() => load(root.Path));
+            foreach (var mimeType in root.MimeTypes) _formats.Add(mimeType, format);
+        }
     }
 
-    internal KsyFormatRegistry(Func<List<KsyFormat>> load) => _formats = new Lazy<List<KsyFormat>>(load);
+    public static KsyFormatRegistry Default { get; } =
+        new(() => FileTypeDetector.Default, KsyBuiltinFormats.Roots, KsyBuiltinFormats.Load);
 
-    public static KsyFormatRegistry Default { get; } = new(KsyBuiltinFormats.Load);
-
-    internal void Register(KsyFormat format) => _formats.Value.Add(format);
-
-    public void Preload() => _ = _formats.Value;
-
-    public KsyFormat? Detect(ByteBuffer buffer, string? filePath)
+    internal void Register(KsyFormat format, params string[] mimeTypes)
     {
-        KsyFormat? best = null;
-        var formats = _formats.Value;
-        foreach (var format in formats)
-        {
-            if (format.Magic is { } magic && Matches(buffer, magic) && magic.Length > (best?.Magic?.Length ?? 0))
-                best = format;
-        }
-        if (best is not null) return best;
+        var loaded = new Lazy<KsyFormat?>(format);
+        foreach (var mimeType in mimeTypes) _formats.Add(mimeType, loaded);
+    }
 
-        var extension = Path.GetExtension(filePath ?? "").TrimStart('.');
-        if (extension.Length == 0) return null;
+    public KsyFormat? Detect(ByteBuffer buffer)
+    {
+        var detector = _detector();
+        if (detector.Detect(buffer)?.MimeType is not { } mimeType) return null;
 
-        foreach (var format in formats)
+        foreach (var name in detector.SelfAndAncestorNames(mimeType))
         {
-            if (format.Magic is not null) continue;
-            if (format.FileExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)) return format;
+            if (!_formats.TryGetValue(name, out var entry)) continue;
+            if (entry.Value is not { } format) return null;
+            return format.Magic is { } magic && !Matches(buffer, magic) ? null : format;
         }
         return null;
     }

@@ -32,6 +32,12 @@ public sealed class Mp3FormatTests
     }
 
     [Fact]
+    public void Default_Mp3WithoutId3Tag_IsNotDetected()
+    {
+        Assert.Null(Detect(Audio));
+    }
+
+    [Fact]
     public void Parse_ReadsAVersion22Tag()
     {
         var root = Parse("media/mp3",

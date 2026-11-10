@@ -10,16 +10,16 @@ internal static class KsyBuiltinFormats
 {
     internal const string ResourcePrefix = "ZeroIchi.Formats.";
 
-    internal static IReadOnlyList<string> Roots { get; } =
+    internal static IReadOnlyList<KsyFormatRoot> Roots { get; } =
     [
-        "archive/zip",
-        "image/bmp",
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "media/mp3",
-        "media/standard_midi_file",
-        "media/wav",
+        new("archive/zip", ["application/zip"]),
+        new("image/bmp", ["image/bmp"]),
+        new("image/jpeg", ["image/jpeg"]),
+        new("image/png", ["image/png"]),
+        new("image/webp", ["image/webp"]),
+        new("media/mp3", ["audio/mpeg"]),
+        new("media/standard_midi_file", ["audio/midi"]),
+        new("media/wav", ["audio/vnd.wave"]),
     ];
 
     internal static KsyNativeTypeRegistry CreateNativeTypes()
@@ -34,39 +34,21 @@ internal static class KsyBuiltinFormats
     internal static IKsyImportSource CreateSource() =>
         new KsyResourceImportSource(typeof(KsyBuiltinFormats).Assembly, ResourcePrefix);
 
-    internal static List<KsyFormat> Load() => Load(CreateSource, Roots, CreateNativeTypes);
+    internal static KsyFormat? Load(string path) => Load(CreateSource, path, CreateNativeTypes);
 
-    internal static List<KsyFormat> Load(Func<IKsyImportSource> createSource, IEnumerable<string> roots,
+    internal static KsyFormat? Load(Func<IKsyImportSource> createSource, string path,
         Func<KsyNativeTypeRegistry> createNatives)
     {
         try
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            return Load(createSource(), roots, createNatives());
+            var result = KsyModelBuilder.Load(path, createSource(), createNatives());
+            return result.Diagnostics.Count == 0 ? result.Format : null;
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
             Console.Error.WriteLine(e);
-            return [];
+            return null;
         }
-    }
-
-    internal static List<KsyFormat> Load(IKsyImportSource source, IEnumerable<string> roots,
-        KsyNativeTypeRegistry natives)
-    {
-        var formats = new List<KsyFormat>();
-        foreach (var root in roots)
-        {
-            try
-            {
-                var result = KsyModelBuilder.Load(root, source, natives);
-                if (result.Format is { } format && result.Diagnostics.Count == 0) formats.Add(format);
-            }
-            catch (Exception e) when (e is not OutOfMemoryException)
-            {
-                Console.Error.WriteLine(e);
-            }
-        }
-        return formats;
     }
 }
