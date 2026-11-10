@@ -68,6 +68,9 @@ public sealed class FileTypeDetector
         return "";
     }
 
+    public IEnumerable<string> SelfAndAncestorNames(string mimeType) =>
+        SelfAndAncestors(mimeType).Select(type => type.Name);
+
     public bool IsA(string mimeType, string ancestorOrSelf) =>
         mimeType == ancestorOrSelf || SelfAndAncestors(mimeType).Any(type => type.Name == ancestorOrSelf);
 

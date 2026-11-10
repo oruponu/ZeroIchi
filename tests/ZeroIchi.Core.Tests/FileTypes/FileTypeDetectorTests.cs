@@ -50,6 +50,16 @@ public sealed class FileTypeDetectorTests
     }
 
     [Fact]
+    public void SelfAndAncestorNames_ListsTheTypeThenItsAncestors()
+    {
+        var detector = new FileTypeDetector(
+            [Type("x/child", "x/parent", 50, "C"), Type("x/parent", "x/root", 50, "P"), Type("x/root", null, 50, "R")]);
+
+        Assert.Equal(["x/child", "x/parent", "x/root"], detector.SelfAndAncestorNames("x/child"));
+        Assert.Empty(detector.SelfAndAncestorNames("x/unknown"));
+    }
+
+    [Fact]
     public void Extension_IsTheFirstGlob()
     {
         Assert.Equal("mpga", FileTypeDetector.Default.Extension("audio/mpeg"));
