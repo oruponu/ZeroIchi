@@ -242,14 +242,14 @@ types:
         type: str
         terminator: 0
         eos-error: false
-        encoding: ascii
+        encoding: ASCII
         if: name_zeroes == 0
       name_from_short:
         pos: 0
         type: str
         terminator: 0
         eos-error: false
-        encoding: ascii
+        encoding: ASCII
         if: name_zeroes != 0
       name:
         value: 'name_zeroes == 0 ? name_from_offset : name_from_short'

@@ -11,7 +11,7 @@ meta:
   license: CC0-1.0
   imports:
     - windows_shell_items
-  encoding: cp437
+  encoding: IBM437
   endian: le
 doc: |
   Windows .lnk files (AKA "shell link" file) are most frequently used

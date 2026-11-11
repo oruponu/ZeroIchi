@@ -45,7 +45,7 @@ types:
       - id: tag
         type: str
         size: 4
-        encoding: ascii
+        encoding: ASCII
       - id: checksum
         type: u4
       - id: offset
@@ -721,7 +721,7 @@ types:
       - id: ach_vend_id
         type: str
         size: 4
-        encoding: ascii
+        encoding: ASCII
         doc: 'The four character identifier for the vendor of the given type face.'
       - id: selection
         type: u2
@@ -883,7 +883,7 @@ types:
               - id: value
                 type: str
                 size: length
-                encoding: ascii
+                encoding: ASCII
                 if: length != 0
         seq:
           - id: number_of_glyphs
@@ -955,7 +955,7 @@ types:
           ascii_value:
             type: str
             size: len_str
-            encoding: ascii
+            encoding: ASCII
             io: _parent._io
             pos: _parent.ofs_strings + ofs_str
             #if: encoding_id == 0
@@ -963,7 +963,7 @@ types:
           unicode_value:
             type: str
             size: len_str
-            encoding: utf-16be
+            encoding: UTF-16BE
             io: _parent._io
             pos: _parent.ofs_strings + ofs_str
             #if: encoding_id == 1

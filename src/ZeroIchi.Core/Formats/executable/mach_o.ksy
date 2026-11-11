@@ -373,7 +373,7 @@ types:
         type: str
         size: 16
         pad-right: 0
-        encoding: ascii
+        encoding: ASCII
       - id: vmaddr
         type: u8
       - id: vmsize
@@ -403,13 +403,13 @@ types:
             size: 16
             type: str
             pad-right: 0
-            encoding: ascii
+            encoding: ASCII
           - id: seg_name
             -orig-id: segname
             size: 16
             type: str
             pad-right: 0
-            encoding: ascii
+            encoding: ASCII
           - id: addr
             type: u8
           - id: size
@@ -520,7 +520,7 @@ types:
             seq:
               - id: strings
                 type: strz
-                encoding: ascii
+                encoding: ASCII
                 repeat: eos
           pointer_list:
             seq:
@@ -660,7 +660,7 @@ types:
           - id: symbol
             type: strz
             if: "opcode == bind_opcode::set_symbol_trailing_flags_immediate"
-            encoding: ascii
+            encoding: ASCII
         instances:
           opcode:
             value: "opcode_and_immediate & 0xf0"
@@ -693,7 +693,7 @@ types:
             seq:
               - id: name
                 type: strz
-                encoding: ascii
+                encoding: ASCII
               - id: node_offset
                 type: uleb128
             instances:
@@ -756,7 +756,7 @@ types:
             type: u4
           - id: items
             type: strz
-            encoding: utf-8
+            encoding: UTF-8
             repeat: until
             repeat-until: _ == ""
             eos-error: false
@@ -777,7 +777,7 @@ types:
           name:
             pos: _parent.str_off + un
             type: strz
-            encoding: utf-8
+            encoding: UTF-8
             if: un != 0
       nlist:
         -webide-representation: "un={un} type={type} sect={sect} desc={desc} value={value}"
@@ -796,7 +796,7 @@ types:
           name:
             pos: _parent.str_off + un
             type: strz
-            encoding: utf-8
+            encoding: UTF-8
             if: un != 0
   dysymtab_command:
     seq:
@@ -917,7 +917,7 @@ types:
         type: u4
       - id: strings
         type: strz
-        encoding: utf-8
+        encoding: UTF-8
         repeat: expr
         repeat-expr: num_strings
   sub_command:
@@ -974,7 +974,7 @@ types:
         type: u4
       - id: name
         type: strz
-        encoding: utf-8
+        encoding: UTF-8
   rpath_command:
     -webide-representation: '{path}'
     seq:
@@ -982,7 +982,7 @@ types:
         type: u4
       - id: path
         type: strz
-        encoding: utf-8
+        encoding: UTF-8
   linkedit_data_command:
     -webide-representation: 'offs={data_off}, size={data_size}'
     seq:
@@ -1072,12 +1072,12 @@ types:
           ident:
             pos: ident_offset - 8
             type: strz
-            encoding: utf-8
+            encoding: UTF-8
             -webide-parse-mode: eager
           team_id:
             pos: team_id_offset - 8
             type: strz
-            encoding: utf-8
+            encoding: UTF-8
             -webide-parse-mode: eager
           hashes:
             pos: hash_offset - 8 - hash_size * n_special_slots
@@ -1330,7 +1330,7 @@ types:
         type: str
         size: 16
         pad-right: 0
-        encoding: ascii
+        encoding: ASCII
       - id: vmaddr
         type: u4
       - id: vmsize
@@ -1359,13 +1359,13 @@ types:
             size: 16
             type: str
             pad-right: 0
-            encoding: ascii
+            encoding: ASCII
           - id: seg_name
             -orig-id: segname
             size: 16
             type: str
             pad-right: 0
-            encoding: ascii
+            encoding: ASCII
           - id: addr
             type: u4
           - id: size

@@ -149,7 +149,7 @@ types:
       - id: version_str
         size: 4
         type: strz
-        encoding: ascii
+        encoding: ASCII
       - id: checksum
         type: u4
         doc: |
@@ -282,7 +282,7 @@ types:
           - id: data
             size: utf16_size.value
             type: str
-            encoding: ascii
+            encoding: ASCII
     instances:
       value:
         pos: string_data_off
