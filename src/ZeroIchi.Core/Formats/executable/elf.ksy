@@ -28,7 +28,6 @@ doc-ref:
 seq:
   - id: magic
     -orig-id: e_ident[EI_MAG0..EI_MAG3]
-    size: 4
     contents: [0x7f, "ELF"]
     doc: File identification, must be 0x7f + "ELF".
   - id: bits
