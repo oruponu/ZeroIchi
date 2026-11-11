@@ -13,7 +13,7 @@ ZeroIchi は、[Avalonia UI](https://avaloniaui.net/) ベースのバイナリ�
 
 ## システム要件
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [.NET 11 SDK](https://dotnet.microsoft.com/download)
 
 ### プラットフォーム
 
