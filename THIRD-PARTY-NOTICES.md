@@ -73,7 +73,7 @@ SOFTWARE.
 
 ## CommunityToolkit.Mvvm
 
-- Packages: CommunityToolkit.Mvvm
+- Package: CommunityToolkit.Mvvm
 - Source: https://github.com/CommunityToolkit/dotnet
 - License: MIT
 
@@ -101,7 +101,7 @@ SOFTWARE.
 
 ## MicroCom.Runtime
 
-- Packages: MicroCom.Runtime
+- Package: MicroCom.Runtime
 - Source: https://github.com/kekekeks/MicroCom
 - License: MIT
 
@@ -160,7 +160,7 @@ SOFTWARE.
 - Packages: SkiaSharp, HarfBuzzSharp and their native assets
 - Source: https://github.com/mono/SkiaSharp
 - License: MIT
-- The native assets incorporate third-party material such as Skia, HarfBuzz, libpng and zlib. Their notices are reproduced in "SkiaSharp and HarfBuzzSharp: native assets" below.
+- The native assets incorporate third-party material such as Skia, HarfBuzz, libpng and zlib. Their notices are reproduced in the "SkiaSharp and HarfBuzzSharp: native assets" section below.
 - This software is based in part on the work of the Independent JPEG Group.
 
 ```
@@ -188,7 +188,7 @@ SOFTWARE.
 
 ## Tmds.DBus.Protocol
 
-- Packages: Tmds.DBus.Protocol
+- Package: Tmds.DBus.Protocol
 - Source: https://github.com/tmds/Tmds.DBus
 - License: MIT
 
@@ -216,7 +216,7 @@ SOFTWARE.
 
 ## YamlDotNet
 
-- Packages: YamlDotNet
+- Package: YamlDotNet
 - Source: https://github.com/aaubry/YamlDotNet
 - License: MIT
 
@@ -247,7 +247,7 @@ SOFTWARE.
 - Source: https://github.com/apache/tika
 - Version: 4.1.0 (commit c5348700b3f58e5559a50c8e1156d7e2806f42f9)
 - License: Apache License, Version 2.0 (below)
-- Files: `src/ZeroIchi.Core/Models/FileTypes/TikaMimeRules.g.cs` is generated from `tika-mimetypes.xml` of Apache Tika and has been modified. The original file is in `tools/MimeRuleGenerator/tika/`.
+- File: `src/ZeroIchi.Core/Models/FileTypes/TikaMimeRules.g.cs` is generated from Apache Tika's `tika-mimetypes.xml` and has been modified. The original `tika-mimetypes.xml` is in `tools/MimeRuleGenerator/tika/`.
 - Contains public sector information licensed under the Open Government Licence v3.0 (http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 
 ```
@@ -446,7 +446,39 @@ under the Open Government License 3.0 (http://www.nationalarchives.gov.uk/doc/op
 - Source: https://github.com/kaitai-io/kaitai_struct_formats
 - Commit: c35300d0049440570230aaed4219b1f794dd3843
 - License: CC0-1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
-- Files: the .ksy files under `src/ZeroIchi.Core/Formats/` except `media/wav.ksy`, `media/mp3.ksy` and `media/id3v2_2.ksy`, which are part of ZeroIchi. Some of the files have been modified.
+- Files: the `.ksy` files under `src/ZeroIchi.Core/Formats/` except `media/wav.ksy`, `media/mp3.ksy` and `media/id3v2_2.ksy`, which are part of ZeroIchi. Some of the files have been modified.
+
+The following files are licensed under licenses other than CC0-1.0. They contain no copyright notices. The contributors listed for each file are its commit authors, as recorded in the source repository's Git history.
+
+| File | License | Contributors |
+|---|---|---|
+| `executable/dex.ksy` | Apache-2.0 (text in "Apache Tika") | KT, Mikhail Yakshin, Petr Pucil, Petr Pučil, Silviu-Mihai Popescu |
+| `executable/mach_o.ksy` | MIT (text below) | Dimitri Papadopoulos, Filippo Bigarella, KT, Mikhail Yakshin, Petr Pucil, Petr Pučil, Shane Garrett, Tom Hebb |
+| `firmware/ines.ksy` | WTFPL (http://www.wtfpl.net/) | DarkLinkXXXX, MetaDark, Petr Pucil |
+| `font/ttf.ksy` | MIT (text below) | Armijn Hemel, KT, Mikhail Yakshin, Peter Ross, Petr Pucil |
+| `image/dicom.ksy` | MIT (text below) | Mikhail Yakshin, Petr Pucil |
+| `image/nitf.ksy` | MIT (text below) | David Hicks, Petr Pucil, River Loop Security |
+| `security/openpgp_message.ksy` | MIT (text below) | Armijn Hemel, Jonas Plum, Mikhail Yakshin, Petr Pucil |
+
+```
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## Inter
 
