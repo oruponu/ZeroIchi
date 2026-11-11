@@ -68,20 +68,15 @@ internal sealed class MagicEvaluator(ByteBuffer buffer)
 
         var pattern = match.Pattern;
         var mask = match.Mask;
-        for (var start = match.OffsetStart; start <= last; start++)
+        scan: for (var start = match.OffsetStart; start <= last; start++)
         {
-            var found = true;
             for (var i = 0; i < length; i++)
             {
                 var value = _data[start + i];
                 if (ignoreCase && value is >= (byte)'A' and <= (byte)'Z') value += 'a' - 'A';
-                if ((value & mask[i]) != pattern[i])
-                {
-                    found = false;
-                    break;
-                }
+                if ((value & mask[i]) != pattern[i]) continue scan;
             }
-            if (found) return true;
+            return true;
         }
         return false;
     }
