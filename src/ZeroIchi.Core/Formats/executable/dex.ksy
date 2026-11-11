@@ -1,3 +1,4 @@
+# Modified: the encoding names were replaced with their canonical names.
 meta:
   id: dex
   title: Android Dalvik VM executable (dex)
