@@ -107,6 +107,7 @@ public sealed class KsyBuiltinFormatsTests
     [InlineData("image/png")]
     [InlineData("media/id3v2_4")]
     [InlineData("common/vlq_base128_be")]
+    [InlineData("serialization/asn1/asn1_der")]
     public void Source_ReadsTheEmbeddedDefinitions(string path)
     {
         Assert.True(KsyBuiltinFormats.CreateSource().TryRead(path, out _));
