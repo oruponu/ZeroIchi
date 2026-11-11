@@ -17,7 +17,11 @@ internal static class KsyBuiltinFormats
         new("archive/lzh", ["application/x-lha", "application/x-lharc"]),
         new("archive/rar", ["application/x-rar-compressed"]),
         new("archive/rpm", ["application/x-rpm"]),
-        new("archive/zip", ["application/zip"]),
+        new("archive/zip",
+        [
+            "application/zip", "application/epub+zip",
+            "application/vnd.adobe.air-application-installer-package+zip",
+        ]),
         new("database/dbf", ["application/x-dbf"]),
         new("database/sqlite3", ["application/x-sqlite3"]),
         new("executable/dex", ["application/x-dex"]),

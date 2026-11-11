@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Text;
 using static ZeroIchi.Tests.Formats.BuiltinFormat;
 
 namespace ZeroIchi.Tests.Formats;
@@ -28,6 +29,21 @@ public sealed class BuiltinDetectionTests
     public void Default_ExeAndDllUseThePeDefinition(ushort characteristics)
     {
         Assert.Equal("microsoft_pe", Detect(Pe(characteristics)));
+    }
+
+    [Theory]
+    [InlineData("application/vnd.oasis.opendocument.text")]
+    [InlineData("application/epub+zip")]
+    [InlineData("application/x-ibooks+zip")]
+    [InlineData("application/vnd.adobe.air-application-installer-package+zip")]
+    public void Default_ZipWithAMimetypeEntryUsesTheZipDefinition(string mimeType)
+    {
+        var data = new ZipBuilder()
+            .Add("mimetype", Encoding.ASCII.GetBytes(mimeType))
+            .Add("content.xml", "<x/>"u8.ToArray())
+            .Build();
+
+        Assert.Equal("zip", Detect(data));
     }
 
     [Fact]
