@@ -12,7 +12,7 @@ public enum KsyByteOrder
     Be,
 }
 
-public abstract record KsyEndian;
+public closed record KsyEndian;
 
 public sealed record KsyFixedEndian(KsyByteOrder Order) : KsyEndian;
 
@@ -20,7 +20,7 @@ public sealed record KsyEndianCase(KsExpr Match, KsyByteOrder Order);
 
 public sealed record KsySwitchEndian(KsExpr On, IReadOnlyList<KsyEndianCase> Cases) : KsyEndian;
 
-public abstract record KsyDataType;
+public closed record KsyDataType;
 
 public sealed record KsyIntType(int Size, bool Signed, KsyByteOrder? Order) : KsyDataType;
 

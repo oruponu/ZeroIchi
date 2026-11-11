@@ -4,7 +4,7 @@ namespace ZeroIchi.Models.FileStructure.Ksy.Yaml;
 
 public readonly record struct YamlPosition(int Line, int Column);
 
-public abstract class YamlNode(YamlPosition start)
+public closed class YamlNode(YamlPosition start)
 {
     public YamlPosition Start { get; } = start;
 }
