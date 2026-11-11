@@ -209,65 +209,72 @@ internal sealed partial class KsyRun
     }
 
     private static FileStructureError? Validate(KsyValidation validation, KsValue value, KsyAttribute attribute,
-        IKsEvalScope scope)
+        IKsEvalScope scope) => validation switch
     {
-        var path = attribute.Path;
-        switch (validation)
+        KsyValidEq eq => ValidateEq(eq, value, scope, attribute.Path),
+        KsyValidRange range => ValidateRange(range, value, scope, attribute.Path),
+        KsyValidAnyOf anyOf => ValidateAnyOf(anyOf, value, scope, attribute.Path),
+        KsyValidInEnum => ValidateInEnum(value),
+        KsyValidExpr expr => ValidateExpr(expr, value, scope, attribute.Path),
+    };
+
+    private static FileStructureError? ValidateEq(KsyValidEq eq, KsValue value, IKsEvalScope scope, string path)
+    {
+        var expected = Evaluate(eq.Value, scope, path, "valid");
+        return Equal(eq.Value, value, expected, path, "valid")
+            ? null
+            : new FileStructureError(FileStructureErrorKind.ValidEq, [Show(expected), Show(value)],
+                $"Validation failed: expected {Show(expected)}, got {Show(value)}");
+    }
+
+    private static FileStructureError? ValidateRange(KsyValidRange range, KsValue value, IKsEvalScope scope,
+        string path)
+    {
+        if (range.Min is { } min)
         {
-            case KsyValidEq eq:
+            var limit = Evaluate(min, scope, path, "valid/min");
+            if (Compare(min, value, limit, path, "valid/min") < 0)
             {
-                var expected = Evaluate(eq.Value, scope, path, "valid");
-                return Equal(eq.Value, value, expected, path, "valid")
-                    ? null
-                    : new FileStructureError(FileStructureErrorKind.ValidEq, [Show(expected), Show(value)],
-                        $"Validation failed: expected {Show(expected)}, got {Show(value)}");
+                return new FileStructureError(FileStructureErrorKind.ValidMin, [Show(value), Show(limit)],
+                    $"Validation failed: {Show(value)} is less than {Show(limit)}");
             }
-            case KsyValidRange range:
+        }
+        if (range.Max is { } max)
+        {
+            var limit = Evaluate(max, scope, path, "valid/max");
+            if (Compare(max, value, limit, path, "valid/max") > 0)
             {
-                if (range.Min is { } min)
-                {
-                    var limit = Evaluate(min, scope, path, "valid/min");
-                    if (Compare(min, value, limit, path, "valid/min") < 0)
-                    {
-                        return new FileStructureError(FileStructureErrorKind.ValidMin, [Show(value), Show(limit)],
-                            $"Validation failed: {Show(value)} is less than {Show(limit)}");
-                    }
-                }
-                if (range.Max is { } max)
-                {
-                    var limit = Evaluate(max, scope, path, "valid/max");
-                    if (Compare(max, value, limit, path, "valid/max") > 0)
-                    {
-                        return new FileStructureError(FileStructureErrorKind.ValidMax, [Show(value), Show(limit)],
-                            $"Validation failed: {Show(value)} is greater than {Show(limit)}");
-                    }
-                }
-                return null;
+                return new FileStructureError(FileStructureErrorKind.ValidMax, [Show(value), Show(limit)],
+                    $"Validation failed: {Show(value)} is greater than {Show(limit)}");
             }
-            case KsyValidAnyOf anyOf:
-            {
-                foreach (var option in anyOf.Values)
-                {
-                    if (Equal(option, value, Evaluate(option, scope, path, "valid/any-of"), path, "valid/any-of"))
-                        return null;
-                }
-                return new FileStructureError(FileStructureErrorKind.ValidAnyOf, [Show(value)],
-                    $"Validation failed: {Show(value)} is not any of the allowed values");
-            }
-            case KsyValidInEnum:
-                return value.Kind == KsValueKind.Enum && value.EnumType.GetName(value.EnumValue) is null
-                    ? new FileStructureError(FileStructureErrorKind.ValidInEnum, [value.EnumType.Name, Show(value)],
-                        $"Validation failed: {Show(value)} is not defined in enum '{value.EnumType.Name}'")
-                    : null;
-            case KsyValidExpr expr:
-                return EvaluateBool(expr.Condition, new KsScope(scope) { Underscore = value }, path, "valid/expr")
-                    ? null
-                    : new FileStructureError(FileStructureErrorKind.ValidExpr, [Show(value)],
-                        $"Validation failed: {Show(value)} does not satisfy the expression");
-            default:
+        }
+        return null;
+    }
+
+    private static FileStructureError? ValidateAnyOf(KsyValidAnyOf anyOf, KsValue value, IKsEvalScope scope,
+        string path)
+    {
+        foreach (var option in anyOf.Values)
+        {
+            if (Equal(option, value, Evaluate(option, scope, path, "valid/any-of"), path, "valid/any-of"))
                 return null;
         }
+        return new FileStructureError(FileStructureErrorKind.ValidAnyOf, [Show(value)],
+            $"Validation failed: {Show(value)} is not any of the allowed values");
     }
+
+    private static FileStructureError? ValidateInEnum(KsValue value) =>
+        value.Kind == KsValueKind.Enum && value.EnumType.GetName(value.EnumValue) is null
+            ? new FileStructureError(FileStructureErrorKind.ValidInEnum, [value.EnumType.Name, Show(value)],
+                $"Validation failed: {Show(value)} is not defined in enum '{value.EnumType.Name}'")
+            : null;
+
+    private static FileStructureError? ValidateExpr(KsyValidExpr expr, KsValue value, IKsEvalScope scope,
+        string path) =>
+        EvaluateBool(expr.Condition, new KsScope(scope) { Underscore = value }, path, "valid/expr")
+            ? null
+            : new FileStructureError(FileStructureErrorKind.ValidExpr, [Show(value)],
+                $"Validation failed: {Show(value)} does not satisfy the expression");
 
     private static string Show(KsValue value) => KsyDescriptions.Describe(value).Text;
 

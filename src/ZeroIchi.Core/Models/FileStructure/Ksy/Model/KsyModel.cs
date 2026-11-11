@@ -56,7 +56,7 @@ public enum KsyProcessKind
 
 public sealed record KsyProcess(KsyProcessKind Kind, KsExpr? Argument);
 
-public abstract record KsyValidation;
+public closed record KsyValidation;
 
 public sealed record KsyValidEq(KsExpr Value) : KsyValidation;
 
