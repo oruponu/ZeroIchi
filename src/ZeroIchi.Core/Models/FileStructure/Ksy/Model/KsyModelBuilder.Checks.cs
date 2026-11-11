@@ -23,7 +23,7 @@ public static partial class KsyModelBuilder
                     var node = pending.Pop();
                     if (CheckNode(use, node) is { } message)
                         Report(KsySeverity.Error, ExpressionPosition(use.Node, node.Position), use.Path, message);
-                    foreach (var child in Children(node)) pending.Push(child);
+                    foreach (var child in node.Children()) pending.Push(child);
                 }
             }
         }
@@ -93,19 +93,5 @@ public static partial class KsyModelBuilder
 
         private static KsyAttribute? FindMember(KsyType type, string name) =>
             type.Seq.FirstOrDefault(a => a.Id == name) ?? type.Instances.FirstOrDefault(a => a.Id == name);
-
-        private static IEnumerable<KsExpr> Children(KsExpr node) => node switch
-        {
-            KsFString e => e.Parts,
-            KsArrayLiteral e => e.Elements,
-            KsUnary e => [e.Operand],
-            KsBinary e => [e.Left, e.Right],
-            KsTernary e => [e.Condition, e.Then, e.Else],
-            KsMember e => [e.Target],
-            KsCall e => [e.Target, .. e.Arguments],
-            KsIndex e => [e.Target, e.Index],
-            KsCast e => [e.Target],
-            _ => [],
-        };
     }
 }

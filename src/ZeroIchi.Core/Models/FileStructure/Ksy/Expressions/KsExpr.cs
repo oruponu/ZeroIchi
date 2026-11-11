@@ -3,7 +3,23 @@ using System.Collections.Generic;
 
 namespace ZeroIchi.Models.FileStructure.Ksy.Expressions;
 
-public abstract record KsExpr(int Position, int Length);
+public closed record KsExpr(int Position, int Length)
+{
+    internal IEnumerable<KsExpr> Children() => this switch
+    {
+        KsIntLiteral or KsFloatLiteral or KsStringLiteral or KsBoolLiteral
+            or KsName or KsEnumRef or KsSizeOf => [],
+        KsFString e => e.Parts,
+        KsArrayLiteral e => e.Elements,
+        KsUnary e => [e.Operand],
+        KsBinary e => [e.Left, e.Right],
+        KsTernary e => [e.Condition, e.Then, e.Else],
+        KsMember e => [e.Target],
+        KsCall e => [e.Target, .. e.Arguments],
+        KsIndex e => [e.Target, e.Index],
+        KsCast e => [e.Target],
+    };
+}
 
 public sealed record KsIntLiteral(Int128 Value, int Position, int Length) : KsExpr(Position, Length);
 

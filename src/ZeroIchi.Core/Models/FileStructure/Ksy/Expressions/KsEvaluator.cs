@@ -66,7 +66,6 @@ public static class KsEvaluator
         KsCall e => KsMethods.Call(e, Evaluate(e.Target, scope), e.Name, EvaluateArguments(e.Arguments, scope)),
         KsIndex e => EvaluateIndex(e, scope),
         KsCast e => EvaluateCast(e, scope),
-        _ => throw Error(expr, "Unsupported expression"),
     };
 
     private static KsValue[] EvaluateArguments(IReadOnlyList<KsExpr> arguments, IKsEvalScope scope)

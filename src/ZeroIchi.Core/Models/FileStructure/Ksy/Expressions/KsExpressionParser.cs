@@ -45,47 +45,8 @@ public sealed class KsExpressionParser
             if (depth > MaxAstDepth)
                 throw new KsExpressionException("Expression is nested too deeply", node.Position, Math.Max(node.Length, 1));
 
-            foreach (var child in Children(node))
+            foreach (var child in node.Children())
                 pending.Push((child, depth + 1));
-        }
-    }
-
-    private static IEnumerable<KsExpr> Children(KsExpr node)
-    {
-        switch (node)
-        {
-            case KsFString e:
-                foreach (var part in e.Parts) yield return part;
-                break;
-            case KsArrayLiteral e:
-                foreach (var element in e.Elements) yield return element;
-                break;
-            case KsUnary e:
-                yield return e.Operand;
-                break;
-            case KsBinary e:
-                yield return e.Left;
-                yield return e.Right;
-                break;
-            case KsTernary e:
-                yield return e.Condition;
-                yield return e.Then;
-                yield return e.Else;
-                break;
-            case KsMember e:
-                yield return e.Target;
-                break;
-            case KsCall e:
-                yield return e.Target;
-                foreach (var argument in e.Arguments) yield return argument;
-                break;
-            case KsIndex e:
-                yield return e.Target;
-                yield return e.Index;
-                break;
-            case KsCast e:
-                yield return e.Target;
-                break;
         }
     }
 
